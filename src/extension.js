@@ -9,7 +9,7 @@ var fileUrl = require('file-url');
 
 function activate(context) {
 
-	console.log('vscode-customcss is active!');
+	console.log('vscode-vibrancy is active!');
 
 	process.on('uncaughtException', function (err) {
 		if (/ENOENT|EACCES|EPERM/.test(err.code)) {
@@ -25,7 +25,130 @@ function activate(context) {
 	var base = appDir + (isWin ? '\\vs\\code' : '/vs/code');
 
 	var htmlFile = base + (isWin ? '\\electron-browser\\workbench\\workbench.html' : '/electron-browser/workbench/workbench.html');
-	var htmlFileBack = base + (isWin ? '\\electron-browser\\workbench\\workbench.html.bak-customcss' : '/electron-browser/workbench/workbench.bak-customcss');
+	var htmlFileBack = base + (isWin ? '\\electron-browser\\workbench\\workbench.html.bak-vibrancy' : '/electron-browser/workbench/workbench.bak-vibrancy');
+
+	var injectHTML = `
+	<script>
+	w = nodeRequire('electron')
+   .remote
+   .getCurrentWindow();
+
+	w.setBackgroundColor('#00000000');
+
+	${isWin ? 
+		`
+		bbnative = nodeRequire(${JSON.stringify(__dirname + '\\blurbehind.node')});
+		bbnative.blurbehind(w.getNativeWindowHandle(), true);
+		` :
+		`w.setVibrancy('ultra-dark');`
+	}
+	
+	// hack
+	const width = w.getBounds().width;
+	w.setBounds({
+			width: width + 1,
+	});
+	w.setBounds({
+			width,
+	});
+
+	</script>
+
+	<style>
+	html {
+		background: 'transparent' !important;
+	}
+	
+	.scroll-decoration {
+		box-shadow: none !important;
+	}
+	
+	.minimap, .editor-scrollable>.decorationsOverviewRuler {
+		opacity: 0.6;
+	}
+	
+	.editor-container {
+		background: transparent !important;
+	}
+	
+	.search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
+	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab,
+	.monaco-editor-background,
+	.monaco-editor .margin,
+	.monaco-workbench>.part>.content,
+	.monaco-workbench>.editor>.content>.one-editor-silo.editor-one,
+	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title,
+	.monaco-workbench>.part>.title,
+	.monaco-workbench,
+	.monaco-workbench>.part,
+	body {
+		background: transparent !important;
+	}
+	
+	.editor-group-container>.tabs {
+		background-color: transparent !important;
+	}
+	
+	.editor-group-container>.tabs .tab {
+		background-color: transparent !important;
+	}
+	
+	.editor-group-container>.tabs .tab.active, .editor-group-container>.tabs .monaco-breadcrumbs {
+		background-color: rgba(37, 37, 37,0.3) !important;
+	}
+	
+	.monaco-list.settings-toc-tree .monaco-list-row.focused {
+		outline-color: rgb(37, 37, 37,0.6) !important;
+	}
+	
+	.monaco-list.settings-toc-tree .monaco-list-row.selected,
+	.monaco-list.settings-toc-tree .monaco-list-row.focused,
+	.monaco-list .monaco-list-row.selected,
+	.monaco-list.settings-toc-tree:not(.drop-target) .monaco-list-row:hover:not(.selected):not(.focused) {
+		background-color: rgb(37, 37, 37,0.6) !important;
+	}
+	
+	.monaco-list.settings-editor-tree .monaco-list-row {
+		background-color: transparent !important;
+		outline-color: transparent !important;
+	}
+	
+	.monaco-inputbox {
+		background-color: rgba(41, 41, 41,0.2) !important;
+	}
+	
+	.monaco-editor .selected-text {
+		background-color: rgba(58, 61, 65,0.6) !important;
+	}
+	
+	.monaco-editor .focused .selected-text {
+		background-color: rgba(38, 79, 120,0.6) !important;
+	}
+	
+	.monaco-editor .view-overlays .current-line {
+		border-color: rgba(41, 41, 41,0.2) !important;
+	}
+	
+	.extension-editor,
+	.monaco-inputbox>.wrapper>.input,
+	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
+	.preferences-editor>.preferences-header,
+	.preferences-editor>.preferences-editors-container.side-by-side-preferences-editor .preferences-header-container,
+	.monaco-editor, .monaco-editor .inputarea.ime-input {
+		background: transparent !important;
+	}
+
+	
+	.monaco-workbench>.part.sidebar {
+		background-color: rgba(37, 37, 38, 0.3) !important;
+	}
+	
+	
+	.editor-group-container>.tabs .tab {
+		border: none !important;
+	}
+	</style>
+	`
 
 	function httpGet(theUrl)
 	{
@@ -38,40 +161,14 @@ function activate(context) {
 	}
 
 	function replaceCss() {
-		var config = vscode.workspace.getConfiguration("vscode_custom_css");
-		console.log(config);
-		if (!config || !config.imports || !(config.imports instanceof Array)) {
-			vscode.window.showInformationMessage(msg.notconfigured);
-			console.log(msg.notconfigured);
-			fUninstall();
-			return;
-		};
-		var injectHTML = config.imports.map(function (x) {
-			if (!x) return;
-			if (typeof x === 'string') {
-				if (/^file.*\.js$/.test(x)) return '<script src="' + x + '"></script>';
-				if (/^file.*\.css$/.test(x)) return '<link rel="stylesheet" href="' + x + '"/>';
-				if (/^http.*\.js$/.test(x)) return '<script>' + httpGet(x) + '</script>';
-				if (/^http.*\.css$/.test(x)) return '<style>' + httpGet(x) + '</style>';
-			}
-		}).join('');
 		try {
 			var html = fs.readFileSync(htmlFile, 'utf-8');
-			html = html.replace(/<!-- !! VSCODE-CUSTOM-CSS-START !! -->[\s\S]*?<!-- !! VSCODE-CUSTOM-CSS-END !! -->/, '');
+			html = html.replace(/<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/, '');
 
-			if (config.policy) {
-				html = html.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
-			}
-
-			var indicatorClass = ''
-			var indicatorJS = ''
-			if (config.statusbar){
-				indicatorClass = '__CUSTOM_CSS_JS_INDICATOR_CLS'
-				indicatorJS = `<script src="${fileUrl(__dirname + '/statusbar.js')}"></script>`
-			}
+			html = html.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
 
 			html = html.replace(/(<\/html>)/,
-				'<!-- !! VSCODE-CUSTOM-CSS-START !! -->' + indicatorJS + injectHTML + '<!-- !! VSCODE-CUSTOM-CSS-END !! --></html>');
+				'<!-- !! VSCODE-VIBRANCY-START !! -->' + injectHTML + '<!-- !! VSCODE-VIBRANCY-END !! --></html>');
 			fs.writeFileSync(htmlFile, html, 'utf-8');
 			enabledRestart();
 		} catch (e) {
@@ -100,6 +197,7 @@ function activate(context) {
 
 	function installItem(bakfile, orfile, cleanInstallFunc) {
 		fs.stat(bakfile, function (errBak, statsBak) {
+			console.log(errBak, statsBak)
 			if (errBak) {
 				// clean installation
 				cleanInstallFunc();
@@ -197,13 +295,13 @@ function activate(context) {
 		fUninstall(true);
 	}
 
-	var installCustomCSS = vscode.commands.registerCommand('extension.installCustomCSS', fInstall);
-	var uninstallCustomCSS = vscode.commands.registerCommand('extension.uninstallCustomCSS', fUninstall);
-	var updateCustomCSS = vscode.commands.registerCommand('extension.updateCustomCSS', fUpdate);
+	var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', fInstall);
+	var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', fUninstall);
+	var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', fUpdate);
 
-	context.subscriptions.push(installCustomCSS);
-	context.subscriptions.push(uninstallCustomCSS);
-	context.subscriptions.push(updateCustomCSS);
+	context.subscriptions.push(installVibrancy);
+	context.subscriptions.push(uninstallVibrancy);
+	context.subscriptions.push(updateVibrancy);
 }
 exports.activate = activate;
 
