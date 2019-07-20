@@ -14,6 +14,8 @@ Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code M
 
 ## Supported Operating Systems
 
+Windows 7 ✔
+
 Windows 10 ✔
 
 MacOS ✔
