@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy",
   "displayName": "Vibrancy",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "eyhn",
   "author": {
     "email": "cneyhn@gmail.com",
@@ -46,11 +46,33 @@
         "command": "extension.updateVibrancy",
         "title": "Reload Vibrancy"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Vibrancy Effect",
+      "properties": {
+        "vscode_vibrancy.type": {
+          "description": "(Windows Only) Native method of Vibrancy Effect",
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "dwm",
+            "acrylic"
+          ],
+          "enumDescriptions": [
+            "Automatically switch with system version",
+            "(Windows 7 only) Windows default window blur",
+            "(Windows 10 only) Fluent design blur"
+          ]
+        },
+        "vscode_vibrancy.opacity": {
+          "description": "(Windows Only) Acrylic material opacity.",
+          "type": "number",
+          "default": "0.8"
+        }
+      }
+    }
   },
   "devDependencies": {},
-  "dependencies": {
-    "file-url": "^2.0.2",
-    "xmlhttprequest": "^1.8.0"
-  }
+  "dependencies": {}
 }

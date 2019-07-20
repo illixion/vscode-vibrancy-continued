@@ -2,3 +2,5 @@ node_modules
 test
 .vscode
 .vsixmanifest
+firstload.lock
+*.vsix

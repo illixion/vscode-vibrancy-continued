@@ -10,7 +10,7 @@ Enable Acrylic/Glass effect for your VS Code.
 [![](https://img.shields.io/github/stars/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)&nbsp;
 [![](https://img.shields.io/github/watchers/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)
 
-Links: [Github](https://github.com/eyhn/vscode-vibrancy)&nbsp;&nbsp;[Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy)
+Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/eyhn/vscode-vibrancy/issues)
 
 ## Supported Operating Systems
 
@@ -39,6 +39,22 @@ This extension works by editting the vscode's css file.
 So, a information appears while the first time to install or vscode update.U can click the [never show again] to avoid it.
 
 ![screenshot](./warns.png)
+
+## Options
+
+#### vscode_vibrancy.type (Windows Only)
+
+Native method of Vibrancy Effect.
+
+* auto : Automatically switch with system version.
+* dwm : (Windows 7 only) Windows Aero blur.
+* acrylic : (Windows 10 only) Fluent Design blur.
+
+#### vscode_vibrancy.opacity (Windows Only)
+
+Opacity of Vibrancy Effect.
+
+*value: 0.0 ~ 0.1*
 
 ## FAQs
 

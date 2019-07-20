@@ -1,33 +1,62 @@
 var vscode = require('vscode');
 var fs = require('fs');
+var os = require('os');
 var path = require('path');
 var events = require('events');
 var msg = require('./messages').messages;
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var lockPath = path.join(__dirname, '../firstload.lock');
 
-var fileUrl = require('file-url');
+var isWin = /^win/.test(process.platform);
+var isWin10 = isWin && os.release().split(".").map(Number)[0] === 10;
 
-function activate(context) {
+function deepEqual(obj1, obj2) {
 
-	console.log('vscode-vibrancy is active!');
+	if(obj1 === obj2) // it's just the same object. No need to compare.
+			return true;
 
-	process.on('uncaughtException', function (err) {
-		if (/ENOENT|EACCES|EPERM/.test(err.code)) {
-			vscode.window.showInformationMessage(msg.admin);
-			return;
-		}
-	});
+	if(isPrimitive(obj1) && isPrimitive(obj2)) // compare primitives
+			return obj1 === obj2;
 
-	var eventEmitter = new events.EventEmitter();
-	var isWin = /^win/.test(process.platform);
-	var appDir = path.dirname(require.main.filename);
+	if(Object.keys(obj1).length !== Object.keys(obj2).length)
+			return false;
 
-	var base = appDir + (isWin ? '\\vs\\code' : '/vs/code');
+	// compare objects with same number of keys
+	for(let key in obj1)
+	{
+			if(!(key in obj2)) return false; //other object doesn't have this prop
+			if(!deepEqual(obj1[key], obj2[key])) return false;
+	}
 
-	var htmlFile = base + (isWin ? '\\electron-browser\\workbench\\workbench.html' : '/electron-browser/workbench/workbench.html');
-	var htmlFileBack = base + (isWin ? '\\electron-browser\\workbench\\workbench.html.bak-vibrancy' : '/electron-browser/workbench/workbench.bak-vibrancy');
+	return true;
+}
 
-	var injectHTML = `
+//check if value is primitive
+function isPrimitive(obj)
+{
+	return (obj !== Object(obj));
+}
+
+function isFirstload() {
+	try {
+		fs.readFileSync(lockPath);
+		return false
+	} catch (err) {
+		return true
+	}
+}
+
+function lockFirstload() {
+	fs.writeFileSync(lockPath, '', () => {});
+}
+
+function injectHTML(config) {
+	var type = config.type;
+	if (type === 'auto') {
+		type = isWin10 ? 'acrylic' : 'dwm';
+	}
+	var enableBackground = isWin && type == 'dwm';
+
+	return `
 	<script>
 	w = nodeRequire('electron')
    .remote
@@ -36,10 +65,8 @@ function activate(context) {
 	w.setBackgroundColor('#00000000');
 
 	${isWin ? 
-		`
-		bbnative = nodeRequire(${JSON.stringify(__dirname + '\\blurbehind.node')});
-		bbnative.blurbehind(w.getNativeWindowHandle(), true);
-		` :
+		`nodeRequire("child_process")
+			.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(w.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
 		`w.setVibrancy('ultra-dark');`
 	}
 	
@@ -56,7 +83,7 @@ function activate(context) {
 
 	<style>
 	html {
-		background: 'transparent' !important;
+		background: ${enableBackground ? `rgba(30,30,30,${config.opacity})` : 'transparent'} !important;
 	}
 	
 	.scroll-decoration {
@@ -130,7 +157,6 @@ function activate(context) {
 	}
 	
 	.extension-editor,
-	.monaco-inputbox>.wrapper>.input,
 	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
 	.preferences-editor>.preferences-header,
 	.preferences-editor>.preferences-editors-container.side-by-side-preferences-editor .preferences-header-container,
@@ -149,16 +175,27 @@ function activate(context) {
 	}
 	</style>
 	`
+}
 
-	function httpGet(theUrl)
-	{
-		var xmlHttp = null;
+function activate(context) {
 
-		xmlHttp = new XMLHttpRequest();
-		xmlHttp.open( "GET", theUrl, false );
-		xmlHttp.send( null );
-		return xmlHttp.responseText;
-	}
+	console.log('vscode-vibrancy is active!');
+
+	process.on('uncaughtException', function (err) {
+		if (/ENOENT|EACCES|EPERM/.test(err.code)) {
+			vscode.window.showInformationMessage(msg.admin);
+			return;
+		}
+	});
+
+	var eventEmitter = new events.EventEmitter();
+	var isWin = /^win/.test(process.platform);
+	var appDir = path.dirname(require.main.filename);
+
+	var base = appDir + (isWin ? '\\vs\\code' : '/vs/code');
+
+	var htmlFile = base + (isWin ? '\\electron-browser\\workbench\\workbench.html' : '/electron-browser/workbench/workbench.html');
+	var htmlFileBack = base + (isWin ? '\\electron-browser\\workbench\\workbench.html.bak-vibrancy' : '/electron-browser/workbench/workbench.bak-vibrancy');
 
 	function replaceCss() {
 		try {
@@ -168,9 +205,8 @@ function activate(context) {
 			html = html.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
 
 			html = html.replace(/(<\/html>)/,
-				'<!-- !! VSCODE-VIBRANCY-START !! -->' + injectHTML + '<!-- !! VSCODE-VIBRANCY-END !! --></html>');
+				'<!-- !! VSCODE-VIBRANCY-START !! -->' + injectHTML(vscode.workspace.getConfiguration("vscode_vibrancy")) + '<!-- !! VSCODE-VIBRANCY-END !! --></html>');
 			fs.writeFileSync(htmlFile, html, 'utf-8');
-			enabledRestart();
 		} catch (e) {
 			console.log(e);
 		}
@@ -268,8 +304,12 @@ function activate(context) {
 
 	// ####  main commands ######################################################
 
-	function fInstall() {
+	function fInstall(autoreload) {
 		installItem(htmlFileBack, htmlFile, cleanCssInstall);
+		if (autoreload)
+			reloadWindow();
+		else
+			enabledRestart();
 	}
 
 	function fUninstall(willReinstall) {
@@ -302,6 +342,28 @@ function activate(context) {
 	context.subscriptions.push(installVibrancy);
 	context.subscriptions.push(uninstallVibrancy);
 	context.subscriptions.push(updateVibrancy);
+
+	if (isFirstload()) {
+		vscode.window.showInformationMessage(msg.firstload, { title: msg.installIde })
+			.then(function (msg) {
+				eventEmitter.once('endUninstall', () => fInstall(true));
+				fUninstall(true);
+			});
+		lockFirstload();
+	}
+
+	var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+
+	vscode.workspace.onDidChangeConfiguration(() => {
+		if (!deepEqual(lastConfig, vscode.workspace.getConfiguration("vscode_vibrancy"))) {
+			vscode.window.showInformationMessage(msg.configupdate, { title: msg.reloadIde })
+				.then(function () {
+					eventEmitter.once('endUninstall', () => fInstall(true));
+					fUninstall(true);
+				});
+			lockFirstload();
+		}
+	});
 }
 exports.activate = activate;
 
