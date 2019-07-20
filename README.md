@@ -22,8 +22,6 @@ MacOS ✔
 
 ## Getting Started
 
-> Windows users please make sure you have [Visual C++ Redistributable Packages for Visual Studio 2015 x86](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed!
-
 1. Make sure the color theme you selected is the 'Dark+ (default)'
 
 ![step-1](./step-1.png)
