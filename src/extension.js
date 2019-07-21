@@ -346,8 +346,10 @@ function activate(context) {
 	if (isFirstload()) {
 		vscode.window.showInformationMessage(msg.firstload, { title: msg.installIde })
 			.then(function (msg) {
-				eventEmitter.once('endUninstall', () => fInstall(true));
-				fUninstall(true);
+				if (msg) {
+					eventEmitter.once('endUninstall', () => fInstall(true));
+					fUninstall(true);
+				}
 			});
 		lockFirstload();
 	}
@@ -357,9 +359,11 @@ function activate(context) {
 	vscode.workspace.onDidChangeConfiguration(() => {
 		if (!deepEqual(lastConfig, vscode.workspace.getConfiguration("vscode_vibrancy"))) {
 			vscode.window.showInformationMessage(msg.configupdate, { title: msg.reloadIde })
-				.then(function () {
-					eventEmitter.once('endUninstall', () => fInstall(true));
-					fUninstall(true);
+				.then(function (msg) {
+					if (msg) {
+						eventEmitter.once('endUninstall', () => fInstall(true));
+						fUninstall(true);
+					}
 				});
 			lockFirstload();
 		}
