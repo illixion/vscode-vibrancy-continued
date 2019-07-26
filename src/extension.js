@@ -55,126 +55,52 @@ function injectHTML(config) {
 		type = isWin10 ? 'acrylic' : 'dwm';
 	}
 	var enableBackground = isWin && type == 'dwm';
+	var themeStylePath = path.join(__dirname, '../themes/default.css');
 
-	return `
-	<script>
-	w = nodeRequire('electron')
-   .remote
-   .getCurrentWindow();
+	const HTML = [
+		`
+		<script>
+		w = nodeRequire('electron')
+		.remote
+		.getCurrentWindow();
 
-	w.setBackgroundColor('#00000000');
+		w.setBackgroundColor('#00000000');
 
-	${isWin ? 
-		`nodeRequire("child_process")
-			.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(w.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
-		`w.setVibrancy('ultra-dark');`
-	}
-	
-	// hack
-	const width = w.getBounds().width;
-	w.setBounds({
-			width: width + 1,
-	});
-	w.setBounds({
-			width,
-	});
+		${isWin ? 
+			`nodeRequire("child_process")
+				.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(w.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
+			`w.setVibrancy('ultra-dark');`
+		}
+		
+		// hack
+		const width = w.getBounds().width;
+		w.setBounds({
+				width: width + 1,
+		});
+		w.setBounds({
+				width,
+		});
 
-	</script>
+		</script>
+		`,
+		`
+		<style>
+			html {
+				background: ${enableBackground ? `rgba(30,30,30,${config.opacity})` : 'transparent'} !important;
+			}
+		</style>
+		`,
+		config.imports.map(function (x) {
+			if (!x) return;
+			if (typeof x === 'string') {
+				x = x.replace('%theme-style%', themeStylePath);
+				if (/^.*\.js$/.test(x)) return '<script src="file://' + x + '"></script>';
+				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="file://' + x + '"/>';
+			}
+		})
+	]
 
-	<style>
-	html {
-		background: ${enableBackground ? `rgba(30,30,30,${config.opacity})` : 'transparent'} !important;
-	}
-	
-	.scroll-decoration {
-		box-shadow: none !important;
-	}
-	
-	.minimap, .editor-scrollable>.decorationsOverviewRuler {
-		opacity: 0.6;
-	}
-	
-	.editor-container {
-		background: transparent !important;
-	}
-	
-	.search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
-	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab,
-	.monaco-editor-background,
-	.monaco-editor .margin,
-	.monaco-workbench>.part>.content,
-	.monaco-workbench>.editor>.content>.one-editor-silo.editor-one,
-	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title,
-	.monaco-workbench>.part>.title,
-	.monaco-workbench,
-	.monaco-workbench>.part,
-	body {
-		background: transparent !important;
-	}
-	
-	.editor-group-container>.tabs {
-		background-color: transparent !important;
-	}
-	
-	.editor-group-container>.tabs .tab {
-		background-color: transparent !important;
-	}
-	
-	.editor-group-container>.tabs .tab.active, .editor-group-container>.tabs .monaco-breadcrumbs {
-		background-color: rgba(37, 37, 37,0.3) !important;
-	}
-	
-	.monaco-list.settings-toc-tree .monaco-list-row.focused {
-		outline-color: rgb(37, 37, 37,0.6) !important;
-	}
-	
-	.monaco-list.settings-toc-tree .monaco-list-row.selected,
-	.monaco-list.settings-toc-tree .monaco-list-row.focused,
-	.monaco-list .monaco-list-row.selected,
-	.monaco-list.settings-toc-tree:not(.drop-target) .monaco-list-row:hover:not(.selected):not(.focused) {
-		background-color: rgb(37, 37, 37,0.6) !important;
-	}
-	
-	.monaco-list.settings-editor-tree .monaco-list-row {
-		background-color: transparent !important;
-		outline-color: transparent !important;
-	}
-	
-	.monaco-inputbox {
-		background-color: rgba(41, 41, 41,0.2) !important;
-	}
-	
-	.monaco-editor .selected-text {
-		background-color: rgba(58, 61, 65,0.6) !important;
-	}
-	
-	.monaco-editor .focused .selected-text {
-		background-color: rgba(38, 79, 120,0.6) !important;
-	}
-	
-	.monaco-editor .view-overlays .current-line {
-		border-color: rgba(41, 41, 41,0.2) !important;
-	}
-	
-	.extension-editor,
-	.monaco-workbench>.part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
-	.preferences-editor>.preferences-header,
-	.preferences-editor>.preferences-editors-container.side-by-side-preferences-editor .preferences-header-container,
-	.monaco-editor, .monaco-editor .inputarea.ime-input {
-		background: transparent !important;
-	}
-
-	
-	.monaco-workbench>.part.sidebar {
-		background-color: rgba(37, 37, 38, 0.3) !important;
-	}
-	
-	
-	.editor-group-container>.tabs .tab {
-		border: none !important;
-	}
-	</style>
-	`
+	return HTML.join('')
 }
 
 function activate(context) {

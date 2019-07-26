@@ -58,6 +58,14 @@ Opacity of Vibrancy Effect.
 
 *value: 0.0 ~ 0.1*
 
+#### vscode_vibrancy.imports
+
+Import CSS/JS files, as file paths.
+
+EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
+
+*value: array[]*
+
 ## FAQs
 
 ### How to uninstall?

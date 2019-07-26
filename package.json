@@ -69,6 +69,13 @@
           "description": "(Windows Only) Acrylic material opacity.",
           "type": "number",
           "default": "0.8"
+        },
+        "vscode_vibrancy.imports" : {
+          "description": "Import CSS/JS files, as file paths.",
+          "type": "array",
+          "default": [
+            "%theme-style%"
+          ]
         }
       }
     }
