@@ -1,3 +1,9 @@
+# 1.0.4
+
+* feat: theme system
+* feat: custom import css/js file
+* fix: Auto reload error when config is changed
+
 # 1.0.3
 
 * No longer dependent on the Visual C++ 2015
