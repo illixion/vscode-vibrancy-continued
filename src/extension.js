@@ -9,6 +9,13 @@ var lockPath = path.join(__dirname, '../firstload.lock');
 var isWin = /^win/.test(process.platform);
 var isWin10 = isWin && os.release().split(".").map(Number)[0] === 10;
 
+var themeStylePaths = {
+	'Default Dark': '../themes/Default Dark.css',
+	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css'
+}
+
+var defaultTheme = 'Default Dark';
+
 function deepEqual(obj1, obj2) {
 
 	if(obj1 === obj2) // it's just the same object. No need to compare.
@@ -54,8 +61,8 @@ function injectHTML(config) {
 	if (type === 'auto') {
 		type = isWin10 ? 'acrylic' : 'dwm';
 	}
-	var enableBackground = isWin && type == 'dwm';
-	var themeStylePath = path.join(__dirname, '../themes/default.css');
+	var enableBackground = isWin && type == 'dwm'; path.join(__dirname, '../themes/default.css')
+	var currentTheme = config.theme in themeStylePaths ? config.theme : defaultTheme;
 
 	const HTML = [
 		`
@@ -93,7 +100,7 @@ function injectHTML(config) {
 		config.imports.map(function (x) {
 			if (!x) return;
 			if (typeof x === 'string') {
-				x = x.replace('%theme-style%', themeStylePath);
+				x = x.replace('%theme-style%', path.join(__dirname, themeStylePaths[currentTheme]));
 				if (/^.*\.js$/.test(x)) return '<script src="file://' + x + '"></script>';
 				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="file://' + x + '"/>';
 			}

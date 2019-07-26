@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy",
   "displayName": "Vibrancy",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "eyhn",
   "author": {
     "email": "cneyhn@gmail.com",
@@ -69,6 +69,15 @@
           "description": "(Windows Only) Acrylic material opacity.",
           "type": "number",
           "default": "0.8"
+        },
+        "vscode_vibrancy.theme" : {
+          "description": "Select Vibrancy theme.",
+          "type": "string",
+          "default": "default dark",
+          "enum": [
+            "Default Dark",
+            "Dark (Only Subbar)"
+          ]
         },
         "vscode_vibrancy.imports" : {
           "description": "Import CSS/JS files, as file paths.",

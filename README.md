@@ -58,6 +58,15 @@ Opacity of Vibrancy Effect.
 
 *value: 0.0 ~ 0.1*
 
+#### vscode_vibrancy.theme
+
+Select Vibrancy theme.
+
+* Default Dark
+* Dark (Only Subbar)
+
+> You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
+
 #### vscode_vibrancy.imports
 
 Import CSS/JS files, as file paths.
