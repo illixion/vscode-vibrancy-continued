@@ -85,3 +85,16 @@ body {
 .editor-group-container>.tabs .tab {
   border: none !important;
 }
+
+.monaco-workbench .panel.integrated-terminal *:not(.xterm-cursor):not(.xterm-cursor-block) {
+  background: transparent !important;
+}
+.monaco-workbench .panel.integrated-terminal *:hover:not(.xterm-cursor):not(.xterm-cursor-block) {
+  background: transparent !important;
+}
+.monaco-workbench .panel.integrated-terminal .find-focused .xterm .xterm-viewport, .monaco-workbench .panel.integrated-terminal .xterm.focus .xterm-viewport, .monaco-workbench .panel.integrated-terminal .xterm:focus .xterm-viewport, .monaco-workbench .panel.integrated-terminal .xterm:hover .xterm-viewport {
+  background: transparent !important;
+}
+.monaco-workbench .panel.integrated-terminal .terminal-outer-container {
+  background-color: rgba(37, 37, 37,0.4);
+}
