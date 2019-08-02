@@ -1,8 +1,7 @@
 var vscode = require('vscode');
-var fs = require('fs');
+var fs = require('mz/fs');
 var os = require('os');
 var path = require('path');
-var events = require('events');
 var msg = require('./messages').messages;
 var lockPath = path.join(__dirname, '../firstload.lock');
 
@@ -66,31 +65,6 @@ function injectHTML(config) {
 
 	const HTML = [
 		`
-		<script>
-		w = nodeRequire('electron')
-		.remote
-		.getCurrentWindow();
-
-		w.setBackgroundColor('#00000000');
-
-		${isWin ? 
-			`nodeRequire("child_process")
-				.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(w.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
-			`w.setVibrancy('ultra-dark');`
-		}
-		
-		// hack
-		const width = w.getBounds().width;
-		w.setBounds({
-				width: width + 1,
-		});
-		w.setBounds({
-				width,
-		});
-
-		</script>
-		`,
-		`
 		<style>
 			html {
 				background: ${enableBackground ? `rgba(30,30,30,${config.opacity})` : 'transparent'} !important;
@@ -110,8 +84,39 @@ function injectHTML(config) {
 	return HTML.join('')
 }
 
-function activate(context) {
+function injectJS(config) {
+	var type = config.type;
+	if (type === 'auto') {
+		type = isWin10 ? 'acrylic' : 'dwm';
+	}
+	return `
+	const electron = require('electron');
 
+  electron.app.on('browser-window-created', (event, window) => {
+    window.webContents.on('dom-ready', () => {
+      window.setBackgroundColor('#00000000');
+
+      ${isWin ? 
+				`require("child_process")
+					.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(window.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
+				`window.setVibrancy('ultra-dark');`
+			}
+      // hack
+      const width = window.getBounds().width;
+      window.setBounds({
+          width: width + 1,
+      });
+      window.setBounds({
+          width,
+      });
+
+      window.webContents.executeJavaScript(${JSON.stringify("document.body.innerHTML += " + JSON.stringify(injectHTML(config)))})
+    });
+  })
+	`
+}
+
+function activate(context) {
 	console.log('vscode-vibrancy is active!');
 
 	process.on('uncaughtException', function (err) {
@@ -121,156 +126,101 @@ function activate(context) {
 		}
 	});
 
-	var eventEmitter = new events.EventEmitter();
 	var isWin = /^win/.test(process.platform);
 	var appDir = path.dirname(require.main.filename);
 
-	var base = appDir + (isWin ? '\\vs\\code' : '/vs/code');
+	var HTMLFile = appDir + (isWin ? '\\vs\\code\\electron-browser\\workbench\\workbench.html' : '/vs/code/electron-browser/workbench/workbench.html');
+	var JSFile = appDir + (isWin ? '\\main.js' : '/main.js');
 
-	var htmlFile = base + (isWin ? '\\electron-browser\\workbench\\workbench.html' : '/electron-browser/workbench/workbench.html');
-	var htmlFileBack = base + (isWin ? '\\electron-browser\\workbench\\workbench.html.bak-vibrancy' : '/electron-browser/workbench/workbench.bak-vibrancy');
+	async function installJS() {
+		const JS = await fs.readFile(JSFile, 'utf-8');
+		const newJS = JS.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
+			+ '\n/* !! VSCODE-VIBRANCY-START !! */\n(function(){' + injectJS(vscode.workspace.getConfiguration("vscode_vibrancy")) + '})()\n/* !! VSCODE-VIBRANCY-END !! */\n';
+		await fs.writeFile(JSFile, newJS, 'utf-8');
+	}
 
-	function replaceCss() {
-		try {
-			var html = fs.readFileSync(htmlFile, 'utf-8');
-			html = html.replace(/<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/, '');
-
-			html = html.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
-
-			html = html.replace(/(<\/html>)/,
-				'<!-- !! VSCODE-VIBRANCY-START !! -->' + injectHTML(vscode.workspace.getConfiguration("vscode_vibrancy")) + '<!-- !! VSCODE-VIBRANCY-END !! --></html>');
-			fs.writeFileSync(htmlFile, html, 'utf-8');
-		} catch (e) {
-			console.log(e);
+	async function uninstallJS() {
+		const JS = await fs.readFile(JSFile, 'utf-8');
+		const needClean = /\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
+		if (needClean) {
+			const newJS = JS
+				.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
+			await fs.writeFile(JSFile, newJS, 'utf-8');
 		}
 	}
 
-	function timeDiff(d1, d2) {
-		var timeDiff = Math.abs(d2.getTime() - d1.getTime());
-		return timeDiff;
-	}
-
-	function hasBeenUpdated(stats1, stats2) {
-		var dbak = new Date(stats1.ctime);
-		var dor = new Date(stats2.ctime);
-		var segs = timeDiff(dbak, dor) / 1000;
-		return segs > 60;
-	}
-
-	function cleanCssInstall() {
-		var c = fs.createReadStream(htmlFile).pipe(fs.createWriteStream(htmlFileBack));
-		c.on('finish', function () {
-			replaceCss();
-		});
-	}
-
-	function installItem(bakfile, orfile, cleanInstallFunc) {
-		fs.stat(bakfile, function (errBak, statsBak) {
-			console.log(errBak, statsBak)
-			if (errBak) {
-				// clean installation
-				cleanInstallFunc();
-			} else {
-				// check htmlFileBack's timestamp and compare it to the htmlFile's.
-				fs.stat(orfile, function (errOr, statsOr) {
-					if (errOr) {
-						vscode.window.showInformationMessage(msg.smthingwrong + errOr);
-					} else {
-						var updated = hasBeenUpdated(statsBak, statsOr);
-						if (updated) {
-							// some update has occurred. clean install
-							cleanInstallFunc();
-						}
-					}
-				});
-			}
-		});
-	}
-
-	function emitEndUninstall() {
-		eventEmitter.emit('endUninstall');
-	}
-
-	function restoredAction(isRestored, willReinstall) {
-		if (isRestored >= 1) {
-			if (willReinstall) {
-				emitEndUninstall();
-			} else {
-				disabledRestart();
-			}
+	async function uninstallHTML() {
+		const HTML = await fs.readFile(HTMLFile, 'utf-8');
+		const needClean = /<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/.test(HTML);
+		if (needClean) {
+			const newHTML = HTML
+				.replace(/<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/, '')
+				.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
+			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
 		}
-	}
-
-	function restoreBak(willReinstall) {
-		var restore = 0;
-		fs.unlink(htmlFile, function (err) {
-			if (err) {
-				vscode.window.showInformationMessage(msg.admin);
-				return;
-			}
-			var c = fs.createReadStream(htmlFileBack).pipe(fs.createWriteStream(htmlFile));
-			c.on('finish', function () {
-				fs.unlinkSync(htmlFileBack);
-				restore++;
-				restoredAction(restore, willReinstall);
-			});
-		});
-	}
-
-	function reloadWindow() {
-		// reload vscode-window
-		vscode.commands.executeCommand("workbench.action.reloadWindow");
 	}
 
 	function enabledRestart() {
-		vscode.window.showInformationMessage(msg.enabled, { title: msg.restartIde })
-			.then(function (msg) {
-				reloadWindow();
-			});
+		vscode.window.showInformationMessage(msg.enabled, { title: msg.okIde });
 	}
+
 	function disabledRestart() {
-		vscode.window.showInformationMessage(msg.disabled, { title: msg.restartIde })
-			.then(function (msg) {
-				reloadWindow();
-			});
+		vscode.window.showInformationMessage(msg.disabled, { title: msg.okIde });
 	}
 
 	// ####  main commands ######################################################
 
-	function fInstall(autoreload) {
-		installItem(htmlFileBack, htmlFile, cleanCssInstall);
-		if (autoreload)
-			reloadWindow();
-		else
-			enabledRestart();
+	async function Install(autoreload) {
+		try {
+			await fs.stat(JSFile);
+		} catch (error) {
+			vscode.window.showInformationMessage(msg.smthingwrong + error);
+			throw error;
+		}
+
+		try {
+			await installJS();
+		} catch (error) {
+			vscode.window.showInformationMessage(msg.admin);
+			throw error;
+		}
 	}
 
-	function fUninstall(willReinstall) {
-		fs.stat(htmlFileBack, function (errBak, statsBak) {
-			if (errBak) {
-				if (willReinstall) {
-					emitEndUninstall();
-				}
-				return;
-			}
-			fs.stat(htmlFile, function (errOr, statsOr) {
-				if (errOr) {
-					vscode.window.showInformationMessage(msg.smthingwrong + errOr);
-				} else {
-					restoreBak(willReinstall);
-				}
-			});
-		});
+	async function Uninstall() {
+		try {
+			await fs.stat(JSFile);
+			await fs.stat(HTMLFile);
+		} catch(error) {
+			vscode.window.showInformationMessage(msg.smthingwrong + error);
+			throw error;
+		}
+		
+		try {
+			await uninstallHTML();
+			await uninstallJS();
+		} catch(error) {
+			vscode.window.showInformationMessage(msg.admin);
+			throw error;
+		}
 	}
 
-	function fUpdate() {
-		eventEmitter.once('endUninstall', fInstall);
-		fUninstall(true);
+	async function Update() {
+		await Uninstall();
+		await Install();
 	}
 
-	var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', fInstall);
-	var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', fUninstall);
-	var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', fUpdate);
+	var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', async () => {
+		await Install();
+		enabledRestart();
+	});
+	var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', async () => {
+		await Uninstall()
+		disabledRestart();
+	});
+	var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', async () => {
+		await Update();
+		enabledRestart();
+	});
 
 	context.subscriptions.push(installVibrancy);
 	context.subscriptions.push(uninstallVibrancy);
@@ -278,10 +228,10 @@ function activate(context) {
 
 	if (isFirstload()) {
 		vscode.window.showInformationMessage(msg.firstload, { title: msg.installIde })
-			.then(function (msg) {
+			.then(async (msg) => {
 				if (msg) {
-					eventEmitter.once('endUninstall', () => fInstall(true));
-					fUninstall(true);
+					await Update();
+					enabledRestart();
 				}
 			});
 		lockFirstload();
@@ -292,10 +242,10 @@ function activate(context) {
 	vscode.workspace.onDidChangeConfiguration(() => {
 		if (!deepEqual(lastConfig, vscode.workspace.getConfiguration("vscode_vibrancy"))) {
 			vscode.window.showInformationMessage(msg.configupdate, { title: msg.reloadIde })
-				.then(function (msg) {
+				.then(async (msg) => {
 					if (msg) {
-						eventEmitter.once('endUninstall', () => fInstall(true));
-						fUninstall(true);
+						await Update();
+						enabledRestart();
 					}
 				});
 			lockFirstload();
