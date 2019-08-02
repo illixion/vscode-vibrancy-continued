@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy",
   "displayName": "Vibrancy",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "eyhn",
   "author": {
     "email": "cneyhn@gmail.com",
@@ -70,7 +70,7 @@
           "type": "number",
           "default": "0.8"
         },
-        "vscode_vibrancy.theme" : {
+        "vscode_vibrancy.theme": {
           "description": "Select Vibrancy theme.",
           "type": "string",
           "default": "default dark",
@@ -79,7 +79,7 @@
             "Dark (Only Subbar)"
           ]
         },
-        "vscode_vibrancy.imports" : {
+        "vscode_vibrancy.imports": {
           "description": "Import CSS/JS files, as file paths.",
           "type": "array",
           "default": [
@@ -90,5 +90,7 @@
     }
   },
   "devDependencies": {},
-  "dependencies": {}
+  "dependencies": {
+    "mz": "^2.7.0"
+  }
 }

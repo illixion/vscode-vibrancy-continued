@@ -81,6 +81,12 @@ EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
 Press F1 and Activate command "Disable Vibrancy", and Restart Visual Studio Code.
 
+### Effect doesn't work for terminal?
+
+Check your settings. You should change the renderer type of the terminal to dom.
+
+`"terminal.integrated.rendererType": "dom"`
+
 ## Thanks ⭐
 
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program

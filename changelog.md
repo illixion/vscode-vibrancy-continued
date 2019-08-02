@@ -1,3 +1,11 @@
+# 1.0.5
+
+* fix: support v1.37.0
+* feat: auto config terminal renderer type
+If there is no "terminal.integrated.rendererType" in the global configuration, it will be set to "dom".
+
+* feat: auto restart vscode
+
 # 1.0.4
 
 * feat: theme system
