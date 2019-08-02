@@ -272,7 +272,7 @@ function activate(context) {
 				.then(async (msg) => {
 					if (msg) {
 						await Update();
-						enabledRestart();
+						promptRestart();
 					}
 				});
 			lockFirstload();
