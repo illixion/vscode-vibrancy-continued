@@ -15,6 +15,26 @@ var themeStylePaths = {
 
 var defaultTheme = 'Default Dark';
 
+async function changeTerminalRendererType() {
+	// This is a hacky way to display the restart prompt
+	let v = vscode.workspace.getConfiguration().inspect("terminal.integrated.rendererType");
+	if (v !== undefined) {
+		if (!v.globalValue) {
+			await vscode.workspace.getConfiguration().update("terminal.integrated.rendererType", "dom", vscode.ConfigurationTarget.Global);
+		}
+	}
+}
+
+async function promptRestart() {
+	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
+	if (v !== undefined) {
+		let value = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+		await vscode.workspace.getConfiguration().update("window.titleBarStyle", value === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
+		vscode.workspace.getConfiguration().update("window.titleBarStyle", v.globalValue, vscode.ConfigurationTarget.Global);
+	}
+}
+
+
 function deepEqual(obj1, obj2) {
 
 	if(obj1 === obj2) // it's just the same object. No need to compare.
@@ -161,11 +181,17 @@ function activate(context) {
 	}
 
 	function enabledRestart() {
-		vscode.window.showInformationMessage(msg.enabled, { title: msg.okIde });
+		vscode.window.showInformationMessage(msg.enabled, { title: msg.restartIde })
+			.then(function (msg) {
+				msg && promptRestart();
+			});
 	}
 
 	function disabledRestart() {
-		vscode.window.showInformationMessage(msg.disabled, { title: msg.okIde });
+		vscode.window.showInformationMessage(msg.disabled, { title: msg.restartIde })
+			.then(function (msg) {
+				msg && promptRestart();
+			});
 	}
 
 	// ####  main commands ######################################################
@@ -173,6 +199,7 @@ function activate(context) {
 	async function Install(autoreload) {
 		try {
 			await fs.stat(JSFile);
+			await changeTerminalRendererType()
 		} catch (error) {
 			vscode.window.showInformationMessage(msg.smthingwrong + error);
 			throw error;
