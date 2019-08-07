@@ -51,18 +51,38 @@
       "title": "Vibrancy Effect",
       "properties": {
         "vscode_vibrancy.type": {
-          "description": "(Windows Only) Native method of Vibrancy Effect",
+          "description": "Native method of Vibrancy Effect",
           "type": "string",
           "default": "auto",
           "enum": [
             "auto",
             "dwm",
-            "acrylic"
+            "acrylic",
+            "appearance-based", 
+            "light", 
+            "dark", 
+            "titlebar", 
+            "selection", 
+            "menu", 
+            "popover", 
+            "sidebar", 
+            "medium-light", 
+            "ultra-dark"
           ],
           "enumDescriptions": [
             "Automatically switch with system version",
             "(Windows 7 only) Windows default window blur",
-            "(Windows 10 only) Fluent design blur"
+            "(Windows 10 only) Fluent design blur",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)",
+            "(MacOS only)"
           ]
         },
         "vscode_vibrancy.opacity": {

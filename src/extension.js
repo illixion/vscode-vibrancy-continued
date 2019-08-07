@@ -104,11 +104,36 @@ function injectHTML(config) {
 	return HTML.join('')
 }
 
+const macosType = [
+	"appearance-based",
+	"light", 
+	"dark", 
+	"titlebar", 
+	"selection", 
+	"menu", 
+	"popover", 
+	"sidebar", 
+	"medium-light", 
+	"ultra-dark"
+];
+
+const windowsType = [
+	"dwm",
+	"acrylic"
+];
+
 function injectJS(config) {
 	var type = config.type;
-	if (type === 'auto') {
-		type = isWin10 ? 'acrylic' : 'dwm';
+	if (type !== 'auto') {
+		if (isWin && !windowsType.includes(type)) type = 'auto';
+		if (!isWin && !macosType.includes(type)) type = 'auto';
 	}
+	if (type === 'auto') {
+		type = isWin ? 
+			isWin10 ? 'acrylic' : 'dwm' :
+			'ultra-dark';
+	}
+	
 	return `
 	const electron = require('electron');
 
@@ -119,8 +144,9 @@ function injectJS(config) {
       ${isWin ? 
 				`require("child_process")
 					.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(window.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
-				`window.setVibrancy('ultra-dark');`
+				`window.setVibrancy(${JSON.stringify(type)});`
 			}
+			
       // hack
       const width = window.getBounds().width;
       window.setBounds({

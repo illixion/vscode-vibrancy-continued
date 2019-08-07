@@ -44,13 +44,14 @@ So, a information appears while the first time to install or vscode update.U can
 
 ## Options
 
-#### vscode_vibrancy.type (Windows Only)
+#### vscode_vibrancy.type
 
 Native method of Vibrancy Effect.
 
 * auto : Automatically switch with system version.
 * dwm : (Windows 7 only) Windows Aero blur.
 * acrylic : (Windows 10 only) Fluent Design blur.
+* appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
 #### vscode_vibrancy.opacity (Windows Only)
 
