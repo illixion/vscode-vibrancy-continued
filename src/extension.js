@@ -2,8 +2,21 @@ var vscode = require('vscode');
 var fs = require('mz/fs');
 var os = require('os');
 var path = require('path');
-var msg = require('./messages').messages;
 var lockPath = path.join(__dirname, '../firstload.lock');
+
+const i18nMessages = {
+	'en': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.json'))),
+	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.zh-CN.json')))
+};
+const defaultLocale = 'en';
+const locale = (vscode.env.language || defaultLocale).toLowerCase();
+const localize = (info) => {
+	if (locale in i18nMessages && info in i18nMessages[locale]) {
+		return i18nMessages[locale][info]
+	} else {
+		return i18nMessages[defaultLocale][info]
+	}
+}
 
 var isWin = /^win/.test(process.platform);
 var isWin10 = isWin && os.release().split(".").map(Number)[0] === 10;
@@ -95,6 +108,7 @@ function injectHTML(config) {
 			if (!x) return;
 			if (typeof x === 'string') {
 				x = x.replace('%theme-style%', path.join(__dirname, themeStylePaths[currentTheme]));
+				x = x.replace('$theme-style$', path.join(__dirname, themeStylePaths[currentTheme]));
 				if (/^.*\.js$/.test(x)) return '<script src="file://' + x + '"></script>';
 				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="file://' + x + '"/>';
 			}
@@ -167,7 +181,7 @@ function activate(context) {
 
 	process.on('uncaughtException', function (err) {
 		if (/ENOENT|EACCES|EPERM/.test(err.code)) {
-			vscode.window.showInformationMessage(msg.admin);
+			vscode.window.showInformationMessage(localize('messages.admin'));
 			return;
 		}
 	});
@@ -207,14 +221,14 @@ function activate(context) {
 	}
 
 	function enabledRestart() {
-		vscode.window.showInformationMessage(msg.enabled, { title: msg.restartIde })
+		vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.reloadIde') })
 			.then(function (msg) {
 				msg && promptRestart();
 			});
 	}
 
 	function disabledRestart() {
-		vscode.window.showInformationMessage(msg.disabled, { title: msg.restartIde })
+		vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
 			.then(function (msg) {
 				msg && promptRestart();
 			});
@@ -227,14 +241,14 @@ function activate(context) {
 			await fs.stat(JSFile);
 			await changeTerminalRendererType()
 		} catch (error) {
-			vscode.window.showInformationMessage(msg.smthingwrong + error);
+			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
 			throw error;
 		}
 
 		try {
 			await installJS();
 		} catch (error) {
-			vscode.window.showInformationMessage(msg.admin);
+			vscode.window.showInformationMessage(localize('messages.admin'));
 			throw error;
 		}
 	}
@@ -244,7 +258,7 @@ function activate(context) {
 			await fs.stat(JSFile);
 			await fs.stat(HTMLFile);
 		} catch(error) {
-			vscode.window.showInformationMessage(msg.smthingwrong + error);
+			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
 			throw error;
 		}
 		
@@ -252,7 +266,7 @@ function activate(context) {
 			await uninstallHTML();
 			await uninstallJS();
 		} catch(error) {
-			vscode.window.showInformationMessage(msg.admin);
+			vscode.window.showInformationMessage(localize('messages.admin'));
 			throw error;
 		}
 	}
@@ -280,7 +294,7 @@ function activate(context) {
 	context.subscriptions.push(updateVibrancy);
 
 	if (isFirstload()) {
-		vscode.window.showInformationMessage(msg.firstload, { title: msg.installIde })
+		vscode.window.showInformationMessage(localize('messages.firstload'), { title: localize('messages.installIde') })
 			.then(async (msg) => {
 				if (msg) {
 					await Update();
@@ -294,7 +308,7 @@ function activate(context) {
 
 	vscode.workspace.onDidChangeConfiguration(() => {
 		if (!deepEqual(lastConfig, vscode.workspace.getConfiguration("vscode_vibrancy"))) {
-			vscode.window.showInformationMessage(msg.configupdate, { title: msg.reloadIde })
+			vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
 				.then(async (msg) => {
 					if (msg) {
 						await Update();

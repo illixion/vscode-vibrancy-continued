@@ -1,0 +1,22 @@
+{
+  "configuration.type.description":"设置毛玻璃效果的类型。",
+  "configuration.type.auto.description": "自动",
+  "configuration.type.dwm.description": "(仅限 Windows 7) Windows default window blur",
+  "configuration.type.acrylic.description": "(仅限 Windows 10) Fluent design blur",
+  "configuration.type.appearance-based.description": "(仅限 MacOS)",
+  "configuration.type.light.description": "(仅限 MacOS)",
+  "configuration.type.dark.description": "(仅限 MacOS)",
+  "configuration.type.titlebar.description": "(仅限 MacOS)",
+  "configuration.type.selection.description": "(仅限 MacOS)",
+  "configuration.type.menu.description": "(仅限 MacOS)",
+  "configuration.type.popover.description": "(仅限 MacOS)",
+  "configuration.type.sidebar.description": "(仅限 MacOS)",
+  "configuration.type.medium-light.description": "(仅限 MacOS)",
+  "configuration.type.ultra-dark.description": "(仅限 MacOS)",
+  "configuration.opacity.description": "(仅限 Windows) Windows 系统中毛玻璃效果的透明度。",
+  "configuration.theme.description": "毛玻璃效果的主题样式。",
+  "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
+  "extension.installVibrancy.title": "安装毛玻璃效果",
+  "extension.uninstallVibrancy.title": "卸载毛玻璃效果",
+  "extension.updateVibrancy.title": "重新安装毛玻璃效果"
+}

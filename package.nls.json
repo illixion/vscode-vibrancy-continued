@@ -1,0 +1,22 @@
+{
+  "configuration.type.description": "Native method of Vibrancy Effect",
+  "configuration.type.auto.description": "Automatically switch with system version",
+  "configuration.type.dwm.description": "(Windows 7 only) Windows default window blur",
+  "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
+  "configuration.type.appearance-based.description": "(MacOS only)",
+  "configuration.type.light.description": "(MacOS only)",
+  "configuration.type.dark.description": "(MacOS only)",
+  "configuration.type.titlebar.description": "(MacOS only)",
+  "configuration.type.selection.description": "(MacOS only)",
+  "configuration.type.menu.description": "(MacOS only)",
+  "configuration.type.popover.description": "(MacOS only)",
+  "configuration.type.sidebar.description": "(MacOS only)",
+  "configuration.type.medium-light.description": "(MacOS only)",
+  "configuration.type.ultra-dark.description": "(MacOS only)",
+  "configuration.opacity.description": "(Windows Only) Acrylic material opacity.",
+  "configuration.theme.description": "Select Vibrancy theme.",
+  "configuration.imports.description": "Import CSS/JS files, as file paths.",
+  "extension.installVibrancy.title": "Enable Vibrancy",
+  "extension.uninstallVibrancy.title": "Disable Vibrancy",
+  "extension.updateVibrancy.title": "Reload Vibrancy"
+}

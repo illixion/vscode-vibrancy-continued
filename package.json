@@ -36,22 +36,22 @@
     "commands": [
       {
         "command": "extension.installVibrancy",
-        "title": "Enable Vibrancy"
+        "title": "%extension.installVibrancy.title%"
       },
       {
         "command": "extension.uninstallVibrancy",
-        "title": "Disable Vibrancy"
+        "title": "%extension.uninstallVibrancy.title%"
       },
       {
         "command": "extension.updateVibrancy",
-        "title": "Reload Vibrancy"
+        "title": "%extension.updateVibrancy.title%"
       }
     ],
     "configuration": {
       "title": "Vibrancy Effect",
       "properties": {
         "vscode_vibrancy.type": {
-          "description": "Native method of Vibrancy Effect",
+          "description": "%configuration.type.description%",
           "type": "string",
           "default": "auto",
           "enum": [
@@ -70,28 +70,28 @@
             "ultra-dark"
           ],
           "enumDescriptions": [
-            "Automatically switch with system version",
-            "(Windows 7 only) Windows default window blur",
-            "(Windows 10 only) Fluent design blur",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)",
-            "(MacOS only)"
+            "%configuration.type.auto.description%",
+            "%configuration.type.dwm.description%",
+            "%configuration.type.acrylic.description%",
+            "%configuration.type.appearance-based.description%", 
+            "%configuration.type.light.description%", 
+            "%configuration.type.dark.description%", 
+            "%configuration.type.titlebar.description%", 
+            "%configuration.type.selection.description%", 
+            "%configuration.type.menu.description%", 
+            "%configuration.type.popover.description%", 
+            "%configuration.type.sidebar.description%", 
+            "%configuration.type.medium-light.description%", 
+            "%configuration.type.ultra-dark.description%"
           ]
         },
         "vscode_vibrancy.opacity": {
-          "description": "(Windows Only) Acrylic material opacity.",
+          "description": "%configuration.opacity.description%",
           "type": "number",
           "default": "0.8"
         },
         "vscode_vibrancy.theme": {
-          "description": "Select Vibrancy theme.",
+          "description": "%configuration.theme.description%",
           "type": "string",
           "default": "default dark",
           "enum": [
@@ -100,10 +100,10 @@
           ]
         },
         "vscode_vibrancy.imports": {
-          "description": "Import CSS/JS files, as file paths.",
+          "description": "%configuration.imports.description%",
           "type": "array",
           "default": [
-            "%theme-style%"
+            "$theme-style$"
           ]
         }
       }
