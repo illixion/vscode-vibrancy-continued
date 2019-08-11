@@ -72,7 +72,7 @@ Select Vibrancy theme:
 
 |        Default Dark      |    Dark (Only Subbar)   |
 |:------------------------:|:-----------------------:|
-| ![](./theme-default.jpg) | ![](./theme-subbar.jpg) |
+| ![](./theme-default.jpg) | ![](./theme-subbar.jpg) | 
 
 > You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
 
