@@ -38,11 +38,13 @@ MacOS ✔
 
 Every time after Code is updated, please re-enable vibrancy.
 
-## Warns：
-This extension works by editting the vscode's css file.
-So, a information appears while the first time to install or vscode update.U can click the [never show again] to avoid it.
+## Warning
+
+This extension works by editting VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy` for the first time or each time VS Code updates. U can click [never show again] to hide it.
 
 ![screenshot](./warns.png)
+
+To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
 ## Options
 
@@ -59,15 +61,18 @@ Native method of Vibrancy Effect.
 
 Opacity of Vibrancy Effect.
 
-*value: 0.0 ~ 0.1*
+*value: 0.0 ~ 1*
 
 #### vscode_vibrancy.theme
 
-Select Vibrancy theme.
+Select Vibrancy theme:
 
 * Default Dark
 * Dark (Only Subbar)
-* Default Light
+
+|        Default Dark      |    Dark (Only Subbar)   |
+|:------------------------:|:-----------------------:|
+| ![](./theme-default.jpg) | ![](./theme-subbar.jpg) |
 
 > You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
 
