@@ -99,4 +99,5 @@ Check your settings. You should change the renderer type of the terminal to dom.
 ## Thanks ⭐
 
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program
+
 [DIYgod](https://github.com/microsoft/vscode/issues/32257#issuecomment-509936623) : Fix issues with VSCode 1.36
