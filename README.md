@@ -12,6 +12,8 @@ Enable Acrylic/Glass effect for your VS Code.
 
 Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/eyhn/vscode-vibrancy/issues)
 
+[中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
+
 ## Supported Operating Systems
 
 Windows 7 ✔
