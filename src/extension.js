@@ -109,7 +109,7 @@ function injectHTML(config) {
 			if (typeof x === 'string') {
 				x = x.replace('%theme-style%', path.join(__dirname, themeStylePaths[currentTheme]));
 				x = x.replace('$theme-style$', path.join(__dirname, themeStylePaths[currentTheme]));
-				x = new URL(x, 'file://');
+				x = new URL(x, 'file://').href;
 
 				if (!x.startsWith('file://')) {
 					x = 'file://' + x;
