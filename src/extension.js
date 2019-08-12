@@ -109,8 +109,14 @@ function injectHTML(config) {
 			if (typeof x === 'string') {
 				x = x.replace('%theme-style%', path.join(__dirname, themeStylePaths[currentTheme]));
 				x = x.replace('$theme-style$', path.join(__dirname, themeStylePaths[currentTheme]));
-				if (/^.*\.js$/.test(x)) return '<script src="file://' + x + '"></script>';
-				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="file://' + x + '"/>';
+				x = new URL(x, 'file://');
+
+				if (!x.startsWith('file://')) {
+					x = 'file://' + x;
+				}
+				
+				if (/^.*\.js$/.test(x)) return '<script src="' + x + '"></script>';
+				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="' + x + '"/>';
 			}
 		})
 	]
