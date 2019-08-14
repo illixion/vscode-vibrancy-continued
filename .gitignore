@@ -4,3 +4,4 @@ test
 .vsixmanifest
 firstload.lock
 *.vsix
+yarn.lock
