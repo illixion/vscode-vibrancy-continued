@@ -140,6 +140,10 @@ function injectHTML(config, currentTheme, themeConfig) {
 		opacity = themeConfig.opacity[os]
 	}
 
+	if (os === 'win10') {
+		opacity = 0;
+	}
+
 	const backgroundRGB = hexToRgb(themeConfig.background);
 
 	const HTML = [
