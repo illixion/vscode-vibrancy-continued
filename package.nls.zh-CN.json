@@ -13,7 +13,7 @@
   "configuration.type.sidebar.description": "(仅限 MacOS)",
   "configuration.type.medium-light.description": "(仅限 MacOS)",
   "configuration.type.ultra-dark.description": "(仅限 MacOS)",
-  "configuration.opacity.description": "(仅限 Windows) Windows 系统中毛玻璃效果的透明度。",
+  "configuration.opacity.description": "毛玻璃效果的透明度。",
   "configuration.theme.description": "毛玻璃效果的主题样式。",
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
   "extension.installVibrancy.title": "安装毛玻璃效果",

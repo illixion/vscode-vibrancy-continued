@@ -1,6 +1,5 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
-var os = require('os');
 var path = require('path');
 var lockPath = path.join(__dirname, '../firstload.lock');
 
@@ -18,15 +17,32 @@ const localize = (info) => {
 	}
 }
 
-var isWin = /^win/.test(process.platform);
-var isWin10 = isWin && os.release().split(".").map(Number)[0] === 10;
+let os = 'macos';
+if (/^win/.test(process.platform)) {
+	if (require('os').release().split(".").map(Number)[0] === 10) {
+		os = 'win10';
+	} else {
+		os = 'win7';
+	}
+}
 
 var themeStylePaths = {
 	'Default Dark': '../themes/Default Dark.css',
-	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css'
+	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css',
+	'Default Light': '../themes/Default Light.css',
+}
+
+const themeConfigPaths = {
+	'Default Dark': '../themes/Default Dark.json',
+	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).json',
+	'Default Light': '../themes/Default Light.json',
 }
 
 var defaultTheme = 'Default Dark';
+
+function getCurrentTheme(config) {
+	return config.theme in themeStylePaths ? config.theme : defaultTheme;
+}
 
 async function changeTerminalRendererType() {
 	// This is a hacky way to display the restart prompt
@@ -47,6 +63,21 @@ async function promptRestart() {
 	}
 }
 
+async function checkColorTheme() {
+	const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+	const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
+	const target = themeConfig.colorTheme;
+	const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
+	if (target !== currentColorTheme) {
+		const message = localize('messages.recommendedColorTheme').replace('%1', currentColorTheme).replace('%2', target);
+		await vscode.window.showInformationMessage(message, localize('messages.changeColorThemeIde'), localize('messages.noIde'))
+			.then(async (msg) => {
+				if (msg === localize('messages.changeColorThemeIde')) {
+					await vscode.workspace.getConfiguration().update("workbench.colorTheme", target, vscode.ConfigurationTarget.Global);
+				}
+			});
+	}
+}
 
 function deepEqual(obj1, obj2) {
 
@@ -69,6 +100,15 @@ function deepEqual(obj1, obj2) {
 	return true;
 }
 
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
 //check if value is primitive
 function isPrimitive(obj)
 {
@@ -88,19 +128,25 @@ function lockFirstload() {
 	fs.writeFileSync(lockPath, '', () => {});
 }
 
-function injectHTML(config) {
+function injectHTML(config, currentTheme, themeConfig) {
 	var type = config.type;
 	if (type === 'auto') {
-		type = isWin10 ? 'acrylic' : 'dwm';
+		type = themeConfig.type[os];
 	}
-	var enableBackground = isWin && type == 'dwm'; path.join(__dirname, '../themes/default.css')
-	var currentTheme = config.theme in themeStylePaths ? config.theme : defaultTheme;
+
+	let opacity = config.opacity;
+
+	if (opacity < 0) {
+		opacity = themeConfig.opacity[os]
+	}
+
+	const backgroundRGB = hexToRgb(themeConfig.background);
 
 	const HTML = [
 		`
 		<style>
 			html {
-				background: ${enableBackground ? `rgba(30,30,30,${config.opacity})` : 'transparent'} !important;
+				background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
 			}
 		</style>
 		`,
@@ -142,16 +188,20 @@ const windowsType = [
 	"acrylic"
 ];
 
-function injectJS(config) {
+function injectJS(config, currentTheme, themeConfig) {
 	var type = config.type;
 	if (type !== 'auto') {
-		if (isWin && !windowsType.includes(type)) type = 'auto';
-		if (!isWin && !macosType.includes(type)) type = 'auto';
+		if (os === 'win10' || os === 'win7' && !windowsType.includes(type)) type = 'auto';
+		if (os === 'macos' && !macosType.includes(type)) type = 'auto';
 	}
 	if (type === 'auto') {
-		type = isWin ? 
-			isWin10 ? 'acrylic' : 'dwm' :
-			'ultra-dark';
+		type = themeConfig.type[os];
+	}
+
+	let opacity = config.opacity;
+
+	if (opacity < 0) {
+		opacity = themeConfig.opacity[os]
 	}
 	
 	return `
@@ -161,9 +211,9 @@ function injectJS(config) {
     window.webContents.on('dom-ready', () => {
       window.setBackgroundColor('#00000000');
 
-      ${isWin ? 
+      ${os !== 'macos' ? 
 				`require("child_process")
-					.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(window.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--opacity', ${JSON.stringify(config.opacity)}]);` :
+					.spawn(${JSON.stringify(__dirname + '\\blur-cli.exe')}, [new Uint32Array(window.getNativeWindowHandle().buffer)[0], '--type', ${JSON.stringify(type)}, '--enable', 'true', '--color', '${themeConfig.background}', '--opacity', ${JSON.stringify(opacity)}]);` :
 				`window.setVibrancy(${JSON.stringify(type)});`
 			}
 			
@@ -176,7 +226,7 @@ function injectJS(config) {
           width,
       });
 
-      window.webContents.executeJavaScript(${JSON.stringify("document.body.innerHTML += " + JSON.stringify(injectHTML(config)))})
+      window.webContents.executeJavaScript(${JSON.stringify("document.body.innerHTML += " + JSON.stringify(injectHTML(config, currentTheme, themeConfig)))})
     });
   })
 	`
@@ -199,9 +249,13 @@ function activate(context) {
 	var JSFile = appDir + (isWin ? '\\main.js' : '/main.js');
 
 	async function installJS() {
+		const config = vscode.workspace.getConfiguration("vscode_vibrancy");
+		const currentTheme = getCurrentTheme(config);
+		const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
+
 		const JS = await fs.readFile(JSFile, 'utf-8');
 		const newJS = JS.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-			+ '\n/* !! VSCODE-VIBRANCY-START !! */\n(function(){' + injectJS(vscode.workspace.getConfiguration("vscode_vibrancy")) + '})()\n/* !! VSCODE-VIBRANCY-END !! */\n';
+			+ '\n/* !! VSCODE-VIBRANCY-START !! */\n(function(){' + injectJS(config, currentTheme, themeConfig) + '})()\n/* !! VSCODE-VIBRANCY-END !! */\n';
 		await fs.writeFile(JSFile, newJS, 'utf-8');
 	}
 
@@ -304,6 +358,7 @@ function activate(context) {
 			.then(async (msg) => {
 				if (msg) {
 					await Update();
+					await checkColorTheme();
 					enabledRestart();
 				}
 			});
@@ -318,6 +373,9 @@ function activate(context) {
 				.then(async (msg) => {
 					if (msg) {
 						await Update();
+						if (lastConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
+							await checkColorTheme();
+						}
 						promptRestart();
 					}
 				});

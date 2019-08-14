@@ -55,7 +55,7 @@ Native method of Vibrancy Effect.
 * acrylic : (Windows 10 only) Fluent Design blur.
 * appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
-#### vscode_vibrancy.opacity (Windows Only)
+#### vscode_vibrancy.opacity
 
 Opacity of Vibrancy Effect.
 
@@ -67,6 +67,7 @@ Select Vibrancy theme.
 
 * Default Dark
 * Dark (Only Subbar)
+* Default Light
 
 > You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
 

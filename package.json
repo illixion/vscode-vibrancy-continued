@@ -88,7 +88,7 @@
         "vscode_vibrancy.opacity": {
           "description": "%configuration.opacity.description%",
           "type": "number",
-          "default": "0.8"
+          "default": "-1"
         },
         "vscode_vibrancy.theme": {
           "description": "%configuration.theme.description%",
@@ -96,7 +96,8 @@
           "default": "default dark",
           "enum": [
             "Default Dark",
-            "Dark (Only Subbar)"
+            "Dark (Only Subbar)",
+            "Default Light"
           ]
         },
         "vscode_vibrancy.imports": {

@@ -6,7 +6,10 @@
 	"messages.disabled": "毛玻璃已卸载并恢复为默认值。重启才能生效。",
 	"messages.already_disabled": "毛玻璃已经禁用。",
 	"messages.smthingwrong": "发生了预料之外的错误: ",
+	"messages.recommendedColorTheme": "你当前的颜色主题是 \"%1\" ，而你的毛玻璃主题是为 \"%2\" 设计的!",
 	"messages.restartIde": "重启 Visual Studio Code",
 	"messages.installIde": "安装毛玻璃效果",
-	"messages.reloadIde": "重新加载"
+	"messages.reloadIde": "重新加载",
+	"messages.changeColorThemeIde": "改变颜色主题",
+	"messages.noIde": "不要"
 }

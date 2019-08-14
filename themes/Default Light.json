@@ -1,0 +1,14 @@
+{
+  "type": {
+    "win7": "dwm",
+    "win10": "acrylic",
+    "macos": "medium-light"
+  },
+  "background": "ffffff",
+  "opacity": {
+    "win7": 0.3,
+    "win10": 0.5,
+    "macos": 0.3
+  },
+  "colorTheme": "Default Light+"
+}

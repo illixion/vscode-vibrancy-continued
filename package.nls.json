@@ -13,7 +13,7 @@
   "configuration.type.sidebar.description": "(MacOS only)",
   "configuration.type.medium-light.description": "(MacOS only)",
   "configuration.type.ultra-dark.description": "(MacOS only)",
-  "configuration.opacity.description": "(Windows Only) Acrylic material opacity.",
+  "configuration.opacity.description": "Opacity of Vibrancy Effect.",
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
   "extension.installVibrancy.title": "Enable Vibrancy",

@@ -6,7 +6,10 @@
 	"messages.disabled": "Vibrancy disabled and reverted to default. Restart to take effect.",
 	"messages.already_disabled": "Vibrancy already disabled.",
 	"messages.smthingwrong": "Something went wrong: ",
+	"messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
 	"messages.restartIde": "Restart Visual Studio Code",
 	"messages.installIde": "Install Vibrancy",
-	"messages.reloadIde": "Reload"
+	"messages.reloadIde": "Reload",
+	"messages.changeColorThemeIde": "Change The Color Theme",
+	"messages.noIde": "No"
 }
