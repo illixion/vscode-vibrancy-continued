@@ -1,3 +1,17 @@
+# 1.0.6
+
+* feat: The opacity option is now also available for macos.
+By default, Macos has a background with opacity of 0.3.
+
+* feat: new light theme
+* fix: support import file path begin with 'file://'
+* feat: i18n zh-cn
+* feat: macos effect type
+You can change the effect type of macos, but generally 'auto' is the best.
+
+* fix: multiple pop-ups when config is changed
+
+
 # 1.0.5
 
 * fix: support v1.37.0
