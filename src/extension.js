@@ -372,12 +372,14 @@ function activate(context) {
 	var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
 	vscode.workspace.onDidChangeConfiguration(() => {
-		if (!deepEqual(lastConfig, vscode.workspace.getConfiguration("vscode_vibrancy"))) {
+		newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+		if (!deepEqual(lastConfig, newConfig)) {
+			lastConfig = newConfig;
 			vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
 				.then(async (msg) => {
 					if (msg) {
 						await Update();
-						if (lastConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
+						if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
 							await checkColorTheme();
 						}
 						promptRestart();
