@@ -1,5 +1,6 @@
 # 1.0.6
 
+* fix: Delete the wrong ',' in the generated html
 * feat: The opacity option is now also available for macos.
 By default, Macos has a background with opacity of 0.3.
 

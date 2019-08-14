@@ -150,7 +150,7 @@ function injectHTML(config, currentTheme, themeConfig) {
 			}
 		</style>
 		`,
-		config.imports.map(function (x) {
+		...config.imports.map(function (x) {
 			if (!x) return;
 			if (typeof x === 'string') {
 				x = x.replace('%theme-style%', path.join(__dirname, themeStylePaths[currentTheme]));
