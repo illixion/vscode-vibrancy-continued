@@ -72,7 +72,8 @@ body {
 .monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
 .preferences-editor>.preferences-header,
 .preferences-editor>.preferences-editors-container.side-by-side-preferences-editor .preferences-header-container,
-.monaco-editor, .monaco-editor .inputarea.ime-input {
+.monaco-editor, .monaco-editor .inputarea.ime-input,
+.monaco-list .monaco-list-rows {
   background: transparent !important;
 }
 
