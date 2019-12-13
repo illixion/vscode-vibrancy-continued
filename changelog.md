@@ -1,3 +1,10 @@
+# 1.0.7
+
+* fix: multiple pop-ups when color theme is changed
+* fix: opacity in win10
+* docs: Add macOS theme screenshots
+* docs: Add solution to removing [Unsupported] on VS Code's titlebar
+
 # 1.0.6
 
 * fix: Delete the wrong ',' in the generated html
