@@ -2,7 +2,7 @@
 .monaco-workbench .sidebar,
 .monaco-workbench .activitybar,
 .monaco-workbench .titlebar,
-.monaco-workbench .monaco-list-rows
+.monaco-workbench .monaco-list-rows,
 body {
   background: transparent !important;
 }
