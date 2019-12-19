@@ -5,7 +5,8 @@ var lockPath = path.join(__dirname, '../firstload.lock');
 
 const i18nMessages = {
 	'en': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.json'))),
-	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.zh-CN.json')))
+	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.zh-CN.json'))),
+	'ja': JSON.parse(fs.readFileSync(path.join(__dirname, 'extension.nls.ja.json')))
 };
 const defaultLocale = 'en';
 const locale = (vscode.env.language || defaultLocale).toLowerCase();
