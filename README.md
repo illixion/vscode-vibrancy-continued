@@ -1,5 +1,7 @@
 # Visual Studio Code Extension - Vibrancy
 
+> Continuous mouse interruption occurs in versions above 1809 of Windows 10, please do not install. See here: https://github.com/EYHN/vscode-vibrancy/issues/5#issuecomment-546591977
+
 Enable Acrylic/Glass effect for your VS Code.
 
 ![screenshot](./screenshot.png)
