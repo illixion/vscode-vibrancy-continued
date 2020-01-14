@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy",
   "displayName": "Vibrancy",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "publisher": "eyhn",
   "author": {
     "email": "cneyhn@gmail.com",
@@ -10,7 +10,7 @@
     "url": "https://eyhn.in"
   },
   "engines": {
-    "vscode": "^1.28.0"
+    "vscode": "^1.41.0"
   },
   "categories": [
     "Other",

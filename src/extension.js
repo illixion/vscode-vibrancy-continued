@@ -55,14 +55,14 @@ async function changeTerminalRendererType() {
 	}
 }
 
-async function promptRestart() {
-	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
-	if (v !== undefined) {
-		let value = vscode.workspace.getConfiguration().get("window.titleBarStyle");
-		await vscode.workspace.getConfiguration().update("window.titleBarStyle", value === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
-		vscode.workspace.getConfiguration().update("window.titleBarStyle", v.globalValue, vscode.ConfigurationTarget.Global);
-	}
-}
+// async function promptRestart() {
+// 	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
+// 	if (v !== undefined) {
+// 		let value = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+// 		vscode.workspace.getConfiguration().update("window.titleBarStyle", value === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
+// 		vscode.workspace.getConfiguration().update("window.titleBarStyle", v.globalValue, vscode.ConfigurationTarget.Global);
+// 	}
+// }
 
 async function checkColorTheme() {
 	const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
@@ -287,16 +287,16 @@ function activate(context) {
 
 	function enabledRestart() {
 		vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.reloadIde') })
-			.then(function (msg) {
-				msg && promptRestart();
-			});
+			// .then(function (msg) {
+			// 	msg && promptRestart();
+			// });
 	}
 
 	function disabledRestart() {
 		vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
-			.then(function (msg) {
-				msg && promptRestart();
-			});
+			// .then(function (msg) {
+			// 	msg && promptRestart();
+			// });
 	}
 
 	// ####  main commands ######################################################

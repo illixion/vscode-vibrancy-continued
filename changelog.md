@@ -1,3 +1,13 @@
+# 1.0.9
+
+* fix: Disable auto restart
+* i18n: Add Japanese translations
+* fix: Support vscode 1.41.1
+
+# 1.0.8
+
+* fix: Support vscode 1.41.0
+
 # 1.0.7
 
 * fix: multiple pop-ups when color theme is changed
