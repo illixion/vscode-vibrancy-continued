@@ -31,12 +31,14 @@ var themeStylePaths = {
 	'Default Dark': '../themes/Default Dark.css',
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css',
 	'Default Light': '../themes/Default Light.css',
+	'Light (Only Subbar)': '../themes/Light (Only Subbar).css',
 }
 
 const themeConfigPaths = {
 	'Default Dark': '../themes/Default Dark.json',
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).json',
 	'Default Light': '../themes/Default Light.json',
+	'Light (Only Subbar)': '../themes/Light (Only Subbar).json',
 }
 
 var defaultTheme = 'Default Dark';
