@@ -1,7 +1,6 @@
 {
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
-  "configuration.type.dwm.description": "(Windows 7 only) Windows default window blur",
   "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
   "configuration.type.appearance-based.description": "(MacOS only)",
   "configuration.type.light.description": "(MacOS only)",
@@ -18,5 +17,19 @@
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
-  "extension.updateVibrancy.title": "Reload Vibrancy"
+  "extension.updateVibrancy.title": "Reload Vibrancy",
+
+  "messages.firstload": "Welcome to use Vibrancy. Please read the README first. Click the button below to install.",
+	"messages.configupdate": "Config is changed, do you want to reload.",
+	"messages.enabled": "Vibrancy enabled. Restart to take effect. If Code complains about it is corrupted, CLICK DON\"T SHOW AGAIN. See README for more detail.",
+	"messages.disabled": "Vibrancy disabled and reverted to default. Restart to take effect.",
+	"messages.already_disabled": "Vibrancy already disabled.",
+	"messages.smthingwrong": "Something went wrong: ",
+	"messages.unsupported": "Unsupported operating system, only macos and win10 are supported",
+	"messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
+	"messages.restartIde": "Restart Visual Studio Code",
+	"messages.installIde": "Install Vibrancy",
+	"messages.reloadIde": "Reload",
+	"messages.changeColorThemeIde": "Change The Color Theme",
+	"messages.noIde": "No"
 }

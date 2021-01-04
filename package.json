@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy",
   "displayName": "Vibrancy",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.9",
+  "version": "1.0.10-alpha",
   "publisher": "eyhn",
   "author": {
     "email": "cneyhn@gmail.com",
@@ -10,7 +10,7 @@
     "url": "https://eyhn.in"
   },
   "engines": {
-    "vscode": "^1.41.0"
+    "vscode": "^1.52.1"
   },
   "categories": [
     "Other",
@@ -31,7 +31,7 @@
   "activationEvents": [
     "*"
   ],
-  "main": "./src/extension",
+  "main": "./extension/index.js",
   "contributes": {
     "commands": [
       {
@@ -56,7 +56,6 @@
           "default": "auto",
           "enum": [
             "auto",
-            "dwm",
             "acrylic",
             "appearance-based",
             "light",
@@ -71,7 +70,6 @@
           ],
           "enumDescriptions": [
             "%configuration.type.auto.description%",
-            "%configuration.type.dwm.description%",
             "%configuration.type.acrylic.description%",
             "%configuration.type.appearance-based.description%",
             "%configuration.type.light.description%",
@@ -110,8 +108,15 @@
       }
     }
   },
-  "devDependencies": {},
+  "scripts": {
+    "build-win10": "node-gyp rebuild"
+  },
   "dependencies": {
+    "fs-extra": "^9.0.1",
     "mz": "^2.7.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^7.1.2",
+    "node-addon-api": "^3.1.0"
   }
 }

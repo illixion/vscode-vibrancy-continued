@@ -85,17 +85,20 @@ body {
   background: transparent !important;
 }
 
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon {
+  color: #616161 !important;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item:hover .action-label.codicon {
+  color: #000 !important;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item.checked .active-item-indicator:before {
+  border-left-color: #616161 !important;
+}
 
 .monaco-workbench .part.sidebar {
   background-color: rgba(228, 230, 241, 0.3) !important;
-}
-
-.monaco-workbench .activitybar > .content .monaco-action-bar .action-item .action-label {
-  background-color: #616161 !important;
-}
-
-.monaco-workbench .activitybar > .content .monaco-action-bar .action-item:hover .action-label {
-  background-color:#000 !important;
 }
 
 .monaco-workbench .part.statusbar {
