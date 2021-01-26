@@ -1,6 +1,10 @@
 # Visual Studio Code Extension - Vibrancy
 
-> Mouse dragging lag in versions above 1809 of Windows 10, please do not install. See here: https://github.com/EYHN/vscode-vibrancy/issues/5#issuecomment-546591977
+> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
+
+> Starting from v1.0.10, this extension no longer supports Windows 7.
+
+> For questions about installation and uninstallation, please read [FAQs](#FAQs).
 
 Enable Acrylic/Glass effect for your VS Code.
 
@@ -17,8 +21,6 @@ Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code M
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
 ## Supported Operating Systems
-
-Windows 7 ✔
 
 Windows 10 ✔
 
@@ -55,7 +57,6 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 Native method of Vibrancy Effect.
 
 * auto : Automatically switch with system version.
-* dwm : (Windows 7 only) Windows Aero blur.
 * acrylic : (Windows 10 only) Fluent Design blur.
 * appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
@@ -97,6 +98,10 @@ Press F1 and Activate command "Disable Vibrancy", and Restart Visual Studio Code
 Check your settings. You should change the renderer type of the terminal to dom.
 
 `"terminal.integrated.rendererType": "dom"`
+
+### Prompt "Run Visual Studio Code with administrator privileges" ?
+
+It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
 ## Thanks ⭐
 

@@ -1,4 +1,5 @@
 {
+  "$schema": "./nls-schema.json",
   "configuration.type.description": "すりガラス効果の適用方法を制御します。",
   "configuration.type.auto.description": "自動",
   "configuration.type.acrylic.description": "(Windows 10 のみ) Fluent Design のブラー効果を使用します",
@@ -19,13 +20,14 @@
   "extension.uninstallVibrancy.title": "Vibrancy を無効化",
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",
 
-  "messages.admin": "変更を適用するには、Visual Studio Code を管理者として実行してください。",
 	"messages.firstload": "Vibrancy へようこそ。はじめに README をご覧ください。ボタンをクリックして、インストールを開始します。",
 	"messages.configupdate": "設定が変更されました。反映させるには、再読み込みします。",
 	"messages.enabled": "Vibrancy が有効化されました。設定は再起動の後に反映されます。もし Visual Studio Code が破損を検出した場合、\"今後表示しない\" をクリックします。詳細については README をご確認ください。",
 	"messages.disabled": "Vibrancy が無効化されました。再起動することで、元の状態に戻ります。",
-	"messages.already_disabled": "Vibrancy は既に無効です。",
-	"messages.smthingwrong": "問題が発生しました: ",
+  "messages.already_disabled": "Vibrancy は既に無効です。",
+  "messages.smthingwrong": "問題が発生しました: ",
+  "messages.unsupported": "サポートされていないオペレーティングシステム。macosとwin10のみがサポートされています。 ",
+  "messages.admin": "変更の適用に失敗しました，管理者権限でVSCodeを実行してください，詳細については README をご確認ください: ",
 	"messages.recommendedColorTheme": "現在の配色テーマは \"%1\" ですが、選択された Vibrancy テーマには \"%2\" を推奨します。",
 	"messages.restartIde": "Visual Studio Code を再起動",
 	"messages.installIde": "Vibrancy をインストール",

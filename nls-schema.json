@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "configuration.type.description": {
+      "type": "string"
+    },
+    "configuration.type.auto.description": {
+      "type": "string"
+    },
+    "configuration.type.acrylic.description": {
+      "type": "string"
+    },
+    "configuration.type.appearance-based.description": {
+      "type": "string"
+    },
+    "configuration.type.light.description": {
+      "type": "string"
+    },
+    "configuration.type.dark.description": {
+      "type": "string"
+    },
+    "configuration.type.titlebar.description": {
+      "type": "string"
+    },
+    "configuration.type.selection.description": {
+      "type": "string"
+    },
+    "configuration.type.menu.description": {
+      "type": "string"
+    },
+    "configuration.type.popover.description": {
+      "type": "string"
+    },
+    "configuration.type.sidebar.description": {
+      "type": "string"
+    },
+    "configuration.type.medium-light.description": {
+      "type": "string"
+    },
+    "configuration.type.ultra-dark.description": {
+      "type": "string"
+    },
+    "configuration.opacity.description": {
+      "type": "string"
+    },
+    "configuration.theme.description": {
+      "type": "string"
+    },
+    "configuration.imports.description": {
+      "type": "string"
+    },
+    "extension.installVibrancy.title": {
+      "type": "string"
+    },
+    "extension.uninstallVibrancy.title": {
+      "type": "string"
+    },
+    "extension.updateVibrancy.title": {
+      "type": "string"
+    },
+    "messages.firstload": {
+      "type": "string"
+    },
+    "messages.configupdate": {
+      "type": "string"
+    },
+    "messages.enabled": {
+      "type": "string"
+    },
+    "messages.disabled": {
+      "type": "string"
+    },
+    "messages.already_disabled": {
+      "type": "string"
+    },
+    "messages.smthingwrong": {
+      "type": "string"
+    },
+    "messages.unsupported": {
+      "type": "string"
+    },
+    "messages.admin": {
+      "type": "string"
+    },
+    "messages.recommendedColorTheme": {
+      "type": "string"
+    },
+    "messages.restartIde": {
+      "type": "string"
+    },
+    "messages.installIde": {
+      "type": "string"
+    },
+    "messages.reloadIde": {
+      "type": "string"
+    },
+    "messages.changeColorThemeIde": {
+      "type": "string"
+    },
+    "messages.noIde": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "configuration.type.description",
+    "configuration.type.auto.description",
+    "configuration.type.acrylic.description",
+    "configuration.type.appearance-based.description",
+    "configuration.type.light.description",
+    "configuration.type.dark.description",
+    "configuration.type.titlebar.description",
+    "configuration.type.selection.description",
+    "configuration.type.menu.description",
+    "configuration.type.popover.description",
+    "configuration.type.sidebar.description",
+    "configuration.type.medium-light.description",
+    "configuration.type.ultra-dark.description",
+    "configuration.opacity.description",
+    "configuration.theme.description",
+    "configuration.imports.description",
+    "extension.installVibrancy.title",
+    "extension.uninstallVibrancy.title",
+    "extension.updateVibrancy.title",
+    "messages.firstload",
+    "messages.configupdate",
+    "messages.enabled",
+    "messages.disabled",
+    "messages.already_disabled",
+    "messages.smthingwrong",
+    "messages.unsupported",
+    "messages.admin",
+    "messages.recommendedColorTheme",
+    "messages.restartIde",
+    "messages.installIde",
+    "messages.reloadIde",
+    "messages.changeColorThemeIde",
+    "messages.noIde"
+  ]
+}

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/coffeelint",
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
@@ -25,7 +26,8 @@
 	"messages.disabled": "Vibrancy disabled and reverted to default. Restart to take effect.",
 	"messages.already_disabled": "Vibrancy already disabled.",
 	"messages.smthingwrong": "Something went wrong: ",
-	"messages.unsupported": "Unsupported operating system, only macos and win10 are supported",
+  "messages.unsupported": "Unsupported operating system, only macos and win10 are supported",
+  "messages.admin": "Apply changes failed, please run Visual Studio Code with administrator privileges, see README for more detail: ",
 	"messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
 	"messages.restartIde": "Restart Visual Studio Code",
 	"messages.installIde": "Install Vibrancy",

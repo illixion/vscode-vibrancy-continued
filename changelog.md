@@ -1,3 +1,9 @@
+# 1.0.10
+
+* New runtime implementation.
+* fix: win10 dragging lay
+* Remove win7 support
+
 # 1.0.9
 
 * fix: Disable auto restart

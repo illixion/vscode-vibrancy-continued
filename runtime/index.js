@@ -67,11 +67,27 @@ electron.app.on('browser-window-created', (_, window) => {
         window.maximize();
       }
     });
-  }
-  
-  if (app.os === 'macos') {
-    window.setVibrancy(type);
-  }
+	}
+	
+	window.on('enter-full-screen', () => {
+		const currentURL = window.webContents.getURL();
+
+    if (!currentURL.includes('workbench.html')) {
+      return;
+		}
+		
+		removeStyle(window);
+	});
+
+	window.on('leave-full-screen', () => {
+		const currentURL = window.webContents.getURL();
+
+    if (!currentURL.includes('workbench.html')) {
+      return;
+		}
+		
+		injectStyle(window);
+	});
 
   window.webContents.on('dom-ready', () => {
     const currentURL = window.webContents.getURL();
@@ -80,14 +96,71 @@ electron.app.on('browser-window-created', (_, window) => {
       return;
     }
 
-    window.setBackgroundColor('#00000000');
+		window.setBackgroundColor('#00000000');
+		
+		if (app.os === 'macos') {
+			window.setVibrancy(type);
 
-    window.webContents.executeJavaScript("document.body.innerHTML += " + JSON.stringify(HTML()))
+			// hack
+      const width = window.getBounds().width;
+      window.setBounds({
+          width: width + 1,
+      });
+      window.setBounds({
+          width,
+      });
+		}
+
+		injectStyle(window);
+		injectScript(window);
   });
 });
 
+function injectScript(window) {
+	window.webContents.executeJavaScript(`(function(){
+		const element = document.createElement("div");
+		element.id = "vscode-vibrancy-script";
+		element.innerHTML = ${JSON.stringify(scriptHTML())};
+		document.body.appendChild(element);
+	})();`);
+}
 
-function HTML() {
+function injectStyle(window) {
+	window.webContents.executeJavaScript(`(function(){
+		const element = document.createElement("div");
+		element.id = "vscode-vibrancy-style";
+		element.innerHTML = ${JSON.stringify(styleHTML())};
+		document.body.appendChild(element);
+	})();`);
+}
+
+function removeStyle(window) {
+	window.webContents.executeJavaScript("document.getElementById(\"vscode-vibrancy-style\")?.remove();")
+}
+
+const customImports = {
+	js: [],
+	css: []
+}
+
+app.config.imports.forEach(function (x) {
+	if (typeof x === 'string') {
+		x = new URL(x, 'file://').href;
+
+		if (!x.startsWith('file://')) {
+			x = 'file://' + x;
+		}
+		
+		if (/^.*\.js$/.test(x)) customImports.js.push('<script src="' + x + '"></script>');
+		if (/^.*\.css$/.test(x)) customImports.css.push('<link rel="stylesheet" href="' + x + '"/>');
+	}
+})
+
+function scriptHTML() {
+	return customImports.js.join('')
+}
+
+function styleHTML() {
 	if (app.os === 'unknown') return '';
 
 	var type = app.config.type;
@@ -116,20 +189,7 @@ function HTML() {
       ${app.themeCSS}
     </style>
     `,
-		...app.config.imports.map(function (x) {
-			if (!x) return '';
-			if (typeof x === 'string') {
-				x = new URL(x, 'file://').href;
-
-				if (!x.startsWith('file://')) {
-					x = 'file://' + x;
-				}
-				
-				if (/^.*\.js$/.test(x)) return '<script src="' + x + '"></script>';
-				if (/^.*\.css$/.test(x)) return '<link rel="stylesheet" href="' + x + '"/>';
-      }
-      return ''; 
-		})
+		...customImports.css
 	]
 
 	return HTML.join('')

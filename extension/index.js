@@ -41,6 +41,16 @@ async function changeTerminalRendererType() {
 	}
 }
 
+async function promptRestart() {
+	// This is a hacky way to display the restart prompt
+	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
+	if (v !== undefined) {
+		let value = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+		await vscode.workspace.getConfiguration().update("window.titleBarStyle", value === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
+		vscode.workspace.getConfiguration().update("window.titleBarStyle", v.globalValue, vscode.ConfigurationTarget.Global);
+	}
+}
+
 async function checkColorTheme() {
 	const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
 	const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
@@ -104,12 +114,10 @@ function activate(context) {
 	var HTMLFile = appDir + '/vs/code/electron-browser/workbench/workbench.html';
 	var JSFile = appDir + '/main.js';
 
-	var runtimeVersion = 'v1';
+	var runtimeVersion = 'v2';
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
-		if (!isWin) return;
-
 		if (fs.existsSync(runtimeDir)) return;
 
 		await fs.mkdir(runtimeDir);
@@ -163,11 +171,17 @@ function activate(context) {
 	}
 
 	function enabledRestart() {
-		vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') });
+		vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
+			.then(function (msg) {
+				msg && promptRestart();
+			});
 	}
 
 	function disabledRestart() {
-		vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') });
+		vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
+			.then(function (msg) {
+				msg && promptRestart();
+			});
 	}
 
 	// ####  main commands ######################################################
@@ -181,36 +195,41 @@ function activate(context) {
 
 		try {
 			await fs.stat(JSFile);
-			await changeTerminalRendererType()
-		} catch (error) {
-			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
-			throw error;
-		}
 
-		try {
 			await installRuntime();
 			await installJS();
+			await changeTerminalRendererType();
 		} catch (error) {
-			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
+				vscode.window.showInformationMessage(localize('messages.admin') + error);
+			}
+			else {
+				vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+			}
 			throw error;
 		}
 	}
 
 	async function Uninstall() {
 		try {
-			await fs.stat(JSFile);
+			// uninstall old version
 			await fs.stat(HTMLFile);
-		} catch (error) {
-			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
-			throw error;
+			await uninstallHTML();
+		} finally {
+
 		}
 
 		try {
-			// uninstall old version
-			await uninstallHTML();
+			await fs.stat(JSFile);
+			
 			await uninstallJS();
 		} catch (error) {
-			vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
+				vscode.window.showInformationMessage(localize('messages.admin') + error);
+			}
+			else {
+				vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+			}
 			throw error;
 		}
 	}
