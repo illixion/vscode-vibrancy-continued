@@ -1,3 +1,7 @@
+# 1.0.11
+
+* fix: Optimize the fullscreen style fixed #82
+
 # 1.0.10
 
 * New runtime implementation.
