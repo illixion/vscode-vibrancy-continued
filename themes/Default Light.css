@@ -118,3 +118,7 @@ body {
 .xterm-rows {
   background-color: transparent !important;
 }
+
+.monaco-workbench.fullscreen {
+	background-color: #ffffff !important;
+}

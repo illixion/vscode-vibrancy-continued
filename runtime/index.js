@@ -68,26 +68,6 @@ electron.app.on('browser-window-created', (_, window) => {
       }
     });
 	}
-	
-	window.on('enter-full-screen', () => {
-		const currentURL = window.webContents.getURL();
-
-    if (!currentURL.includes('workbench.html')) {
-      return;
-		}
-		
-		removeStyle(window);
-	});
-
-	window.on('leave-full-screen', () => {
-		const currentURL = window.webContents.getURL();
-
-    if (!currentURL.includes('workbench.html')) {
-      return;
-		}
-		
-		injectStyle(window);
-	});
 
   window.webContents.on('dom-ready', () => {
     const currentURL = window.webContents.getURL();
@@ -118,6 +98,7 @@ electron.app.on('browser-window-created', (_, window) => {
 
 function injectScript(window) {
 	window.webContents.executeJavaScript(`(function(){
+		document.getElementById("vscode-vibrancy-script")?.remove();
 		const element = document.createElement("div");
 		element.id = "vscode-vibrancy-script";
 		element.innerHTML = ${JSON.stringify(scriptHTML())};
@@ -127,15 +108,12 @@ function injectScript(window) {
 
 function injectStyle(window) {
 	window.webContents.executeJavaScript(`(function(){
+		document.getElementById("vscode-vibrancy-style")?.remove();
 		const element = document.createElement("div");
 		element.id = "vscode-vibrancy-style";
 		element.innerHTML = ${JSON.stringify(styleHTML())};
 		document.body.appendChild(element);
 	})();`);
-}
-
-function removeStyle(window) {
-	window.webContents.executeJavaScript("document.getElementById(\"vscode-vibrancy-style\")?.remove();")
 }
 
 const customImports = {

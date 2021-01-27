@@ -114,7 +114,7 @@ function activate(context) {
 	var HTMLFile = appDir + '/vs/code/electron-browser/workbench/workbench.html';
 	var JSFile = appDir + '/main.js';
 
-	var runtimeVersion = 'v2';
+	var runtimeVersion = 'v3';
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
