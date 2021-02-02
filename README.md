@@ -74,6 +74,8 @@ Select Vibrancy theme:
 
 * Default Dark
 * Dark (Only Subbar)
+* Default Light
+* Light (Only Subbar)
 
 |        Default Dark      |    Dark (Only Subbar)   |
 |:------------------------:|:-----------------------:|

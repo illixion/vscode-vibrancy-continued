@@ -95,7 +95,8 @@
           "enum": [
             "Default Dark",
             "Dark (Only Subbar)",
-            "Default Light"
+            "Default Light",
+            "Light (Only Subbar)"
           ]
         },
         "vscode_vibrancy.imports": {

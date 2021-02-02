@@ -1,0 +1,24 @@
+.monaco-workbench,
+.monaco-workbench .sidebar,
+.monaco-workbench .activitybar,
+.monaco-workbench .titlebar,
+.monaco-workbench .monaco-list-rows,
+body {
+  background: transparent !important;
+}
+
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon {
+  color: #616161 !important;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item:hover .action-label.codicon {
+  color: #000 !important;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item.checked .active-item-indicator:before {
+  border-left-color: #616161 !important;
+}
+
+.monaco-workbench.fullscreen {
+	background-color: #ffffff !important;
+}
