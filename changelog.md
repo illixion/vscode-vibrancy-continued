@@ -1,3 +1,7 @@
+# 1.0.13
+
+* fix: not working in vscode 1.53.0-insider
+
 # 1.0.12
 
 * feat: Add "Light (Only Subbar)" theme
