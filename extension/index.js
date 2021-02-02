@@ -116,7 +116,7 @@ function activate(context) {
 	var HTMLFile = appDir + '/vs/code/electron-browser/workbench/workbench.html';
 	var JSFile = appDir + '/main.js';
 
-	var runtimeVersion = 'v3';
+	var runtimeVersion = 'v4';
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
@@ -151,6 +151,21 @@ function activate(context) {
 		await fs.writeFile(JSFile, newJS, 'utf-8');
 	}
 
+	async function installHTML() {
+		const HTML = await fs.readFile(HTMLFile, 'utf-8');
+
+		const newHTML = HTML.replace(
+			/<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'; trusted-types (.+);">/g,
+			(_, trustedTypes) => {
+				return `<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script';  trusted-types ${trustedTypes} VscodeVibrancy;">`;
+			}
+		);
+
+		if (HTML !== newHTML) {
+			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+		}
+	}
+
 	async function uninstallJS() {
 		const JS = await fs.readFile(JSFile, 'utf-8');
 		const needClean = /\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
@@ -167,7 +182,6 @@ function activate(context) {
 		if (needClean) {
 			const newHTML = HTML
 				.replace(/<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/, '')
-				.replace(/<meta.*http-equiv="Content-Security-Policy".*>/, '');
 			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
 		}
 	}
@@ -197,9 +211,11 @@ function activate(context) {
 
 		try {
 			await fs.stat(JSFile);
+			await fs.stat(HTMLFile);
 
 			await installRuntime();
 			await installJS();
+			await installHTML();
 			await changeTerminalRendererType();
 		} catch (error) {
 			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {

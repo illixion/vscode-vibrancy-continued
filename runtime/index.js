@@ -7,14 +7,14 @@ const app = global.vscode_vibrancy_plugin;
 
 const macosType = [
 	"appearance-based",
-	"light", 
-	"dark", 
-	"titlebar", 
-	"selection", 
-	"menu", 
-	"popover", 
-	"sidebar", 
-	"medium-light", 
+	"light",
+	"dark",
+	"titlebar",
+	"selection",
+	"menu",
+	"popover",
+	"sidebar",
+	"medium-light",
 	"ultra-dark"
 ];
 
@@ -23,16 +23,16 @@ const windowsType = [
 ];
 
 function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
+	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return result ? {
+		r: parseInt(result[1], 16),
+		g: parseInt(result[2], 16),
+		b: parseInt(result[3], 16)
+	} : null;
 }
 
 electron.app.on('browser-window-created', (_, window) => {
-  var type = app.config.type;
+	var type = app.config.type;
 	if (type !== 'auto') {
 		if (app.os === 'win10' && !windowsType.includes(type)) type = 'auto';
 		if (app.os === 'macos' && !macosType.includes(type)) type = 'auto';
@@ -41,78 +41,75 @@ electron.app.on('browser-window-created', (_, window) => {
 		type = app.theme.type[app.os];
 	}
 
-  let opacity = app.config.opacity;
-  // if opacity < 0, use the theme default opacity
+	let opacity = app.config.opacity;
+	// if opacity < 0, use the theme default opacity
 	if (opacity < 0) {
 		opacity = app.theme.opacity[app.os]
 	}
 
-  const backgroundRGB = hexToRgb(app.theme.background);
+	const backgroundRGB = hexToRgb(app.theme.background);
 
-  if (app.os === 'win10') {
-    const bindings = require('./vibrancy.js');
-    bindings.setVibrancy(window.getNativeWindowHandle().readInt32LE(0), 1, backgroundRGB.r, backgroundRGB.g, backgroundRGB.b, 0);
-    const win10refresh = require('./win10refresh.js');
-    win10refresh(window, 60);
+	if (app.os === 'win10') {
+		const bindings = require('./vibrancy.js');
+		bindings.setVibrancy(window.getNativeWindowHandle().readInt32LE(0), 1, backgroundRGB.r, backgroundRGB.g, backgroundRGB.b, 0);
+		const win10refresh = require('./win10refresh.js');
+		win10refresh(window, 60);
 
-    window.webContents.once('dom-ready', () => {
-      const currentURL = window.webContents.getURL();
+		window.webContents.once('dom-ready', () => {
+			const currentURL = window.webContents.getURL();
 
-      if (!currentURL.includes('workbench.html')) {
-        return;
-      }
+			if (!currentURL.includes('workbench.html')) {
+				return;
+			}
 
-      if (window.isMaximized()) {
-        window.unmaximize();
-        window.maximize();
-      }
-    });
+			if (window.isMaximized()) {
+				window.unmaximize();
+				window.maximize();
+			}
+		});
 	}
 
-  window.webContents.on('dom-ready', () => {
-    const currentURL = window.webContents.getURL();
+	window.webContents.on('dom-ready', () => {
+		const currentURL = window.webContents.getURL();
 
-    if (!currentURL.includes('workbench.html')) {
-      return;
-    }
+		if (!currentURL.includes('workbench.html')) {
+			return;
+		}
 
 		window.setBackgroundColor('#00000000');
-		
+
 		if (app.os === 'macos') {
 			window.setVibrancy(type);
 
 			// hack
-      const width = window.getBounds().width;
-      window.setBounds({
-          width: width + 1,
-      });
-      window.setBounds({
-          width,
-      });
+			const width = window.getBounds().width;
+			window.setBounds({
+				width: width + 1,
+			});
+			window.setBounds({
+				width,
+			});
 		}
 
-		injectStyle(window);
-		injectScript(window);
-  });
+		injectHTML(window);
+	});
 });
 
-function injectScript(window) {
+function injectHTML(window) {
 	window.webContents.executeJavaScript(`(function(){
-		document.getElementById("vscode-vibrancy-script")?.remove();
-		const element = document.createElement("div");
-		element.id = "vscode-vibrancy-script";
-		element.innerHTML = ${JSON.stringify(scriptHTML())};
-		document.body.appendChild(element);
-	})();`);
-}
+		const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancy", { createHTML (v) { return v; }});
 
-function injectStyle(window) {
-	window.webContents.executeJavaScript(`(function(){
 		document.getElementById("vscode-vibrancy-style")?.remove();
-		const element = document.createElement("div");
-		element.id = "vscode-vibrancy-style";
-		element.innerHTML = ${JSON.stringify(styleHTML())};
-		document.body.appendChild(element);
+		const styleElement = document.createElement("div");
+		styleElement.id = "vscode-vibrancy-style";
+		styleElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(styleHTML())});
+		document.body.appendChild(styleElement);
+
+		document.getElementById("vscode-vibrancy-script")?.remove();
+		const scriptElement = document.createElement("div");
+		scriptElement.id = "vscode-vibrancy-script";
+		scriptElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(scriptHTML())});
+		document.body.appendChild(scriptElement);
 	})();`);
 }
 
@@ -128,7 +125,7 @@ app.config.imports.forEach(function (x) {
 		if (!x.startsWith('file://')) {
 			x = 'file://' + x;
 		}
-		
+
 		if (/^.*\.js$/.test(x)) customImports.js.push('<script src="' + x + '"></script>');
 		if (/^.*\.css$/.test(x)) customImports.css.push('<link rel="stylesheet" href="' + x + '"/>');
 	}
@@ -162,7 +159,7 @@ function styleHTML() {
 			}
 		</style>
     `,
-    `
+		`
     <style>
       ${app.themeCSS}
     </style>
