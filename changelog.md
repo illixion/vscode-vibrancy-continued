@@ -1,3 +1,7 @@
+# 1.0.12
+
+* feat: Add "Light (Only Subbar)" theme
+
 # 1.0.11
 
 * fix: Optimize the fullscreen style fixed #82
