@@ -1,3 +1,6 @@
+# 1.0.14
+
+* fix: not work with Customize UI
 # 1.0.13
 
 * fix: not working in vscode 1.53.0-insider
