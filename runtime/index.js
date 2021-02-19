@@ -58,7 +58,7 @@ electron.app.on('browser-window-created', (_, window) => {
 		window.webContents.once('dom-ready', () => {
 			const currentURL = window.webContents.getURL();
 
-			if (!currentURL.includes('workbench.html')) {
+			if (!(currentURL.includes('workbench.html') || currentURL.includes('workbench-monkey-patch.html'))) {
 				return;
 			}
 
@@ -72,7 +72,7 @@ electron.app.on('browser-window-created', (_, window) => {
 	window.webContents.on('dom-ready', () => {
 		const currentURL = window.webContents.getURL();
 
-		if (!currentURL.includes('workbench.html')) {
+		if (!(currentURL.includes('workbench.html') || currentURL.includes('workbench-monkey-patch.html'))) {
 			return;
 		}
 

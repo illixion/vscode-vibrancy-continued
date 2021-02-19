@@ -110,13 +110,12 @@ function lockFirstload() {
 function activate(context) {
 	console.log('vscode-vibrancy is active!');
 
-	var isWin = /^win/.test(process.platform);
 	var appDir = path.dirname(require.main.filename);
 
 	var HTMLFile = appDir + '/vs/code/electron-browser/workbench/workbench.html';
 	var JSFile = appDir + '/main.js';
 
-	var runtimeVersion = 'v4';
+	var runtimeVersion = 'v5';
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
