@@ -101,6 +101,10 @@ Press F1 and Activate command "Disable Vibrancy", and Restart Visual Studio Code
 
 Check your settings. You should change the renderer type of the terminal to dom.
 
+`"terminal.integrated.gpuAcceleration": "off"`
+
+For Code versions prior to 1.56, you must use this setting:
+
 `"terminal.integrated.rendererType": "dom"`
 
 ### Prompt "Run Visual Studio Code with administrator privileges" ?
