@@ -103,10 +103,6 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
-For Code versions prior to 1.56, you must use this setting:
-
-`"terminal.integrated.rendererType": "dom"`
-
 ### Prompt "Run Visual Studio Code with administrator privileges" ?
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
