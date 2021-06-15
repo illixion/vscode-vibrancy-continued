@@ -38,7 +38,7 @@ async function changeTerminalRendererType() {
 	let v = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
 	if (v !== undefined) {
 		if (!v.globalValue) {
-			await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "no", vscode.ConfigurationTarget.Global);
+			await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
 		}
 	}
 }
