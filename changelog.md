@@ -1,3 +1,8 @@
+# 1.0.16
+
+* fix: turn off gpuAcceleration
+* fix: vscode 1.57.0
+
 # 1.0.14
 
 * fix: not work with Customize UI
