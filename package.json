@@ -94,6 +94,7 @@
           "default": "default dark",
           "enum": [
             "Default Dark",
+            "Tokyo Night",
             "Dark (Only Subbar)",
             "Default Light",
             "Light (Only Subbar)"
@@ -119,5 +120,16 @@
   "devDependencies": {
     "node-gyp": "^7.1.2",
     "node-addon-api": "^3.1.0"
+  },
+  "__metadata": {
+    "id": "d25a53a9-3c49-45b7-8751-ad426ccda154",
+    "publisherId": "39ef2881-c0ea-419c-89f1-82ac920bf5a3",
+    "publisherDisplayName": "eyhn",
+    "targetPlatform": "undefined",
+    "isApplicationScoped": false,
+    "updated": false,
+    "isPreReleaseVersion": false,
+    "preRelease": false,
+    "installedTimestamp": 1657774571672
   }
 }
