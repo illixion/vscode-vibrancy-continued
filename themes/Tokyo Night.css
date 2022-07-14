@@ -52,7 +52,7 @@ body {
 }
 
 .monaco-list.settings-toc-tree .monaco-list-row.focused {
-  outline-color: rgb(26, 27, 38, 0.6) !important;
+  outline-color: rgb(26, 27, 38, 0.4) !important;
 }
 
 .monaco-list.settings-toc-tree .monaco-list-row.selected,
@@ -60,7 +60,7 @@ body {
 .monaco-list .monaco-list-row.selected,
 .monaco-list.settings-toc-tree:not(.drop-target)
   .monaco-list-row:hover:not(.selected):not(.focused) {
-  background-color: rgb(26, 27, 38, 0.6) !important;
+  background-color: rgb(26, 27, 38, 0.4) !important;
 }
 
 .monaco-list.settings-editor-tree .monaco-list-row {
@@ -69,19 +69,19 @@ body {
 }
 
 .monaco-inputbox {
-  background-color: rgba(26, 27, 38, 0.2) !important;
+  background-color: rgba(26, 27, 38, 0.3) !important;
 }
 
 .monaco-editor .selected-text {
-  background-color: rgba(51, 70, 124, 0.6) !important;
+  background-color: rgba(51, 70, 124, 0.5) !important;
 }
 
 .monaco-editor .focused .selected-text {
-  background-color: rgba(51, 70, 124, 0.6) !important;
+  background-color: rgba(51, 70, 124, 0.3) !important;
 }
 
 .monaco-editor .view-overlays .current-line {
-  border-color: rgba(51, 70, 124, 0.6) !important;
+  border-color: rgba(51, 70, 124, 0.2) !important;
 }
 
 .extension-editor,
@@ -104,7 +104,7 @@ body {
 }
 
 .monaco-workbench .part.sidebar {
-  background-color: rgba(26, 27, 38, 0.3) !important;
+  background-color: rgba(26, 27, 38, 0.2) !important;
 }
 
 .editor-group-container > .tabs .tab {
