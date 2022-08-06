@@ -278,7 +278,7 @@ function activate(context) {
 			.then(async (msg) => {
 				if (msg) {
 					await Update();
-					await checkColorTheme();
+					// await checkColorTheme();
 					enabledRestart();
 				}
 			});
@@ -295,9 +295,9 @@ function activate(context) {
 				.then(async (msg) => {
 					if (msg) {
 						await Update();
-						if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
-							await checkColorTheme();
-						}
+						// if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
+						// 	await checkColorTheme();
+						// }
 						enabledRestart();
 					}
 				});

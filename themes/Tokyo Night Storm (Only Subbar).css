@@ -1,0 +1,12 @@
+.monaco-workbench,
+.monaco-workbench .sidebar,
+.monaco-workbench .activitybar,
+.monaco-workbench .titlebar,
+.monaco-workbench .monaco-list-rows,
+body {
+  background: transparent !important;
+}
+
+.monaco-workbench.fullscreen {
+  background-color: #1a1b26 !important;
+}

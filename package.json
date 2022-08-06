@@ -94,7 +94,7 @@
           "default": "default dark",
           "enum": [
             "Default Dark",
-            "Tokyo Night",
+            "Tokyo Night Storm",
             "Dark (Only Subbar)",
             "Default Light",
             "Light (Only Subbar)"
