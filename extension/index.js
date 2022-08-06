@@ -19,6 +19,8 @@ var themeStylePaths = {
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css',
 	'Default Light': '../themes/Default Light.css',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).css',
+	'Tokyo Night Storm': '../themes/Tokyo Night Storm.css',
+	'Tokyo Night Storm (Only Subbar)': '../themes/Tokyo Night Storm (Only Subbar).css',
 }
 
 const themeConfigPaths = {
@@ -26,6 +28,8 @@ const themeConfigPaths = {
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).json',
 	'Default Light': '../themes/Default Light.json',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).json',
+	'Tokyo Night Storm': '../themes/Tokyo Night Storm.json',
+	'Tokyo Night Storm (Only Subbar)': '../themes/Tokyo Night Storm (Only Subbar).json',
 }
 
 var defaultTheme = 'Default Dark';

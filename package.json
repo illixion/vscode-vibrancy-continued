@@ -29,7 +29,7 @@
     "color": "#EEEEEE"
   },
   "activationEvents": [
-    "*"
+    "onStartupFinished"
   ],
   "main": "./extension/index.js",
   "contributes": {
@@ -91,13 +91,14 @@
         "vscode_vibrancy.theme": {
           "description": "%configuration.theme.description%",
           "type": "string",
-          "default": "default dark",
+          "default": "Tokyo Night Storm (Only Subbar)",
           "enum": [
             "Default Dark",
-            "Tokyo Night Storm",
             "Dark (Only Subbar)",
             "Default Light",
-            "Light (Only Subbar)"
+            "Light (Only Subbar)",
+            "Tokyo Night Storm",
+            "Tokyo Night Storm (Only Subbar)"
           ]
         },
         "vscode_vibrancy.imports": {
