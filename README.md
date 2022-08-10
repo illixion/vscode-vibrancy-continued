@@ -20,15 +20,15 @@ Enable Acrylic/Glass effect for your VS Code.
 
 ![screenshot](./screenshot.png)
 
-[![](https://vsmarketplacebadge.apphb.com/version/eyhn.vscode-vibrancy.svg)](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy)&nbsp;
-[![](https://img.shields.io/visual-studio-marketplace/stars/eyhn.vscode-vibrancy.svg)](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy)
+[![](https://vsmarketplacebadge.apphb.com/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://img.shields.io/visual-studio-marketplace/stars/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.57.0-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
-[![](https://img.shields.io/github/stars/manualmanul/vscode-vibrancy.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy)&nbsp;
-[![](https://img.shields.io/github/watchers/manualmanul/vscode-vibrancy.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy)
+[![](https://img.shields.io/github/stars/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)&nbsp;
+[![](https://img.shields.io/github/watchers/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)
 
-Links: [Github](https://github.com/manualmanul/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/manualmanul/vscode-vibrancy/issues)
+Links: [Github](https://github.com/manualmanul/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/manualmanul/vscode-vibrancy/issues)
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
@@ -44,7 +44,7 @@ MacOS ✔
 
 ![step-1](./step-1.png)
 
-2. Install this extension from [the Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy).
+2. Install this extension from [the Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
 3. Press F1 and Activate command "Reload Vibrancy".
 
@@ -118,6 +118,8 @@ Check your settings. You should change the renderer type of the terminal to dom.
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
 ## Thanks ⭐
+
+[EYHN](https://github.com/EYHN) : for making the original extension that this is a fork of
 
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program
 
