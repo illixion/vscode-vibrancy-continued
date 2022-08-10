@@ -112,7 +112,7 @@ function activate(context) {
 
 	var appDir = path.dirname(require.main.filename);
 
-	var HTMLFile = appDir + '/vs/code/electron-browser/workbench/workbench.html';
+	var HTMLFile = appDir + '/vs/code/electron-sandbox/workbench/workbench.html';
 	var JSFile = appDir + '/main.js';
 
 	var runtimeVersion = 'v6';
