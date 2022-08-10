@@ -111,11 +111,11 @@ body {
   border: none !important;
 }
 
-/* .terminal-outer-container,
+.terminal-outer-container,
 .xterm-viewport,
 .xterm-rows {
   background-color: transparent !important;
-} */
+}
 
 .monaco-workbench.fullscreen {
   background-color: #1a1b26 !important;

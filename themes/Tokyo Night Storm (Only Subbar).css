@@ -7,6 +7,34 @@ body {
   background: transparent !important;
 }
 
+.editor-group-container > .tabs {
+  background-color: transparent !important;
+}
+
+.editor-group-container > .tabs .tab {
+  background-color: transparent !important;
+}
+
+.editor-group-container > .tabs .tab.active,
+.editor-group-container > .tabs .monaco-breadcrumbs {
+  background-color: rgba(26, 27, 38, 0.3) !important;
+}
+
+.monaco-workbench
+  .part.editor
+  > .content
+  > .one-editor-silo
+  > .container
+  > .title
+  .tabs-container
+  > .tab.active {
+  background: transparent !important;
+}
+
+.editor-group-container > .tabs .tab {
+  border: none !important;
+}
+
 .monaco-workbench.fullscreen {
   background-color: #1a1b26 !important;
 }
