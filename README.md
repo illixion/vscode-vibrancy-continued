@@ -1,14 +1,16 @@
-# Vibrancy - Continued
+# Vibrancy Continued
 
 The original extension seems to have been abandoned, so this is my fork that will continue to be supported and receive community PRs.
 
-Once the extension is published on VSCode extension store, I will add a link here.
+Download it here: https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued
+
+Additionally, I recommend installing [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums) and using it to remove the "your VSCode installation is corrupted" message on every start.
 
 Original description follows.
 
 # Visual Studio Code Extension - Vibrancy
 
-> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
+> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/manualmanul/vscode-vibrancy/discussions/80).
 
 > Starting from v1.0.10, this extension no longer supports Windows 7.
 
@@ -23,10 +25,10 @@ Enable Acrylic/Glass effect for your VS Code.
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.57.0-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
-[![](https://img.shields.io/github/stars/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)&nbsp;
-[![](https://img.shields.io/github/watchers/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)
+[![](https://img.shields.io/github/stars/manualmanul/vscode-vibrancy.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy)&nbsp;
+[![](https://img.shields.io/github/watchers/manualmanul/vscode-vibrancy.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy)
 
-Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/eyhn/vscode-vibrancy/issues)
+Links: [Github](https://github.com/manualmanul/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/manualmanul/vscode-vibrancy/issues)
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
@@ -89,7 +91,7 @@ Select Vibrancy theme:
 |:------------------------:|:-----------------------:|
 | ![](./theme-default.jpg) | ![](./theme-subbar.jpg) | 
 
-> You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
+> You can contribute more themes for us! [see here](https://github.com/manualmanul/vscode-vibrancy/tree/master/themes).
 
 #### vscode_vibrancy.imports
 
