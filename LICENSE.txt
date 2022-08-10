@@ -1,5 +1,6 @@
 The MIT License (MIT)
 
+Copyright (c) 2022 Illixion
 Copyright (c) 2016 Roberto Huertas
 Copyright (c) 2016 Belleve Invis
 
