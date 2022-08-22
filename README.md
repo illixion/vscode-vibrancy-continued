@@ -1,18 +1,8 @@
-# Vibrancy Continued
+# Visual Studio Code Extension - Vibrancy Continued
 
-The original extension seems to have been abandoned, so this is my fork that will continue to be supported and receive community PRs.
-
-Download it here: https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued
-
-Additionally, I recommend installing [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums) and using it to remove the "your VSCode installation is corrupted" message on every start.
-
-Original description follows.
-
-# Visual Studio Code Extension - Vibrancy
+> The original extension seems to have been abandoned, so this is my fork that will continue to be supported and receive community PRs.
 
 > Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
-
-> Starting from v1.0.10, this extension no longer supports Windows 7.
 
 > For questions about installation and uninstallation, please read [FAQs](#FAQs).
 
@@ -32,7 +22,17 @@ Links: [Github](https://github.com/manualmanul/vscode-vibrancy-continued) | [Vis
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
+## Warning
+
+This extension works by editing VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy-continued` for the first time or each time VS Code updates. You can click [never show again] to hide it.
+
+![screenshot](./warns.png)
+
+To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
+
 ## Supported Operating Systems
+
+Windows 11 ✔
 
 Windows 10 ✔
 
@@ -53,14 +53,6 @@ MacOS ✔
 4. Restart.
 
 Every time after Code is updated, please re-enable vibrancy.
-
-## Warning
-
-This extension works by editting VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy` for the first time or each time VS Code updates. U can click [never show again] to hide it.
-
-![screenshot](./warns.png)
-
-To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
 ## Options
 
@@ -116,7 +108,7 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
-### Prompt "Run Visual Studio Code with administrator privileges" ?
+### Prompt "Run Visual Studio Code with administrator privileges"?
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
