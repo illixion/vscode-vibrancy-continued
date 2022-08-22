@@ -1,0 +1,209 @@
+.scroll-decoration {
+  box-shadow: none !important;
+}
+
+.minimap, .editor-scrollable>.decorationsOverviewRuler {
+  opacity: 0.4;
+}
+
+.editor-container {
+  background: transparent !important;
+}
+
+.search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
+.monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab,
+.monaco-editor-background,
+.monaco-editor .margin,
+.monaco-workbench .part>.content,
+.monaco-workbench .editor>.content>.one-editor-silo.editor-one,
+.monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title,
+.monaco-workbench .part>.title,
+.monaco-workbench,
+body {
+  background: transparent !important;
+}
+
+.editor-group-container>.tabs {
+  background-color: transparent !important;
+}
+
+.activitybar {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.editor-group-container>.tabs .tab {
+  background-color: transparent !important;
+}
+
+.editor-group-container>.tabs .tab.active, .editor-group-container>.tabs .monaco-breadcrumbs {
+  background-color: rgba(228, 230, 241,0.3) !important;
+}
+
+
+.monaco-list.settings-toc-tree .monaco-list-row.focused {
+  outline-color: rgba(228, 230, 241,0.6) !important;
+}
+
+.monaco-list.settings-toc-tree .monaco-list-row.selected,
+.monaco-list.settings-toc-tree .monaco-list-row.focused,
+.monaco-list .monaco-list-row.selected,
+.monaco-list.settings-toc-tree:not(.drop-target) .monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: rgb(228, 230, 241,0.6) !important;
+}
+
+.monaco-list.settings-editor-tree .monaco-list-row {
+  background-color: transparent !important;
+  outline-color: transparent !important;
+}
+
+.monaco-inputbox {
+  background-color: rgba(228, 230, 241,0.2) !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: hsla(210, 100%, 80%, 0.4) !important;
+}
+
+.monaco-editor .focused .selected-text {
+  background-color: hsla(210, 100%, 80%, 0.6) !important;
+}
+
+.monaco-editor .selectionHighlight {
+  background-color: hsla(210, 100%, 80%, 0.3) !important;
+}
+
+.monaco-editor .wordHighlight {
+  background-color: hsla(210, 100%, 80%, 0.3) !important;
+}
+
+.monaco-editor .view-overlays .current-line {
+  border-color: rgba(41, 41, 41,0.2) !important;
+}
+
+.extension-editor,
+.monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
+.preferences-editor>.preferences-header,
+.preferences-editor>.preferences-editors-container.side-by-side-preferences-editor .preferences-header-container,
+.monaco-editor, .monaco-editor .inputarea.ime-input,
+.monaco-list .monaco-list-rows {
+  background: transparent !important;
+}
+
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon {
+  color: #adadad !important;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item:hover .action-label.codicon {
+  color: #000;
+}
+
+.monaco-workbench .activitybar > .content :not(.monaco-menu) > .monaco-action-bar .action-item.checked .active-item-indicator:before {
+  border-left-color: #adadad !important;
+}
+
+.monaco-workbench .part.sidebar {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff;
+}
+
+.monaco-workbench .part.sidebar .codicon {
+  color: #ffffff !important;
+}
+
+.monaco-workbench .part.sidebar>.title>.title-label h2 {
+  color: #ffffff !important;
+}
+
+.monaco-workbench .part.sidebar .monaco-list .monaco-list-row:hover {
+  background-color: rgb(228, 230, 241,0.4) !important;
+  color: #ffffff !important;
+}
+
+.monaco-workbench .part.sidebar .monaco-list .monaco-list-row.selected {
+  background-color: rgb(228, 230, 241,0.2) !important;
+  color: #ffffff !important;
+}
+
+.monaco-workbench .part.sidebar input {
+  background-color: rgb(228, 230, 241,0.2) !important;
+  color: #ffffff !important;
+}
+
+.monaco-workbench .part.sidebar {
+  --vscode-list-focusOutline: #007fd4 !important;
+  --vscode-list-activeSelectionBackground: #094771 !important;
+  --vscode-list-activeSelectionForeground: #ffffff !important;
+  --vscode-list-activeSelectionIconForeground: #ffffff !important;
+
+  --vscode-list-inactiveSelectionBackground: #37373d !important;
+  --vscode-list-hoverBackground: #2a2d2e !important;
+  --vscode-list-dropBackground: #383b3d !important;
+  --vscode-list-highlightForeground: #18a3ff !important;
+  --vscode-list-focusHighlightForeground: #18a3ff !important;
+  --vscode-list-invalidItemForeground: #b89500 !important;
+  --vscode-list-errorForeground: #f88070 !important;
+  --vscode-list-warningForeground: #cca700 !important;
+  --vscode-listFilterWidget-background: #653723 !important; 
+  --vscode-listFilterWidget-outline: rgba(0, 0, 0, 0) !important;
+  --vscode-listFilterWidget-noMatchesOutline: #be1100 !important;
+  --vscode-list-filterMatchBackground: rgba(234, 92, 0, 0.33) !important;
+  --vscode-tree-indentGuidesStroke: #585858 !important; 
+  --vscode-tree-tableColumnsBorder: rgba(204, 204, 204, 0.13) !important;
+  --vscode-tree-tableOddRowsBackground: rgba(204, 204, 204, 0.04) !important;
+  --vscode-list-deemphasizedForeground: #8c8c8c !important;
+  
+  --vscode-gitDecoration-addedResourceForeground: #81b88b !important;
+  --vscode-gitDecoration-modifiedResourceForeground: #e2c08d !important;
+  --vscode-gitDecoration-deletedResourceForeground: #c74e39 !important;
+  --vscode-gitDecoration-renamedResourceForeground: #73c991 !important;
+  --vscode-gitDecoration-untrackedResourceForeground: #73c991 !important;
+  --vscode-gitDecoration-ignoredResourceForeground: #8c8c8c !important;
+  --vscode-gitDecoration-stageModifiedResourceForeground: #e2c08d !important;
+  --vscode-gitDecoration-stageDeletedResourceForeground: #c74e39 !important;
+  --vscode-gitDecoration-conflictingResourceForeground: #e4676b !important;
+  --vscode-gitDecoration-submoduleResourceForeground: #8db9e2 !important;
+}
+
+.monaco-workbench .part.statusbar {
+  color: #616161 !important;
+}
+
+.notification-toast, 
+.notifications-list-container,
+.notifications-list-container .monaco-list-row {
+  border-radius: 8px !important;
+}
+
+.monaco-button {
+  border-radius: 4px !important;
+}
+
+.notifications-list-container .monaco-list-row {
+  padding: 1px;
+}
+
+.monaco-list .monaco-list-row.selected.focused {
+  color: #000 !important;
+}
+
+.quick-input-widget {
+  background-color: rgba(246, 246, 246, 0.95) !important;
+  padding: 4px 6px !important; 
+  border-radius: 10px !important;
+  top: 50% !important;
+  transform: translate(0%, -50%) !important;
+}
+
+.editor-group-container>.tabs .tab {
+  border: none !important;
+}
+
+.terminal-outer-container,
+.xterm-viewport,
+.xterm-rows {
+  background-color: transparent !important;
+}
+
+.monaco-workbench.fullscreen {
+	background-color: #ffffff !important;
+}
