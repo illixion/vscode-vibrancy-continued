@@ -1,12 +1,12 @@
 # Visual Studio Code Extension - Vibrancy Continued
 
-> The original extension seems to have been abandoned, so this is my fork that will continue to be supported and receive community PRs.
+> The original extension has been deprecated, this version will continue to be supported and receive community updates.
 
 > Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
 
 > For questions about installation and uninstallation, please read [FAQs](#FAQs).
 
-Enable Acrylic/Glass effect for your VS Code.
+Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
 
@@ -15,18 +15,19 @@ Enable Acrylic/Glass effect for your VS Code.
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.57.0-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
-[![](https://img.shields.io/github/stars/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)&nbsp;
-[![](https://img.shields.io/github/watchers/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)
+[![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
+[![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
 
-Links: [Github](https://github.com/manualmanul/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/manualmanul/vscode-vibrancy-continued/issues)
+Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
 ## Warning
 
-This extension works by editing VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy-continued` for the first time or each time VS Code updates. You can click [never show again] to hide it.
+This extension works by editing VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy-continued` and enabling it. Click on the cogwheel and select [never show again] to hide it.
 
-![screenshot](./warns.png)
+![screenshot](./warn.png)
+![screenshot](./warnfix.png)
 
 To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
@@ -52,7 +53,7 @@ MacOS ✔
 
 4. Restart.
 
-Every time after Code is updated, please re-enable vibrancy.
+Every time after VS Code is updated, please re-enable Vibrancy.
 
 ## Options
 
@@ -86,7 +87,7 @@ Select Vibrancy theme:
 | Dark (Only Subbar) | ![](./theme-default.jpg) |
 | Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
 
-> You can contribute more themes for us! [see here](https://github.com/manualmanul/vscode-vibrancy-continued/tree/master/themes).
+> You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
 #### vscode_vibrancy.imports
 
@@ -98,9 +99,9 @@ EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
 ## FAQs
 
-### How to uninstall?
+### How to uninstall Vibrancy?
 
-Press F1 and Activate command "Disable Vibrancy", and Restart Visual Studio Code.
+Press F1 or ⌘+Shift+P and activate command "Disable Vibrancy", then restart Visual Studio Code.
 
 ### Effect doesn't work for terminal?
 
