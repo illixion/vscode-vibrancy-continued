@@ -10,7 +10,7 @@ Original description follows.
 
 # Visual Studio Code Extension - Vibrancy
 
-> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/manualmanul/vscode-vibrancy/discussions/80).
+> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
 
 > Starting from v1.0.10, this extension no longer supports Windows 7.
 
@@ -28,7 +28,7 @@ Enable Acrylic/Glass effect for your VS Code.
 [![](https://img.shields.io/github/stars/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/manualmanul/vscode-vibrancy-continued.svg?style=social)](https://github.com/manualmanul/vscode-vibrancy-continued)
 
-Links: [Github](https://github.com/manualmanul/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/manualmanul/vscode-vibrancy/issues)
+Links: [Github](https://github.com/manualmanul/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/manualmanul/vscode-vibrancy-continued/issues)
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
@@ -91,7 +91,7 @@ Select Vibrancy theme:
 |:------------------------:|:-----------------------:|
 | ![](./theme-default.jpg) | ![](./theme-subbar.jpg) | 
 
-> You can contribute more themes for us! [see here](https://github.com/manualmanul/vscode-vibrancy/tree/master/themes).
+> You can contribute more themes for us! [see here](https://github.com/manualmanul/vscode-vibrancy-continued/tree/master/themes).
 
 #### vscode_vibrancy.imports
 
@@ -124,3 +124,5 @@ It usually appears on windows when you are using the VSCode System Installer. Yo
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program
 
 [DIYgod](https://github.com/microsoft/vscode/issues/32257#issuecomment-509936623) : Fix issues with VSCode 1.36
+
+
