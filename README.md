@@ -86,10 +86,13 @@ Select Vibrancy theme:
 * Dark (Only Subbar)
 * Default Light
 * Light (Only Subbar)
+* Noir et blanc
 
-|        Default Dark      |    Dark (Only Subbar)   |
-|:------------------------:|:-----------------------:|
-| ![](./theme-default.jpg) | ![](./theme-subbar.jpg) | 
+| Theme | Screenshot |
+| ---- | ---- |
+| Default Dark | ![](./theme-default.jpg) |
+| Dark (Only Subbar) | ![](./theme-default.jpg) |
+| Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
 
 > You can contribute more themes for us! [see here](https://github.com/manualmanul/vscode-vibrancy-continued/tree/master/themes).
 
