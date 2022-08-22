@@ -18,12 +18,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/manualmanul/vscode-vibrancy-continued"
+    "url": "https://github.com/illixion/vscode-vibrancy-continued"
   },
   "bugs": {
-    "url": "https://github.com/manualmanul/vscode-vibrancy-continued/issues"
+    "url": "https://github.com/illixion/vscode-vibrancy-continued/issues"
   },
-  "preview": true,
+  "preview": false,
   "icon": "images/logo.png",
   "galleryBanner": {
     "color": "#EEEEEE"
