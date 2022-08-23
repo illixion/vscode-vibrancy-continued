@@ -13,7 +13,7 @@ Enable Acrylic/Glass effect in VS Code.
 [![](https://vsmarketplacebadge.apphb.com/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/visual-studio-marketplace/stars/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
-![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.57.0-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
+![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.70.2-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
