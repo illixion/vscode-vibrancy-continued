@@ -1,12 +1,12 @@
 {
   "type": {
     "win10": "acrylic",
-    "macos": "ultra-dark"
+    "macos": "dark"
   },
   "background": "1a1b26",
   "opacity": {
     "win10": 0.8,
-    "macos": 0.2
+    "macos": 0.4
   },
   "colorTheme": "Tokyo Night Storm"
 }
