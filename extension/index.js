@@ -34,7 +34,7 @@ const themeConfigPaths = {
 	'Noir et blanc': '../themes/Noir et blanc.json',
 }
 
-var defaultTheme = 'Default Dark';
+var defaultTheme = 'Tokyo Night Storm (Only Subbar)';
 
 function getCurrentTheme(config) {
 	return config.theme in themeStylePaths ? config.theme : defaultTheme;
