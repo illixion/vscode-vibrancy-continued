@@ -1,28 +1,39 @@
-# Visual Studio Code Extension - Vibrancy
+# Visual Studio Code Extension - Vibrancy Continued
+
+> The original extension has been deprecated, this version will continue to be supported and receive community updates.
 
 > Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
 
-> Starting from v1.0.10, this extension no longer supports Windows 7.
-
 > For questions about installation and uninstallation, please read [FAQs](#FAQs).
 
-Enable Acrylic/Glass effect for your VS Code.
+Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
 
-[![](https://vsmarketplacebadge.apphb.com/version/eyhn.vscode-vibrancy.svg)](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy)&nbsp;
-[![](https://img.shields.io/visual-studio-marketplace/stars/eyhn.vscode-vibrancy.svg)](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy)
+[![](https://vsmarketplacebadge.apphb.com/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://img.shields.io/visual-studio-marketplace/stars/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.57.0-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
-[![](https://img.shields.io/github/stars/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)&nbsp;
-[![](https://img.shields.io/github/watchers/eyhn/vscode-vibrancy.svg?style=social)](https://github.com/eyhn/vscode-vibrancy)
+[![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
+[![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
 
-Links: [Github](https://github.com/eyhn/vscode-vibrancy) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy) | [issues](https://github.com/eyhn/vscode-vibrancy/issues)
+Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
+## Warning
+
+This extension works by editing VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy-continued` and enabling it. Click on the cogwheel and select [never show again] to hide it.
+
+![screenshot](./warn.png)
+![screenshot](./warnfix.png)
+
+To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
+
 ## Supported Operating Systems
+
+Windows 11 ✔
 
 Windows 10 ✔
 
@@ -34,7 +45,7 @@ MacOS ✔
 
 ![step-1](./step-1.png)
 
-2. Install this extension from [the Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=eyhn.vscode-vibrancy).
+2. Install this extension from [the Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
 3. Press F1 and Activate command "Reload Vibrancy".
 
@@ -42,15 +53,7 @@ MacOS ✔
 
 4. Restart.
 
-Every time after Code is updated, please re-enable vibrancy.
-
-## Warning
-
-This extension works by editting VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy` for the first time or each time VS Code updates. U can click [never show again] to hide it.
-
-![screenshot](./warns.png)
-
-To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
+Every time after VS Code is updated, please re-enable Vibrancy.
 
 ## Options
 
@@ -76,12 +79,15 @@ Select Vibrancy theme:
 * Dark (Only Subbar)
 * Default Light
 * Light (Only Subbar)
+* Noir et blanc
 
-|        Default Dark      |    Dark (Only Subbar)   |
-|:------------------------:|:-----------------------:|
-| ![](./theme-default.jpg) | ![](./theme-subbar.jpg) | 
+| Theme | Screenshot |
+| ---- | ---- |
+| Default Dark | ![](./theme-default.jpg) |
+| Dark (Only Subbar) | ![](./theme-default.jpg) |
+| Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
 
-> You can contribute more themes for us! [see here](https://github.com/EYHN/vscode-vibrancy/tree/master/themes).
+> You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
 #### vscode_vibrancy.imports
 
@@ -93,9 +99,9 @@ EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
 ## FAQs
 
-### How to uninstall?
+### How to uninstall Vibrancy?
 
-Press F1 and Activate command "Disable Vibrancy", and Restart Visual Studio Code.
+Press F1 or ⌘+Shift+P and activate command "Disable Vibrancy", then restart Visual Studio Code.
 
 ### Effect doesn't work for terminal?
 
@@ -103,12 +109,16 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
-### Prompt "Run Visual Studio Code with administrator privileges" ?
+### Prompt "Run Visual Studio Code with administrator privileges"?
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
 ## Thanks ⭐
 
+[EYHN](https://github.com/EYHN) : for making the original extension that this is a fork of
+
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program
 
 [DIYgod](https://github.com/microsoft/vscode/issues/32257#issuecomment-509936623) : Fix issues with VSCode 1.36
+
+
