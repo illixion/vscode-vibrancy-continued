@@ -1,3 +1,27 @@
+# 1.1.4
+
+* Fix disable action not fully restoring files
+* Fix inconsistent behavior when re-enabling
+* Change activation events to *
+
+# 1.1.3
+
+* Extension is no longer in preview
+
+# 1.1.2
+
+* Update readme
+
+# 1.1.1
+
+Add Noir et blanc theme (by [pryter](https://github.com/pryter))
+
+# 1.1.0
+
+* Fix extension not working in VS Code 1.70.0 (by [slanterns](https://github.com/slanterns))
+* Update activation events
+* Extension is now maintained by [Illixion](https://github.com/illixion)
+
 # 1.0.16
 
 * fix: turn off gpuAcceleration
