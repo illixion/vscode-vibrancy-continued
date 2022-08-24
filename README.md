@@ -22,16 +22,16 @@ Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
-## Warning
+# Warning
 
-This extension works by editing VS Code's css file. So, a prompt will appear when installing `vscode-vibrancy-continued` and enabling it. Click on the cogwheel and select [never show again] to hide it.
+This extension works by editing VS Code's checksum-verified CSS file, which means that a warning prompt will appear after installing and enabling `vscode-vibrancy-continued`. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
 ![screenshot](./warn.png)
 ![screenshot](./warnfix.png)
 
 To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
-## Supported Operating Systems
+# Supported Operating Systems
 
 Windows 11 ✔
 
@@ -39,7 +39,7 @@ Windows 10 ✔
 
 MacOS ✔
 
-## Getting Started
+# Getting Started
 
 1. Make sure the color theme you selected is the 'Dark+ (default)'
 
@@ -97,7 +97,7 @@ EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
 *value: array[]*
 
-## FAQs
+# FAQs
 
 ### How to uninstall Vibrancy?
 
