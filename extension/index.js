@@ -144,7 +144,7 @@ function activate(context) {
 
 		const base = __filename;
 
-		const newJS = JS.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
+		const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
 			+ '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
 			+ `if (!require(\'fs\').existsSync(${JSON.stringify(base)})) return;\n`
 			+ `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
