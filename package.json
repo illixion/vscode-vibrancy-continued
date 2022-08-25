@@ -27,9 +27,7 @@
     "color": "#EEEEEE"
   },
   "activationEvents": [
-    "onCommand:extension.installVibrancy",
-    "onCommand:extension.uninstallVibrancy",
-    "onCommand:extension.updateVibrancy"
+    "*"
   ],
   "main": "./extension/index.js",
   "contributes": {

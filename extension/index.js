@@ -148,7 +148,7 @@ function activate(context) {
 
 		const base = __filename;
 
-		const newJS = JS.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
+		const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
 			+ '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
 			+ `if (!require(\'fs\').existsSync(${JSON.stringify(base)})) return;\n`
 			+ `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
@@ -173,20 +173,19 @@ function activate(context) {
 
 	async function uninstallJS() {
 		const JS = await fs.readFile(JSFile, 'utf-8');
-		const needClean = /\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
+		const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
 		if (needClean) {
 			const newJS = JS
-				.replace(/\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
+				.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
 			await fs.writeFile(JSFile, newJS, 'utf-8');
 		}
 	}
 
 	async function uninstallHTML() {
 		const HTML = await fs.readFile(HTMLFile, 'utf-8');
-		const needClean = /<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/.test(HTML);
+		const needClean = / VscodeVibrancy;/.test(HTML);
 		if (needClean) {
-			const newHTML = HTML
-				.replace(/<!-- !! VSCODE-VIBRANCY-START !! -->[\s\S]*?<!-- !! VSCODE-VIBRANCY-END !! -->/, '')
+			const newHTML = HTML.replace(" VscodeVibrancy;", ";").replace(";  trusted-types", "; trusted-types")
 			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
 		}
 	}
