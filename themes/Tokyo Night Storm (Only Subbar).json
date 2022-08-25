@@ -6,7 +6,7 @@
   "background": "1a1b26",
   "opacity": {
     "win10": 0.8,
-    "macos": 0.2
+    "macos": 0.6
   },
   "colorTheme": "Tokyo Night Storm"
 }

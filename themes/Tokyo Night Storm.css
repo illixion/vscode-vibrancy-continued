@@ -120,3 +120,7 @@ body {
 .monaco-workbench.fullscreen {
   background-color: #1a1b26 !important;
 }
+
+.mtk4,.mtk8,.mtk9.mtk10,.mtk11,.mtk12,.mtk14,.mtk18,.mtk20,.mtk22 {
+  text-shadow: 0 0 8px, 0 0 2px #000;
+}
