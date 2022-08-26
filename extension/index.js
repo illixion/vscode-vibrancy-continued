@@ -243,7 +243,6 @@ function activate(context) {
 
 		try {
 			await fs.stat(JSFile);
-
 			await uninstallJS();
 		} catch (error) {
 			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
@@ -283,7 +282,7 @@ function activate(context) {
 			.then(async (msg) => {
 				if (msg) {
 					await Update();
-					// await checkColorTheme();
+					await checkColorTheme();
 					enabledRestart();
 				}
 			});
@@ -300,9 +299,9 @@ function activate(context) {
 				.then(async (msg) => {
 					if (msg) {
 						await Update();
-						// if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
-						// 	await checkColorTheme();
-						// }
+						if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
+							await checkColorTheme();
+						}
 						enabledRestart();
 					}
 				});
