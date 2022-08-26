@@ -1,11 +1,13 @@
 {
-  "name": "vbrncee",
-  "displayName": "Vibrancy",
+  "name": "vscode-vibrancy-continued",
+  "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.0.0",
-  "publisher": "yusoofsh",
+  "version": "1.1.3",
+  "publisher": "illixion",
   "author": {
-    "name": "Yusoof SH"
+    "email": "illixion@illixion.com",
+    "name": "illixion",
+    "url": "https://illixion.com"
   },
   "engines": {
     "vscode": "^1.57.0"
@@ -16,10 +18,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yusoofsh/vbrncee"
+    "url": "https://github.com/illixion/vscode-vibrancy-continued"
   },
   "bugs": {
-    "url": "https://github.com/yusoofsh/vbrncee/issues"
+    "url": "https://github.com/illixion/vscode-vibrancy-continued/issues"
   },
   "preview": false,
   "icon": "images/logo.png",
@@ -95,8 +97,6 @@
             "Dark (Only Subbar)",
             "Default Light",
             "Light (Only Subbar)",
-            "Tokyo Night Storm",
-            "Tokyo Night Storm (Only Subbar)",
             "Noir et blanc"
           ]
         },
@@ -109,6 +109,9 @@
         }
       }
     }
+  },
+  "scripts": {
+    "build-win10": "node-gyp rebuild"
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
