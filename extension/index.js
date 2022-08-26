@@ -20,7 +20,7 @@ var themeStylePaths = {
 	'Default Light': '../themes/Default Light.css',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).css',
 	'Tokyo Night Storm': '../themes/Tokyo Night Storm.css',
-	'Tokyo Night Storm (Only Subbar)': '../themes/Tokyo Night Storm (Only Subbar).css',
+	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).css',
 	'Noir et blanc': '../themes/Noir et blanc.css',
 }
 
@@ -30,7 +30,7 @@ const themeConfigPaths = {
 	'Default Light': '../themes/Default Light.json',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).json',
 	'Tokyo Night Storm': '../themes/Tokyo Night Storm.json',
-	'Tokyo Night Storm (Only Subbar)': '../themes/Tokyo Night Storm (Only Subbar).json',
+	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).json',
 	'Noir et blanc': '../themes/Noir et blanc.json',
 }
 

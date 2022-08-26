@@ -3,6 +3,9 @@
 .monaco-workbench .activitybar,
 .monaco-workbench .titlebar,
 .monaco-workbench .monaco-list-rows,
+.monaco-workbench .pane-header,
+.monaco-workbench .auxiliarybar,
+.monaco-workbench .statusbar,
 body {
   background: transparent !important;
 }
@@ -29,6 +32,11 @@ body {
   .tabs-container
   > .tab.active {
   background: transparent !important;
+}
+
+.monaco-workbench .monaco-list-row:hover,
+.monaco-workbench .monaco-list-row.selected {
+  background-color: rgba(26, 27, 38, 0.3) !important;
 }
 
 .editor-group-container > .tabs .tab {
