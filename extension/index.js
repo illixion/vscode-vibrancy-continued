@@ -243,6 +243,7 @@ function activate(context) {
 
 		try {
 			await fs.stat(JSFile);
+
 			await uninstallJS();
 		} catch (error) {
 			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
