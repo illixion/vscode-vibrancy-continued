@@ -19,6 +19,8 @@ var themeStylePaths = {
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css',
 	'Default Light': '../themes/Default Light.css',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).css',
+	'Tokyo Night Storm': '../themes/Tokyo Night Storm.css',
+	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).css',
 	'Noir et blanc': '../themes/Noir et blanc.css',
 }
 
@@ -27,6 +29,8 @@ const themeConfigPaths = {
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).json',
 	'Default Light': '../themes/Default Light.json',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).json',
+	'Tokyo Night Storm': '../themes/Tokyo Night Storm.json',
+	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).json',
 	'Noir et blanc': '../themes/Noir et blanc.json',
 }
 
@@ -239,7 +243,7 @@ function activate(context) {
 
 		try {
 			await fs.stat(JSFile);
-			
+
 			await uninstallJS();
 		} catch (error) {
 			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
