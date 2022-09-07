@@ -1,3 +1,7 @@
+# 1.1.5
+
+* Added Tokyo Night Storm theme
+
 # 1.1.4
 
 * Fix disable action not fully restoring files
