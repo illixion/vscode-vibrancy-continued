@@ -131,10 +131,10 @@ const customImports = {
 
 app.config.imports.forEach(function (x) {
 	if (typeof x === 'string') {
-		x = new URL(x, 'file://').href;
+		//x = new URL(x, 'file://').href;
 
-		if (!x.startsWith('file://')) {
-			x = 'file://' + x;
+		if (!x.startsWith('vscode-file://vscode-app/')) {
+			x = 'vscode-file://vscode-app/' + x;
 		}
 
 		if (/^.*\.js$/.test(x)) customImports.js.push('<script src="' + x + '"></script>');
