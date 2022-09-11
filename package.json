@@ -99,7 +99,8 @@
             "Light (Only Subbar)",
             "Tokyo Night Storm",
             "Tokyo Night Storm (Outer)",
-            "Noir et blanc"
+            "Noir et blanc",
+            "Dark (Exclude Tab Line)"
           ]
         },
         "vscode_vibrancy.imports": {

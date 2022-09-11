@@ -16,6 +16,7 @@ const os = require('./platform');
 
 var themeStylePaths = {
 	'Default Dark': '../themes/Default Dark.css',
+	'Dark (Exclude Tab Line)': '../themes/Dark (Exclude Tab Line).css',
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).css',
 	'Default Light': '../themes/Default Light.css',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).css',
@@ -26,6 +27,7 @@ var themeStylePaths = {
 
 const themeConfigPaths = {
 	'Default Dark': '../themes/Default Dark.json',
+	'Dark (Exclude Tab Line)': '../themes/Dark (Exclude Tab Line).json',
 	'Dark (Only Subbar)': '../themes/Dark (Only Subbar).json',
 	'Default Light': '../themes/Default Light.json',
 	'Light (Only Subbar)': '../themes/Light (Only Subbar).json',
