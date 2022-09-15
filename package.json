@@ -25,6 +25,9 @@
   },
   "preview": false,
   "icon": "images/logo.png",
+  "extensionKind": [
+    "ui"
+  ],
   "galleryBanner": {
     "color": "#EEEEEE"
   },
