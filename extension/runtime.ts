@@ -7,6 +7,7 @@ import localize from './i18n'
 import os from './platform'
 import { HTMLFile, JSFile, runtimeDir, themeConfigPaths, themeStylePaths } from './CONSTANTS'
 import { changeTerminalRendererType, getCurrentTheme } from './utils'
+import * as sudo from './sudoUtils'
 
 const installRuntime = async () => {
   if (fs1.existsSync(runtimeDir)) return
@@ -39,7 +40,7 @@ const installJS = async () => {
       `if (!require('fs').existsSync(${JSON.stringify(base)})) return;\n` +
       `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n` +
       '})()\n/* !! VSCODE-VIBRANCY-END !! */'
-  await fs.writeFile(JSFile, newJS, 'utf-8')
+  await sudo.writeFile(JSFile, newJS)
 }
 
 const installHTML = async () => {
@@ -53,7 +54,7 @@ const installHTML = async () => {
   )
 
   if (HTML !== newHTML) {
-    await fs.writeFile(HTMLFile, newHTML, 'utf-8')
+    await sudo.writeFile(HTMLFile, newHTML)
   }
 }
 
@@ -63,7 +64,7 @@ const uninstallJS = async () => {
   if (needClean) {
     const newJS = JS
       .replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-    await fs.writeFile(JSFile, newJS, 'utf-8')
+    await sudo.writeFile(JSFile, newJS)
   }
 }
 
@@ -72,7 +73,7 @@ const uninstallHTML = async () => {
   const needClean = HTML.includes(' VscodeVibrancy;')
   if (needClean) {
     const newHTML = HTML.replace(' VscodeVibrancy;', ';').replace(';  trusted-types', '; trusted-types')
-    await fs.writeFile(HTMLFile, newHTML, 'utf-8')
+    await sudo.writeFile(HTMLFile, newHTML)
   }
 }
 
