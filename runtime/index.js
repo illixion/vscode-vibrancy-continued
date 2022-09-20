@@ -49,7 +49,7 @@ electron.app.on('browser-window-created', (_, window) => {
 
 	const backgroundRGB = hexToRgb(app.theme.background);
 
-	if (app.os === 'win10') {
+	if (app.os === 'win10' || app.os === 'win11') {
 		const bindings = require('./vibrancy.js');
 		bindings.setVibrancy(window.getNativeWindowHandle().readInt32LE(0), 1, backgroundRGB.r, backgroundRGB.g, backgroundRGB.b, 0);
 		const win10refresh = require('./win10refresh.js');
