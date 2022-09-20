@@ -6,3 +6,4 @@ firstload.lock
 *.vsix
 yarn.lock
 /build
+/dist
