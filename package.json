@@ -117,13 +117,25 @@
     }
   },
   "scripts": {
-    "build-win10": "node-gyp rebuild"
+    "build-win10": "node-gyp rebuild",
+    "lint": "eslint -c package.json --ext *.ts ."
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
     "mz": "^2.7.0"
   },
   "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/mz": "^2.7.4",
+    "@types/node": "^16.11.58",
+    "@types/vscode": "^1.57.0",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
+    "eslint": "^8.23.0",
+    "eslint-config-standard-with-typescript": "^22.0.0",
+    "eslint-config-vscode-ext": "^1.1.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.5",
+    "eslint-plugin-promise": "^6.0.1",
     "node-addon-api": "^5.0.0",
     "node-gyp": "^9.1.0",
     "typescript": "^4.8.3"
