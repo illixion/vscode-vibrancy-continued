@@ -29,6 +29,18 @@ const sudoWriteFile = async (file: string, data: string) => {
   }
 }
 
+const sudoCopy = async (source: string, destination: string) => {
+  let sudocmd = 'mkdir'
+  sudocmd += ' '
+  sudocmd += `"${destination}"`
+  sudocmd += ' && '
+  sudocmd += process.platform === 'win32' ? 'copy /Y' : 'cp -f'
+  sudocmd += ' '
+  sudocmd += `"${source}" "${destination}"`
+
+  await sudo(sudocmd, 'Visual Studio Code Vibrancy Extension')
+}
+
 export const writeFile = async (file: string, data: string) => {
   try {
     // normal write
@@ -43,5 +55,21 @@ export const writeFile = async (file: string, data: string) => {
     const result = await vscode.window.showErrorMessage(msg, retry)
     if (result !== retry) throw new vscode.CancellationError()
     await sudoWriteFile(file, data)
+  }
+}
+export const cp = async (source: string, destination: string) => {
+  try {
+    await fs.mkdir(destination)
+    await fs.cp(source, destination)
+  } catch (error) {
+    const fserr = error as vscode.FileSystemError
+    if (!('code' in fserr)) throw error
+    if (fserr.code !== 'EPERM' && fserr.code !== 'EACCES') throw error
+
+    const msg = fserr.message
+    const retry = 'Retry with Admin/Sudo'
+    const result = await vscode.window.showErrorMessage(msg, retry)
+    if (result !== retry) throw new vscode.CancellationError()
+    await sudoCopy(source, destination)
   }
 }

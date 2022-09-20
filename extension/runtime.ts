@@ -11,8 +11,7 @@ import * as sudo from './sudoUtils'
 const installRuntime = async () => {
   if (fs1.existsSync(runtimeDir)) return
 
-  await fs.mkdir(runtimeDir)
-  await fs.cp(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir))
+  await sudo.cp(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir))
 }
 
 const installJS = async () => {
