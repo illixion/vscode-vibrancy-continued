@@ -34,7 +34,7 @@
   "activationEvents": [
     "*"
   ],
-  "main": "./extension/index.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -117,9 +117,11 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "build-win10": "node-gyp rebuild",
     "lint": "eslint -c package.json --ext *.ts .",
-    "compile": "tsc -p ."
+    "compile": "tsc -p .",
+    "package": "vsce package"
   },
   "dependencies": {
     "@vscode/sudo-prompt": "^9.3.1"
@@ -136,6 +138,7 @@
     "eslint-plugin-promise": "^6.0.1",
     "node-addon-api": "^5.0.0",
     "node-gyp": "^9.1.0",
-    "typescript": "^4.8.3"
+    "typescript": "^4.8.3",
+    "vsce": "^2.11.0"
   }
 }

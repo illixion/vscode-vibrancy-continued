@@ -1,1 +1,11 @@
 firstload.lock
+
+*.jpg
+*.png
+!images/logo.png
+.eslintignore
+.gitignore
+binding.gyp
+extension
+native
+tsconfig.json
