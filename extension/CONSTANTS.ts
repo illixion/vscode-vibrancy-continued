@@ -1,6 +1,7 @@
 import path from 'path'
 
-const appDir = __dirname
+if (!require.main) throw new Error('WTF?')
+const appDir = path.dirname(require.main.filename)
 
 export const HTMLFile = appDir + '/vs/code/electron-sandbox/workbench/workbench.html'
 export const JSFile = appDir + '/main.js'

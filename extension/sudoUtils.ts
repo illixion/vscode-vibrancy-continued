@@ -23,7 +23,9 @@ const sudoWriteFile = async (file: string, data: string) => {
     const fullcmd = `${sudocmd} "${tmpFile}" "${file}"`
     await sudo(fullcmd, 'Visual Studio Code Vibrancy Extension')
   } finally {
-    await fs.rm(tmpFile)
+    try {
+      await fs.rm(tmpFile)
+    } catch {}
   }
 }
 
@@ -32,10 +34,11 @@ export const writeFile = async (file: string, data: string) => {
     // normal write
     await fs.writeFile(file, data, 'utf-8')
   } catch (error) {
-    if (!(error instanceof vscode.FileSystemError)) throw error
-    if (error.code !== 'EPERM' && error.code !== 'EACCES') throw error
+    const fserr = error as vscode.FileSystemError
+    if (!('code' in fserr)) throw error
+    if (fserr.code !== 'EPERM' && fserr.code !== 'EACCES') throw error
 
-    const msg = error.message
+    const msg = fserr.message
     const retry = 'Retry with Admin/Sudo'
     const result = await vscode.window.showErrorMessage(msg, retry)
     if (result !== retry) throw new vscode.CancellationError()

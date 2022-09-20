@@ -111,9 +111,7 @@ const Uninstall = async () => {
     // uninstall old version
     await fs.stat(HTMLFile)
     await uninstallHTML()
-  } catch {}
 
-  try {
     await fs.stat(JSFile)
     await uninstallJS()
   } catch (error) {
