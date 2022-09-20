@@ -1,5 +1,6 @@
 firstload.lock
 
+*.map
 *.jpg
 *.png
 !images/logo.png
