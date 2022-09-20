@@ -2,7 +2,6 @@ import * as vscode from 'vscode'
 import path from 'path'
 import fs from 'fs/promises'
 import fs1 from 'fs'
-import fsExtra from 'fs-extra'
 import localize from './i18n'
 import os from './platform'
 import { HTMLFile, JSFile, runtimeDir, themeConfigPaths, themeStylePaths } from './CONSTANTS'
@@ -13,7 +12,7 @@ const installRuntime = async () => {
   if (fs1.existsSync(runtimeDir)) return
 
   await fs.mkdir(runtimeDir)
-  await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir))
+  await fs.cp(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir))
 }
 
 const installJS = async () => {
