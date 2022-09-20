@@ -11,7 +11,11 @@ import * as sudo from './sudoUtils'
 const installRuntime = async () => {
   if (fs1.existsSync(runtimeDir)) return
 
-  await sudo.cp(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir))
+  const source = path.resolve(__dirname, '../runtime')
+  const target = path.resolve(runtimeDir)
+
+  await sudo.mkdir(target)
+  await sudo.cp(source, target)
 }
 
 const installJS = async () => {
@@ -124,16 +128,40 @@ const Update = async () => {
 }
 
 export default {
-  init: installRuntime,
-  install: Install,
-  uninstall: Uninstall,
-  update: Update,
+  init: async () => {
+    await installRuntime()
+    await sudo.retryByAdminPrompt()
+  },
+  install: async () => {
+    await Install()
+    await sudo.retryByAdminPrompt()
+  },
+  uninstall: async () => {
+    await Uninstall()
+    await sudo.retryByAdminPrompt()
+  },
+  update: async () => {
+    await Update()
+    await sudo.retryByAdminPrompt()
+  },
   js: {
-    install: installJS,
-    uninstall: uninstallJS
+    install: async () => {
+      await installJS()
+      await sudo.retryByAdminPrompt()
+    },
+    uninstall: async () => {
+      await uninstallJS()
+      await sudo.retryByAdminPrompt()
+    }
   },
   html: {
-    install: installHTML,
-    uninstall: uninstallHTML
+    install: async () => {
+      await installHTML()
+      await sudo.retryByAdminPrompt()
+    },
+    uninstall: async () => {
+      await uninstallHTML()
+      await sudo.retryByAdminPrompt()
+    }
   }
 }
