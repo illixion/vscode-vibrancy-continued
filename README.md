@@ -80,6 +80,9 @@ Select Vibrancy theme:
 * Default Light
 * Light (Only Subbar)
 * Noir et blanc
+* Tokyo Night Storm
+* Tokyo Night Storm (Outer)
+* Solarized Dark+
 
 | Theme | Screenshot |
 | ---- | ---- |
@@ -88,6 +91,7 @@ Select Vibrancy theme:
 | Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
 | Tokyo Night Storm | ![](./theme-tokyo-night-storm.png) |
 | Tokyo Night Storm (Only Subbar) | ![](./theme-tokyo-night-storm-outer.png) |
+| Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./theme-solarized-dark%2B.png)
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
