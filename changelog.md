@@ -1,3 +1,11 @@
+# 1.1.7
+
+* Added new theme: Solarized Dark+
+
+# 1.1.6
+
+* Force extension to be local-only
+
 # 1.1.5
 
 * Added Tokyo Night Storm theme
