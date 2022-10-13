@@ -103,7 +103,8 @@
             "Tokyo Night Storm",
             "Tokyo Night Storm (Outer)",
             "Noir et blanc",
-            "Dark (Exclude Tab Line)"
+            "Dark (Exclude Tab Line)",
+            "Solarized Dark+"
           ]
         },
         "vscode_vibrancy.imports": {

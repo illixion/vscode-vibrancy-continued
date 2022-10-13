@@ -1,0 +1,12 @@
+{
+  "type": {
+    "win10": "acrylic",
+    "macos": "ultra-dark"
+  },
+  "background": "003442",
+  "opacity": {
+    "win10": 0.3,
+    "macos": 0.3
+  },
+  "colorTheme": "Solarized Dark+"
+}

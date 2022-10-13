@@ -23,6 +23,7 @@ var themeStylePaths = {
 	'Tokyo Night Storm': '../themes/Tokyo Night Storm.css',
 	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).css',
 	'Noir et blanc': '../themes/Noir et blanc.css',
+	'Solarized Dark+': '../themes/Solarized Dark+.css',
 }
 
 const themeConfigPaths = {
@@ -34,6 +35,7 @@ const themeConfigPaths = {
 	'Tokyo Night Storm': '../themes/Tokyo Night Storm.json',
 	'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).json',
 	'Noir et blanc': '../themes/Noir et blanc.json',
+	'Solarized Dark+': '../themes/Solarized Dark+.json',
 }
 
 var defaultTheme = 'Default Dark';
