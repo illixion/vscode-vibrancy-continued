@@ -33,5 +33,6 @@
 	"messages.installIde": "Install Vibrancy",
 	"messages.reloadIde": "Reload",
 	"messages.changeColorThemeIde": "Change The Color Theme",
-	"messages.noIde": "No"
+	"messages.noIde": "No",
+  "messages.importError": "Couldn't open custom import file: \"%1\""
 }

@@ -129,7 +129,10 @@ function activate(context) {
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
-		if (fs.existsSync(runtimeDir)) return;
+		// if runtimeDir exists, delete it and then update
+		if (fs.existsSync(runtimeDir)) {
+			fs.rmSync(runtimeDir, { recursive: true });
+		}
 
 		await fs.mkdir(runtimeDir);
 		await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
@@ -143,11 +146,33 @@ function activate(context) {
 
 		const JS = await fs.readFile(JSFile, 'utf-8');
 
+		// generate imports by reading all files in config.imports
+		const imports = {
+			css: "",
+			js: "",
+		};
+		for (let i = 0; i < config.imports.length; i++) {
+			if (config.imports[i] === "/path/to/file") continue;
+
+			try {
+				const importContent = await fs.readFile(config.imports[i], 'utf-8');
+				
+				if (config.imports[i].endsWith('.css')) {
+					imports.css += `<style>${importContent}</style>`;
+				} else {
+					imports.js += `<script>${importContent}</script>`;
+				}
+			} catch (err) {
+				vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
+			}
+		}
+
 		const injectData = {
 			os: os,
 			config: config,
 			theme: themeConfig,
-			themeCSS: themeCSS
+			themeCSS: themeCSS,
+			imports: imports,
 		}
 
 		const base = __filename;

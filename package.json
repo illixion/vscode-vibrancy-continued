@@ -111,7 +111,7 @@
           "description": "%configuration.imports.description%",
           "type": "array",
           "default": [
-            "$theme-style$"
+            "/path/to/file"
           ]
         }
       }

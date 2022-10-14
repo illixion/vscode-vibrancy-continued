@@ -33,5 +33,6 @@
 	"messages.installIde": "Vibrancy をインストール",
 	"messages.reloadIde": "再読み込み",
 	"messages.changeColorThemeIde": "配色テーマを変更する",
-	"messages.noIde": "いいえ"
+	"messages.noIde": "いいえ",
+  "messages.importError": "エラーオープニングファイル: \"%1\""
 }

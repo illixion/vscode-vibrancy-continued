@@ -33,5 +33,6 @@
 	"messages.installIde": "安装毛玻璃效果",
 	"messages.reloadIde": "重新加载",
 	"messages.changeColorThemeIde": "改变颜色主题",
-	"messages.noIde": "不要"
+	"messages.noIde": "不要",
+  "messages.importError": "错误打开文件: \"%1\""
 }

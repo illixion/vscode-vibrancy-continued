@@ -124,26 +124,8 @@ function injectHTML(window) {
 	})();`);
 }
 
-const customImports = {
-	js: [],
-	css: []
-}
-
-app.config.imports.forEach(function (x) {
-	if (typeof x === 'string') {
-		x = new URL(x, 'file://').href;
-
-		if (!x.startsWith('file://')) {
-			x = 'file://' + x;
-		}
-
-		if (/^.*\.js$/.test(x)) customImports.js.push('<script src="' + x + '"></script>');
-		if (/^.*\.css$/.test(x)) customImports.css.push('<link rel="stylesheet" href="' + x + '"/>');
-	}
-})
-
 function scriptHTML() {
-	return customImports.js.join('')
+	return app.imports.js
 }
 
 function styleHTML() {
@@ -175,7 +157,7 @@ function styleHTML() {
       ${app.themeCSS}
     </style>
     `,
-		...customImports.css
+	app.imports.css,
 	]
 
 	return HTML.join('')
