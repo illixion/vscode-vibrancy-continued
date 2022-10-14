@@ -1,3 +1,7 @@
+# 1.1.8
+
+* Moved custom imports loading to extension code, as it was broken before due to CSP
+
 # 1.1.7
 
 * Added new theme: Solarized Dark+
