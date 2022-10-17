@@ -71,6 +71,14 @@ Opacity of Vibrancy Effect.
 
 *value: 0.0 ~ 1*
 
+#### vscode_vibrancy.refreshInterval
+
+Experimental: Changes the background refresh interval to fix transparency lost issue when window resizes
+
+**Requires `[Disable -> Restart -> Enable -> Restart]` for it to take effect.**
+
+_value: previously 1000, suggested 1 ~ 10_
+
 #### vscode_vibrancy.theme
 
 Select Vibrancy theme:
@@ -118,6 +126,12 @@ Check your settings. You should change the renderer type of the terminal to dom.
 ### Prompt "Run Visual Studio Code with administrator privileges"?
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
+
+### VScode window lost transparency for a brief second when resizing window
+
+This is cause by VSCode temporarily refreshes the background whenever a re-render is triggered, i.e. resizing window or closing the side panes.
+
+Added new `vibrancy_code.refreshInterval` in config to allow manually setting of refresh time (future release will make it 1ms if no performance issues were reported.)
 
 # Contributing
 

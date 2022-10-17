@@ -113,6 +113,11 @@
           "default": [
             "/path/to/file"
           ]
+        },
+        "vscode_vibrancy.refreshInterval": {
+          "description": "%configuration.refreshInterval.description%",
+          "type": "number",
+          "default": "1"
         }
       }
     }

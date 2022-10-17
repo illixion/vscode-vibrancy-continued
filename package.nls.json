@@ -16,6 +16,7 @@
   "configuration.opacity.description": "Opacity of Vibrancy Effect.",
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
+  "configuration.refreshInterval.description": "Experimental: Changes the background refresh interval to fix flickering issue when window resizes, requires [Disable -> Restart -> Enable -> Restart]",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
   "extension.updateVibrancy.title": "Reload Vibrancy",
