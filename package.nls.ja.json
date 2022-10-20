@@ -16,7 +16,7 @@
   "configuration.opacity.description": "すりガラス効果の透明度を制御します。",
   "configuration.theme.description": "Vibrancy のテーマを制御します。",
   "configuration.imports.description": "インポートする CSS/JS ファイルのパスを指定します。",
-  "configuration.refreshInterval.description": "实验: Changes the background refresh interval to fix flickering issue when window resizes, requires [を無効化 -> Restart -> を有効化 -> Restart]",
+  "configuration.refreshInterval.description": "ウィンドウの透明性のための間隔を更新します。 値が低いと、更新が目立たなくなりますが、CPUの使用量が増加します。",
   "extension.installVibrancy.title": "Vibrancy を有効化",
   "extension.uninstallVibrancy.title": "Vibrancy を無効化",
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",

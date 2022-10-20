@@ -73,11 +73,9 @@ Opacity of Vibrancy Effect.
 
 #### vscode_vibrancy.refreshInterval
 
-Experimental: Changes the background refresh interval to fix transparency lost issue when window resizes
+Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.
 
-**Requires `[Disable -> Restart -> Enable -> Restart]` for it to take effect.**
-
-_value: previously 1000, suggested 1 ~ 10_
+*value: 1 ~ 1000, default is 10*
 
 #### vscode_vibrancy.theme
 
@@ -127,11 +125,11 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
-### VScode window lost transparency for a brief second when resizing window
+### VSCode window loses transparency for a brief moment after resizing
 
-This is cause by VSCode temporarily refreshes the background whenever a re-render is triggered, i.e. resizing window or closing the side panes.
+This is caused by VSCode refreshing the background color whenever a repaint is triggered, for example when resizing the window or closing side panes.
 
-Added new `vibrancy_code.refreshInterval` in config to allow manually setting of refresh time (future release will make it 1ms if no performance issues were reported.)
+You can update the `vibrancy_code.refreshInterval` config variable to change how quickly the background will be changed back to be transparent, with 1ms being imperceptible. Please note that values lower than 10ms will cause a noticeable increase in CPU usage.
 
 # Contributing
 
