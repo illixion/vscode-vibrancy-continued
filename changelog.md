@@ -1,3 +1,9 @@
+# 1.1.9
+
+* Changed background transparency refresh interval to 10, which makes brief flashes when changing window size less noticeable
+
+* Added config option to control the background transparency refresh interval
+
 # 1.1.8
 
 * Moved custom imports loading to extension code, as it was broken before due to CSP
