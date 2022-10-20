@@ -117,7 +117,7 @@
         "vscode_vibrancy.refreshInterval": {
           "description": "%configuration.refreshInterval.description%",
           "type": "number",
-          "default": "1"
+          "default": "10"
         }
       }
     }
