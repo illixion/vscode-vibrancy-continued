@@ -117,90 +117,91 @@ module.exports = function win10refresh(win, maximumRefreshRate) {
 		}
 	}
 
-	win.on('will-move', (e, newBounds) => {
-		if (win.__electron_acrylic_window__.opacityInterval) return
-		// We get a _lot_ of duplicate bounds sent to us in this event.
-		// This messes up our timing quite a bit.
-		if (lastWillMoveBounds !== undefined && areBoundsEqual(lastWillMoveBounds, newBounds)) {
-			e.preventDefault()
-			return
-		}
-		if (lastWillMoveBounds) {
-			newBounds.width = lastWillMoveBounds.width
-			newBounds.height = lastWillMoveBounds.height
-		}
-		lastWillMoveBounds = newBounds
-		// If we're asked to perform some move update and it's under
-		// the refresh speed limit, we can just do it immediately.
-		// This also catches moving windows with the keyboard.
-		const didOptimisticMove = !isMoving && guardingAgainstMoveUpdate(() => {
-			// Do nothing, the default behavior of the event is exactly what we want.
-			desiredMoveBounds = undefined
-		})
-		if (didOptimisticMove) {
-			boundsPromise = boundsPromise.then(doFollowUpQueryIfNecessary)
-			return
-		}
-		e.preventDefault()
+	// https://github.com/illixion/vscode-vibrancy-continued/issues/38#issuecomment-1320238352
+	// win.on('will-move', (e, newBounds) => {
+	// 	if (win.__electron_acrylic_window__.opacityInterval) return
+	// 	// We get a _lot_ of duplicate bounds sent to us in this event.
+	// 	// This messes up our timing quite a bit.
+	// 	if (lastWillMoveBounds !== undefined && areBoundsEqual(lastWillMoveBounds, newBounds)) {
+	// 		e.preventDefault()
+	// 		return
+	// 	}
+	// 	if (lastWillMoveBounds) {
+	// 		newBounds.width = lastWillMoveBounds.width
+	// 		newBounds.height = lastWillMoveBounds.height
+	// 	}
+	// 	lastWillMoveBounds = newBounds
+	// 	// If we're asked to perform some move update and it's under
+	// 	// the refresh speed limit, we can just do it immediately.
+	// 	// This also catches moving windows with the keyboard.
+	// 	const didOptimisticMove = !isMoving && guardingAgainstMoveUpdate(() => {
+	// 		// Do nothing, the default behavior of the event is exactly what we want.
+	// 		desiredMoveBounds = undefined
+	// 	})
+	// 	if (didOptimisticMove) {
+	// 		boundsPromise = boundsPromise.then(doFollowUpQueryIfNecessary)
+	// 		return
+	// 	}
+	// 	e.preventDefault()
 
-		// Track if the user is moving the window
-		if (win.__electron_acrylic_window__.moveTimeout) clearTimeout(win.__electron_acrylic_window__.moveTimeout)
-		win.__electron_acrylic_window__.moveTimeout = setTimeout(() => {
-			shouldMove = false
-		}, 1000 / Math.min(pollingRate, maximumRefreshRate))
+	// 	// Track if the user is moving the window
+	// 	if (win.__electron_acrylic_window__.moveTimeout) clearTimeout(win.__electron_acrylic_window__.moveTimeout)
+	// 	win.__electron_acrylic_window__.moveTimeout = setTimeout(() => {
+	// 		shouldMove = false
+	// 	}, 1000 / Math.min(pollingRate, maximumRefreshRate))
 
-		// Disable next event ('move') if cursor is near the screen edge
-		disableJitterFix = isInSnapZone()
+	// 	// Disable next event ('move') if cursor is near the screen edge
+	// 	disableJitterFix = isInSnapZone()
 
-		// Start new behavior if not already
-		if (!shouldMove) {
-			shouldMove = true
+	// 	// Start new behavior if not already
+	// 	if (!shouldMove) {
+	// 		shouldMove = true
 
-			if (isMoving) return false
-			isMoving = true
+	// 		if (isMoving) return false
+	// 		isMoving = true
 
-			// Get start positions
-			const basisBounds = win.getBounds()
-			const basisCursor = electron.screen.getCursorScreenPoint()
+	// 		// Get start positions
+	// 		const basisBounds = win.getBounds()
+	// 		const basisCursor = electron.screen.getCursorScreenPoint()
 
-			// Handle polling at a slower interval than the setInterval handler
-			function handleIntervalTick(moveInterval) {
-				boundsPromise = boundsPromise.then(() => {
-					if (!shouldMove) {
-						isMoving = false
-						clearInterval(moveInterval)
-						return
-					}
+	// 		// Handle polling at a slower interval than the setInterval handler
+	// 		function handleIntervalTick(moveInterval) {
+	// 			boundsPromise = boundsPromise.then(() => {
+	// 				if (!shouldMove) {
+	// 					isMoving = false
+	// 					clearInterval(moveInterval)
+	// 					return
+	// 				}
 
-					const cursor = electron.screen.getCursorScreenPoint()
-					const didIt = guardingAgainstMoveUpdate(() => {
-						// Set new position
-						if (lastWillResizeBounds && lastWillResizeBounds.width) setWindowBounds({
-							x: Math.floor(basisBounds.x + (cursor.x - basisCursor.x)),
-							y: Math.floor(basisBounds.y + (cursor.y - basisCursor.y)),
-							width: Math.floor(lastWillResizeBounds.width / electron.screen.getDisplayMatching(basisBounds).scaleFactor),
-							height: Math.floor(lastWillResizeBounds.height / electron.screen.getDisplayMatching(basisBounds).scaleFactor)
-						})
-						else setWindowBounds({
-							x: Math.floor(basisBounds.x + (cursor.x - basisCursor.x)),
-							y: Math.floor(basisBounds.y + (cursor.y - basisCursor.y)),
-							width: Math.floor(lastWillMoveBounds.width / electron.screen.getDisplayMatching(basisBounds).scaleFactor),
-							height: Math.floor(lastWillMoveBounds.height / electron.screen.getDisplayMatching(basisBounds).scaleFactor)
-						})
-					})
-					if (didIt) {
-						return doFollowUpQueryIfNecessary(cursor)
-					}
-				})
-			}
+	// 				const cursor = electron.screen.getCursorScreenPoint()
+	// 				const didIt = guardingAgainstMoveUpdate(() => {
+	// 					// Set new position
+	// 					if (lastWillResizeBounds && lastWillResizeBounds.width) setWindowBounds({
+	// 						x: Math.floor(basisBounds.x + (cursor.x - basisCursor.x)),
+	// 						y: Math.floor(basisBounds.y + (cursor.y - basisCursor.y)),
+	// 						width: Math.floor(lastWillResizeBounds.width / electron.screen.getDisplayMatching(basisBounds).scaleFactor),
+	// 						height: Math.floor(lastWillResizeBounds.height / electron.screen.getDisplayMatching(basisBounds).scaleFactor)
+	// 					})
+	// 					else setWindowBounds({
+	// 						x: Math.floor(basisBounds.x + (cursor.x - basisCursor.x)),
+	// 						y: Math.floor(basisBounds.y + (cursor.y - basisCursor.y)),
+	// 						width: Math.floor(lastWillMoveBounds.width / electron.screen.getDisplayMatching(basisBounds).scaleFactor),
+	// 						height: Math.floor(lastWillMoveBounds.height / electron.screen.getDisplayMatching(basisBounds).scaleFactor)
+	// 					})
+	// 				})
+	// 				if (didIt) {
+	// 					return doFollowUpQueryIfNecessary(cursor)
+	// 				}
+	// 			})
+	// 		}
 
-			// Poll at 600hz while moving window
-			const moveInterval = setInterval(() => handleIntervalTick(moveInterval), 1000 / 600)
-		}
-	})
+	// 		// Poll at 600hz while moving window
+	// 		const moveInterval = setInterval(() => handleIntervalTick(moveInterval), 1000 / 600)
+	// 	}
+	// })
 
 	win.on('move', (e) => {
-		if (disableJitterFix) {
+		if (isInSnapZone()) {
 			return false
 		}
 		if (isMoving || win.isDestroyed()) {
