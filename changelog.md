@@ -1,3 +1,8 @@
+# 1.1.10
+
+* Switch to rifraf to clean the runtime folder before updating it (fixes EEXIST error on Windows)
+* Update Windows 10 fix to no longer cause issues with snapping
+
 # 1.1.9
 
 * Changed background transparency refresh interval to 10, which makes brief flashes when changing window size less noticeable
