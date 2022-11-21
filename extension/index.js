@@ -1,6 +1,7 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
+var rmdir = require("rimraf")
 var path = require('path');
 var lockPath = path.join(__dirname, '../firstload.lock');
 
@@ -131,7 +132,7 @@ function activate(context) {
 	async function installRuntime() {
 		// if runtimeDir exists, delete it and then update
 		if (fs.existsSync(runtimeDir)) {
-			fs.rmSync(runtimeDir, { recursive: true });
+			rmdir.sync(runtimeDir);
 		}
 
 		await fs.mkdir(runtimeDir);

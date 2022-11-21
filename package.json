@@ -127,10 +127,11 @@
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
-    "mz": "^2.7.0"
+    "mz": "^2.7.0",
+    "rifraf": "^2.0.3"
   },
   "devDependencies": {
-    "node-gyp": "^9.1.0",
-    "node-addon-api": "^5.0.0"
+    "node-addon-api": "^5.0.0",
+    "node-gyp": "^9.1.0"
   }
 }
