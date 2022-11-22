@@ -128,7 +128,7 @@
   "dependencies": {
     "fs-extra": "^10.1.0",
     "mz": "^2.7.0",
-    "rifraf": "^2.0.3"
+    "rimraf": "^3.0.2"
   },
   "devDependencies": {
     "node-addon-api": "^5.0.0",

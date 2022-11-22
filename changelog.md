@@ -1,3 +1,7 @@
+# 1.1.11
+
+* Hotfix for extension not working due to an incorrect dependency being installed
+
 # 1.1.10
 
 * Switch to rifraf to clean the runtime folder before updating it (fixes EEXIST error on Windows)
