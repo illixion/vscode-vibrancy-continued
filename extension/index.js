@@ -1,7 +1,6 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
-var rmdir = require("rimraf")
 var path = require('path');
 var lockPath = path.join(__dirname, '../firstload.lock');
 
@@ -130,9 +129,14 @@ function activate(context) {
 	var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
 
 	async function installRuntime() {
-		// if runtimeDir exists, delete it and then update
+		// if runtimeDir exists, recurse through it and delete all files
+		// (recursive fs.rm does not work properly on Windows)
 		if (fs.existsSync(runtimeDir)) {
-			rmdir.sync(runtimeDir);
+			fs.readdirSync(runtimeDir).forEach((file, index) => {
+				const curPath = path.join(runtimeDir, file);
+				fs.unlinkSync(curPath);
+			});
+			fs.rmdirSync(runtimeDir);
 		}
 
 		await fs.mkdir(runtimeDir);

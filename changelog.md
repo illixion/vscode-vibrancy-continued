@@ -1,10 +1,14 @@
+# 1.1.12
+
+* Fix rimraf not working correctly on Windows by reimplementing a recursive delete ourselves
+
 # 1.1.11
 
 * Hotfix for extension not working due to an incorrect dependency being installed
 
 # 1.1.10
 
-* Switch to rifraf to clean the runtime folder before updating it (fixes EEXIST error on Windows)
+* Switch to rimraf to clean the runtime folder before updating it (fixes EEXIST error on Windows)
 * Update Windows 10 fix to no longer cause issues with snapping
 
 # 1.1.9
