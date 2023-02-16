@@ -93,7 +93,7 @@ Select Vibrancy theme:
 | Theme | Screenshot |
 | ---- | ---- |
 | Default Dark | ![](./theme-default.jpg) |
-| Dark (Only Subbar) | ![](./theme-default.jpg) |
+| Dark (Only Subbar) | ![](./theme-subbar.jpg) |
 | Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
 | Tokyo Night Storm | ![](./theme-tokyo-night-storm.png) |
 | Tokyo Night Storm (Only Subbar) | ![](./theme-tokyo-night-storm-outer.png) |
