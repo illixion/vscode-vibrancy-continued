@@ -53,6 +53,15 @@ async function changeTerminalRendererType() {
 	}
 }
 
+async function changeNativeWindowControls() {
+	let v = vscode.workspace.getConfiguration().inspect("window.experimental.windowControlsOverlay.enabled");
+	if (v !== undefined) {
+		if (!v.globalValue) {
+			await vscode.workspace.getConfiguration().update("window.experimental.windowControlsOverlay.enabled", false, vscode.ConfigurationTarget.Global);
+		}
+	}
+}
+
 async function promptRestart() {
 	// This is a hacky way to display the restart prompt
 	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
@@ -255,6 +264,7 @@ function activate(context) {
 			await installJS();
 			await installHTML();
 			await changeTerminalRendererType();
+			await changeNativeWindowControls();
 		} catch (error) {
 			if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
 				vscode.window.showInformationMessage(localize('messages.admin') + error);
