@@ -38,9 +38,9 @@ body:
     label: Environment
     description: |
       examples:
-        - **OS**: Windows 11
-        - **VSCode**: 1.71.2
-        - **Extension**: 1.1.6
+        - **OS**: IBM OS/2
+        - **VSCode**: 1.2.3
+        - **Extension**: 1.2.3
     value: |
         - OS:
         - VSCode:
