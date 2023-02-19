@@ -3,6 +3,7 @@ var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
 var path = require('path');
 var lockPath = path.join(__dirname, '../firstload.lock');
+var sudo = require('sudo-prompt');
 
 /**
  * @type {(info: string) => string}
@@ -13,6 +14,7 @@ const localize = require('./i18n');
  * @type {'unknown' | 'win10' | 'macos'}
  */
 const os = require('./platform');
+const { tmpdir } = require('os');
 
 var themeStylePaths = {
 	'Default Dark': '../themes/Default Dark.css',
@@ -42,6 +44,135 @@ var defaultTheme = 'Default Dark';
 
 function getCurrentTheme(config) {
 	return config.theme in themeStylePaths ? config.theme : defaultTheme;
+}
+
+async function sudoMkdir(dir) {
+	return new Promise((resolve, reject) => {
+		if (os === 'win10') {
+			sudo.exec(`mkdir "${dir}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		} else {
+			sudo.exec(`mkdir -p "${dir}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		}
+	});
+}
+
+async function mkdirp(dir) {
+	// try to create the directory directly, use sudo if it fails
+	try {
+		return fsExtra.mkdirp(dir);
+	} catch (err) {
+		return sudoMkdir(dir);
+	}
+}
+
+async function sudoWriteFile(filePath, content, encoding) {
+	return new Promise((resolve, reject) => {
+		// write to a temporary file, then move using "move /Y"
+		const tempPath = path.join(tmpdir(), path.basename(filePath));
+		fs.writeFileSync(tempPath, content, encoding)
+		if (os === 'win10') {
+			sudo.exec(`move /Y "${tempPath}" "${filePath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		} else {
+			sudo.exec(`mv "${tempPath}" "${filePath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		}
+	});
+}
+
+async function writeFile(filePath, content, encoding) {
+	// try to write to the file directly, use sudo if it fails
+	try {
+		return fs.writeFileSync(filePath, content, encoding);
+	} catch (err) {
+		return sudoWriteFile(filePath, content, encoding);
+	}
+}
+
+// sudo capable cp file function
+async function sudoCpFile(srcPath, destPath) {
+	return new Promise((resolve, reject) => {
+		if (os === 'win10') {
+			sudo.exec(`copy /Y "${srcPath}" "${destPath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		} else {
+			sudo.exec(`cp -f "${srcPath}" "${destPath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		}
+	});
+}
+
+async function cpFile(srcPath, destPath) {
+	// try to write to the file directly, use sudo if it fails
+	try {
+		return fsExtra.copyFileSync(srcPath, destPath);
+	} catch (err) {
+		return sudoCpFile(srcPath, destPath);
+	}
+}
+
+// sudo capable rm file function
+async function sudoRmFile(filePath) {
+	return new Promise((resolve, reject) => {
+		if (os === 'win10') {
+			sudo.exec(`del /F /Q "${filePath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		} else {
+			sudo.exec(`rm -f "${filePath}"`, { name: 'Visual Studio Code' }, (error, stdout, stderr) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve();
+				}
+			});
+		}
+	});
+}
+
+async function rmFile(filePath) {
+	// try to write to the file directly, use sudo if it fails
+	try {
+		return fs.rmSync(filePath);
+	} catch (err) {
+		return sudoRmFile(filePath);
+	}
 }
 
 async function changeTerminalRendererType() {
@@ -142,14 +273,24 @@ function activate(context) {
 		// (recursive fs.rm does not work properly on Windows)
 		if (fs.existsSync(runtimeDir)) {
 			fs.readdirSync(runtimeDir).forEach((file, index) => {
-				const curPath = path.join(runtimeDir, file);
-				fs.unlinkSync(curPath);
+				// do not process .node files
+				if (!file.endsWith('.node')) {
+					const curPath = path.join(runtimeDir, file);
+					rmFile(curPath);
+				}
 			});
-			fs.rmdirSync(runtimeDir);
 		}
 
-		await fs.mkdir(runtimeDir);
-		await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+		// if runtimeDir does not exist, create it
+		if (!fs.existsSync(runtimeDir)) {
+			await mkdirp(runtimeDir);
+		}
+		// copy runtime files to runtimeDir, excluding .node files if already present
+		fs.readdirSync(path.resolve(__dirname, '../runtime')).forEach((file, index) => {
+			if (!file.endsWith('.node') || !fs.existsSync(path.resolve(runtimeDir, file))) {
+				cpFile(path.resolve(__dirname, '../runtime', file), path.resolve(runtimeDir, file));
+			}
+		});
 	}
 
 	async function installJS() {
@@ -196,7 +337,7 @@ function activate(context) {
 			+ `if (!require(\'fs\').existsSync(${JSON.stringify(base)})) return;\n`
 			+ `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
 			+ '})()\n/* !! VSCODE-VIBRANCY-END !! */';
-		await fs.writeFile(JSFile, newJS, 'utf-8');
+		await writeFile(JSFile, newJS, 'utf-8');
 	}
 
 	async function installHTML() {
@@ -210,7 +351,7 @@ function activate(context) {
 		);
 
 		if (HTML !== newHTML) {
-			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+			await writeFile(HTMLFile, newHTML, 'utf-8');
 		}
 	}
 
@@ -220,7 +361,7 @@ function activate(context) {
 		if (needClean) {
 			const newJS = JS
 				.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-			await fs.writeFile(JSFile, newJS, 'utf-8');
+			await writeFile(JSFile, newJS, 'utf-8');
 		}
 	}
 
@@ -229,7 +370,7 @@ function activate(context) {
 		const needClean = / VscodeVibrancy;/.test(HTML);
 		if (needClean) {
 			const newHTML = HTML.replace(" VscodeVibrancy;", ";").replace(";  trusted-types", "; trusted-types")
-			await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+			await writeFile(HTMLFile, newHTML, 'utf-8');
 		}
 	}
 

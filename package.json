@@ -123,14 +123,16 @@
     }
   },
   "scripts": {
-    "build-win10": "node-gyp rebuild"
+    "build-win10": "node-gyp rebuild",
+    "preinstall": "npm i node-addon-api"
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
-    "mz": "^2.7.0"
+    "mz": "^2.7.0",
+    "sudo-prompt": "^9.2.1"
   },
   "devDependencies": {
-    "node-addon-api": "^5.0.0",
+    "node-addon-api": "^5.1.0",
     "node-gyp": "^9.1.0"
   }
 }
