@@ -45,58 +45,83 @@ function getCurrentTheme(config) {
 }
 
 async function changeTerminalRendererType() {
-	let v = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
-	if (v !== undefined) {
-		if (!v.globalValue) {
-			await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
-		}
-	}
+  // Check if "terminal.integrated.gpuAcceleration" has a global value
+  const terminalConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
+
+  if (terminalConfig?.globalValue === undefined) {
+    return;
+  }
+
+  // If "terminal.integrated.gpuAcceleration" is not enabled, disable it
+  if (!terminalConfig.globalValue) {
+    await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
+  }
 }
 
 async function promptRestart() {
-	// This is a hacky way to display the restart prompt
-	let v = vscode.workspace.getConfiguration().inspect("window.titleBarStyle");
-	if (v !== undefined) {
-		let value = vscode.workspace.getConfiguration().get("window.titleBarStyle");
-		await vscode.workspace.getConfiguration().update("window.titleBarStyle", value === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
-		vscode.workspace.getConfiguration().update("window.titleBarStyle", v.globalValue, vscode.ConfigurationTarget.Global);
-	}
+  // Store the current value of "window.titleBarStyle"
+  const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+
+  // Toggle the value of "window.titleBarStyle" to prompt for a restart
+  await vscode.workspace.getConfiguration().update("window.titleBarStyle", titleBarStyle === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
+
+  // Reset the value of "window.titleBarStyle" to its original value
+  await vscode.workspace.getConfiguration().update("window.titleBarStyle", titleBarStyle, vscode.ConfigurationTarget.Global);
 }
 
 async function checkColorTheme() {
-	const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
-	const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
-	const target = themeConfig.colorTheme;
-	const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
-	if (target !== currentColorTheme) {
-		const message = localize('messages.recommendedColorTheme').replace('%1', currentColorTheme).replace('%2', target);
-		await vscode.window.showInformationMessage(message, localize('messages.changeColorThemeIde'), localize('messages.noIde'))
-			.then(async (msg) => {
-				if (msg === localize('messages.changeColorThemeIde')) {
-					await vscode.workspace.getConfiguration().update("workbench.colorTheme", target, vscode.ConfigurationTarget.Global);
-				}
-			});
-	}
+  // Get the current color theme and target theme from configuration files
+  const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+  const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
+  const targetTheme = themeConfig.colorTheme;
+  const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
+
+  // Show a message to the user if the current color theme doesn't match the target theme
+  if (targetTheme !== currentColorTheme) {
+    const message = localize('messages.recommendedColorTheme')
+      .replace('%1', currentColorTheme)
+      .replace('%2', targetTheme);
+
+    const result = await vscode.window.showInformationMessage(message, localize('messages.changeColorThemeIde'), localize('messages.noIde'));
+
+    // If the user chooses to change the color theme, update the configuration
+    if (result === localize('messages.changeColorThemeIde')) {
+      await vscode.workspace.getConfiguration().update("workbench.colorTheme", targetTheme, vscode.ConfigurationTarget.Global);
+    }
+  }
 }
 
 function deepEqual(obj1, obj2) {
+  if (obj1 === obj2) {
+    // Objects are the same
+    return true;
+  }
 
-	if (obj1 === obj2) // it's just the same object. No need to compare.
-		return true;
+  if (isPrimitive(obj1) && isPrimitive(obj2)) {
+    // Compare primitive values
+    return obj1 === obj2;
+  }
 
-	if (isPrimitive(obj1) && isPrimitive(obj2)) // compare primitives
-		return obj1 === obj2;
+  if (Object.keys(obj1).length !== Object.keys(obj2).length) {
+    // Objects have different number of properties
+    return false;
+  }
 
-	if (Object.keys(obj1).length !== Object.keys(obj2).length)
-		return false;
+  // Compare objects with the same number of properties
+  for (const key in obj1) {
+    if (!(key in obj2)) {
+      // Other object doesn't have this property
+      return false;
+    }
 
-	// compare objects with same number of keys
-	for (let key in obj1) {
-		if (!(key in obj2)) return false; //other object doesn't have this prop
-		if (!deepEqual(obj1[key], obj2[key])) return false;
-	}
+    if (!deepEqual(obj1[key], obj2[key])) {
+      // Properties are not equal
+      return false;
+    }
+  }
 
-	return true;
+  // Objects are equal
+  return true;
 }
 
 //check if value is primitive
