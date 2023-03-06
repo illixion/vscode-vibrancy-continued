@@ -1,7 +1,9 @@
+// @ts-check
+// @ts-expect-error nvm
 const electron = require('electron');
 
 /**
- * @type {{ os: string, config: any, themeCSS: string, theme: any }}
+ * @type {{ os: string, config: any, themeCSS: string, theme: any, imports: { css: string, js: string } }}
  */
 const app = global.vscode_vibrancy_plugin;
 
@@ -47,7 +49,7 @@ electron.app.on('browser-window-created', (_, window) => {
 		opacity = app.theme.opacity[app.os]
 	}
 
-	const backgroundRGB = hexToRgb(app.theme.background);
+	const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
 
 	if (app.os === 'win10') {
 		const bindings = require('./vibrancy.js');
@@ -69,12 +71,14 @@ electron.app.on('browser-window-created', (_, window) => {
 		});
 	}
 
-	let backgroundColorTimer;
-	window.on('closed', () => {
-		clearInterval(backgroundColorTimer);
-	})
-
+	// https://github.com/microsoft/vscode/blob/9f8431f7fccf7a048531043eb6b6d24819482781/src/vs/platform/theme/electron-main/themeMainService.ts#L80
+	const original = window.setBackgroundColor.bind(window)
+	window.setBackgroundColor = (bg) => {
+		console.trace(bg)
+		original('#00000000')
+	}
 	window.webContents.on('dom-ready', () => {
+
 		const currentURL = window.webContents.getURL();
 
 		if (!(currentURL.includes('workbench.html') || currentURL.includes('workbench-monkey-patch.html'))) {
@@ -83,11 +87,6 @@ electron.app.on('browser-window-created', (_, window) => {
 
 		window.setBackgroundColor('#00000000');
 
-		clearInterval(backgroundColorTimer);
-		// https://github.com/microsoft/vscode/blob/9f8431f7fccf7a048531043eb6b6d24819482781/src/vs/platform/theme/electron-main/themeMainService.ts#L80
-		backgroundColorTimer = setInterval(() => {
-			window.setBackgroundColor('#00000000');
-		}, app.config.refreshInterval);
 
 		if (app.os === 'macos') {
 			window.setVibrancy(type);
@@ -142,7 +141,7 @@ function styleHTML() {
 		opacity = app.theme.opacity[app.os]
 	}
 
-	const backgroundRGB = hexToRgb(app.theme.background);
+	const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
 
 	const HTML = [
 		`
@@ -157,8 +156,8 @@ function styleHTML() {
       ${app.themeCSS}
     </style>
     `,
-	app.imports.css,
-	]
+		app.imports.css,
+	].filter(Boolean)
 
 	return HTML.join('')
 }
