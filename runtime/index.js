@@ -73,10 +73,7 @@ electron.app.on('browser-window-created', (_, window) => {
 
 	// https://github.com/microsoft/vscode/blob/9f8431f7fccf7a048531043eb6b6d24819482781/src/vs/platform/theme/electron-main/themeMainService.ts#L80
 	const original = window.setBackgroundColor.bind(window)
-	window.setBackgroundColor = (bg) => {
-		console.trace(bg)
-		original('#00000000')
-	}
+	window.setBackgroundColor = (bg) => original('#00000000')
 	window.webContents.on('dom-ready', () => {
 
 		const currentURL = window.webContents.getURL();
