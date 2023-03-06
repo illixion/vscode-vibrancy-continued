@@ -146,15 +146,11 @@ function styleHTML() {
 			html {
 				background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
 			}
-		</style>
-    `,
-		`
-    <style>
       ${app.themeCSS}
     </style>
     `,
 		app.imports.css,
-	].filter(Boolean)
+	]
 
 	return HTML.join('')
 }
