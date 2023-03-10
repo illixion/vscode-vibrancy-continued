@@ -1,4 +1,4 @@
-const {VerticalRefreshRateContext} = require('./displayconfig')
+const { VerticalRefreshRateContext } = require('./displayconfig')
 const electron = require('electron')
 const process = require('process')
 

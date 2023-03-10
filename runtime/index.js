@@ -149,24 +149,24 @@ electron.app.on('browser-window-created', (_, window) => {
 
 function injectHTML(window) {
   window.webContents.executeJavaScript(`(function(){
-		const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancy", { createHTML (v) { return v; }});
+    const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancy", { createHTML (v) { return v; }});
 
-		document.getElementById("vscode-vibrancy-style")?.remove();
-		const styleElement = document.createElement("div");
-		styleElement.id = "vscode-vibrancy-style";
-		styleElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
+    document.getElementById("vscode-vibrancy-style")?.remove();
+    const styleElement = document.createElement("div");
+    styleElement.id = "vscode-vibrancy-style";
+    styleElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
     styleHTML()
   )});
-		document.body.appendChild(styleElement);
+    document.body.appendChild(styleElement);
 
-		document.getElementById("vscode-vibrancy-script")?.remove();
-		const scriptElement = document.createElement("div");
-		scriptElement.id = "vscode-vibrancy-script";
-		scriptElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
+    document.getElementById("vscode-vibrancy-script")?.remove();
+    const scriptElement = document.createElement("div");
+    scriptElement.id = "vscode-vibrancy-script";
+    scriptElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
     scriptHTML()
   )});
-		document.body.appendChild(scriptElement);
-	})();`);
+    document.body.appendChild(scriptElement);
+  })();`);
 }
 
 
@@ -192,10 +192,10 @@ function styleHTML() {
 
   const HTML = [
     `
-		<style>
-			html {
-				background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
-			}
+    <style>
+      html {
+        background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
+      }
       ${app.themeCSS}
     </style>
     `,
