@@ -169,17 +169,53 @@ function activate(context) {
 
   async function installRuntime() {
     // if runtimeDir exists, recurse through it and delete all files
-    // (recursive fs.rm does not work properly on Windows)
     if (fs.existsSync(runtimeDir)) {
-      // fs.readdirSync(runtimeDir).forEach((file, index) => {
-      //   const curPath = path.join(runtimeDir, file);
-      //   fs.unlinkSync(curPath);
-      // });
       fs.rmSync(runtimeDir, { recursive: true, force: true });
     }
 
     await fs.mkdir(runtimeDir);
     await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+  }
+
+  async function installRuntimeWin() {
+    // if runtimeDir exists, recurse through it and delete all files
+    // BUG: skip all .node files as they're locked by the VSCode process (#58)
+    if (fs.existsSync(runtimeDir)) {
+      fs.readdirSync(runtimeDir).forEach((file, index) => {
+        if (file.endsWith('.node')) {
+          return;
+        }
+
+        const curPath = path.join(runtimeDir, file);
+
+        // if file is a directory, recurse through it and delete all files
+        if (fs.lstatSync(curPath).isDirectory()) {
+          fs.rmSync(curPath, { recursive: true, force: true });
+          return;
+        }
+
+        fs.unlinkSync(curPath);
+      });
+
+      // copy all files from runtime to runtimeDir, skipping .node files
+      fs.readdirSync(path.resolve(__dirname, '../runtime')).forEach((file, index) => {
+        if (file.endsWith('.node')) {
+          return;
+        }
+
+        // if file is a directory
+        if (fs.lstatSync(path.join(path.resolve(__dirname, '../runtime'), file)).isDirectory()) {
+          fsExtra.copySync(path.join(path.resolve(__dirname, '../runtime'), file), path.join(runtimeDir, file));
+          return;
+        }
+
+        const curPath = path.join(path.resolve(__dirname, '../runtime'), file);
+        fs.copyFileSync(curPath, path.join(runtimeDir, file));
+      });
+    } else {
+      await fs.mkdir(runtimeDir).catch(() => { });
+      await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+    }
   }
 
   async function installJS() {
@@ -290,7 +326,11 @@ function activate(context) {
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
 
-      await installRuntime();
+      if (os === 'win10') {
+        await installRuntimeWin();
+      } else {
+        await installRuntime();
+      }
       await installJS();
       await installHTML();
       await changeTerminalRendererType();
