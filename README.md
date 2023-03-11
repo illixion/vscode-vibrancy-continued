@@ -10,9 +10,9 @@ Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
 
-[![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
-[![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
-[![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
+[![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.70.2-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
