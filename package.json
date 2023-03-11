@@ -118,6 +118,11 @@
           "description": "%configuration.refreshInterval.description%",
           "type": "number",
           "default": "10"
+        },
+        "vscode_vibrancy.preventFlash": {
+          "description": "%configuration.preventFlash.description%",
+          "type": "boolean",
+          "default": true
         }
       }
     }
