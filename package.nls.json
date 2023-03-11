@@ -17,7 +17,7 @@
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
   "configuration.refreshInterval.description": "Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.",
-  "configuration.preventFlash.description": "An intrusive hack to prevent flashing while resizing.",
+  "configuration.preventFlash.description": "Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
   "extension.updateVibrancy.title": "Reload Vibrancy",
