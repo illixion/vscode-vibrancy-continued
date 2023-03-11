@@ -10,8 +10,9 @@ Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
 
-[![](https://vsmarketplacebadge.apphb.com/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
-[![](https://img.shields.io/visual-studio-marketplace/stars/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
+[![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.svg)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
 ![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.70.2-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
@@ -71,9 +72,15 @@ Opacity of Vibrancy Effect.
 
 *value: 0.0 ~ 1*
 
+#### vscode_vibrancy.preventFlash
+
+Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
+
+*boolean, default is true*
+
 #### vscode_vibrancy.refreshInterval
 
-Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.
+Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. Ignored when using "Prevent Flash" method.
 
 *value: 1 ~ 1000, default is 10*
 

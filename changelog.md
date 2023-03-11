@@ -1,3 +1,7 @@
+# 1.1.14
+
+* No code changes, re-deploying a failed build due to a broken badge URL in README.
+
 # 1.1.13
 
 * Added new method to prevent window flashing when it's being resized. Enabled by default, but can be disabled in settings if it causes issues. Thanks [@arily](https://github.com/arily)!
