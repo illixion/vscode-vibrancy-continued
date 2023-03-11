@@ -58,6 +58,20 @@ async function changeTerminalRendererType() {
   }
 }
 
+async function changeNativeWindowControls() {
+  // Check if "window.experimental.windowControlsOverlay.enabled" has a global value
+  const windowNativeControlsConfig = vscode.workspace.getConfiguration().inspect("window.experimental.windowControlsOverlay.enabled");
+
+  if (windowNativeControlsConfig?.globalValue === undefined) {
+    return;
+  }
+
+  // If "window.experimental.windowControlsOverlay.enabled" is enabled, disable it
+  if (!windowNativeControlsConfig.globalValue) {
+    await vscode.workspace.getConfiguration().update("window.experimental.windowControlsOverlay.enabled", false, vscode.ConfigurationTarget.Global);
+  }
+}
+
 async function promptRestart() {
   // Store the current value of "window.titleBarStyle"
   const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
@@ -280,6 +294,7 @@ function activate(context) {
       await installJS();
       await installHTML();
       await changeTerminalRendererType();
+      await changeNativeWindowControls();
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
