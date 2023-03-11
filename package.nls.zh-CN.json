@@ -17,7 +17,7 @@
   "configuration.theme.description": "毛玻璃效果的主题样式。",
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
   "configuration.refreshInterval.description": "试验性功能：改变背景颜色刷新率以避免在改变窗口大小后出现的闪屏，更改后需要 [卸载 -> 重启 -> 安装 -> 重启]才会生效",
-  "configuration.preventFlash.description": "透过一个入侵性的修改，防止改变窗口大小时的闪屏。",
+  "configuration.preventFlash.description": "另一种启用的途径，可以防止在改变窗口大小时闪屏。启用后不需要“刷新率”设置，但在某些情况下兼容性可能会降低。",
   "extension.installVibrancy.title": "安装毛玻璃效果",
   "extension.uninstallVibrancy.title": "卸载毛玻璃效果",
   "extension.updateVibrancy.title": "重新安装毛玻璃效果",
