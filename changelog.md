@@ -1,3 +1,10 @@
+# 1.1.13
+
+* Added new method to prevent window flashing when it's being resized. Enabled by default, but can be disabled in settings if it causes issues. Thanks [@arily](https://github.com/arily)!
+* Disable native window controls when enabling Vibrancy (Windows only)
+* Added a workaround for .node files being locked by VSCode as "in use", enabling/reloading Vibrancy now doesn't require manually deleting the `runtime` folder.
+* Code improvements
+
 # 1.1.12
 
 * Fix rimraf not working correctly on Windows by reimplementing a recursive delete ourselves
