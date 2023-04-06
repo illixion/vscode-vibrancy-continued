@@ -131,6 +131,7 @@
     "build-win10": "node-gyp rebuild"
   },
   "dependencies": {
+    "@vscode/sudo-prompt": "^9.3.1",
     "fs-extra": "^10.1.0",
     "mz": "^2.7.0"
   },

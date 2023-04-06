@@ -1,8 +1,8 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
-var fsExtra = require('fs-extra');
 var path = require('path');
 var lockPath = path.join(__dirname, '../firstload.lock');
+const sudo = require('./sudo')
 
 /**
  * @type {(info: string) => string}
@@ -170,11 +170,12 @@ function activate(context) {
   async function installRuntime() {
     // if runtimeDir exists, recurse through it and delete all files
     if (fs.existsSync(runtimeDir)) {
-      fs.rmSync(runtimeDir, { recursive: true, force: true });
+      await sudo.rm(runtimeDir, { recursive: true, force: true });
     }
 
-    await fs.mkdir(runtimeDir);
-    await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+    await sudo.mkdir(runtimeDir);
+    await sudo.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+    await sudo.run()
   }
 
   async function installRuntimeWin() {
@@ -190,7 +191,7 @@ function activate(context) {
 
         // if file is a directory, recurse through it and delete all files
         if (fs.lstatSync(curPath).isDirectory()) {
-          fs.rmSync(curPath, { recursive: true, force: true });
+          sudo.rm(curPath, { recursive: true, force: true });
           return;
         }
 
@@ -205,17 +206,18 @@ function activate(context) {
 
         // if file is a directory
         if (fs.lstatSync(path.join(path.resolve(__dirname, '../runtime'), file)).isDirectory()) {
-          fsExtra.copySync(path.join(path.resolve(__dirname, '../runtime'), file), path.join(runtimeDir, file));
+          sudo.copy(path.join(path.resolve(__dirname, '../runtime'), file), path.join(runtimeDir, file));
           return;
         }
 
         const curPath = path.join(path.resolve(__dirname, '../runtime'), file);
-        fs.copyFileSync(curPath, path.join(runtimeDir, file));
+        sudo.copyFile(curPath, path.join(runtimeDir, file));
       });
     } else {
-      await fs.mkdir(runtimeDir).catch(() => { });
-      await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+      await sudo.mkdir(runtimeDir).catch(() => { });
+      await sudo.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
     }
+    await sudo.run()
   }
 
   async function installJS() {
@@ -262,7 +264,7 @@ function activate(context) {
       + `if (!require(\'fs\').existsSync(${JSON.stringify(base)})) return;\n`
       + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
-    await fs.writeFile(JSFile, newJS, 'utf-8');
+    await sudo.writeFile(JSFile, newJS, 'utf-8');
   }
 
   async function installHTML() {
@@ -276,7 +278,7 @@ function activate(context) {
     );
 
     if (HTML !== newHTML) {
-      await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+      await sudo.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
 
@@ -286,7 +288,7 @@ function activate(context) {
     if (needClean) {
       const newJS = JS
         .replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-      await fs.writeFile(JSFile, newJS, 'utf-8');
+      await sudo.writeFile(JSFile, newJS, 'utf-8');
     }
   }
 
@@ -295,7 +297,7 @@ function activate(context) {
     const needClean = / VscodeVibrancy;/.test(HTML);
     if (needClean) {
       const newHTML = HTML.replace(" VscodeVibrancy;", ";").replace(";  trusted-types", "; trusted-types")
-      await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+      await sudo.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
 
@@ -333,6 +335,7 @@ function activate(context) {
       }
       await installJS();
       await installHTML();
+      await sudo.run()
       await changeTerminalRendererType();
       await changeNativeWindowControls();
     } catch (error) {
@@ -359,6 +362,7 @@ function activate(context) {
       await fs.stat(JSFile);
 
       await uninstallJS();
+      await sudo.run()
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
