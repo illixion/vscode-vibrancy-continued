@@ -1,3 +1,7 @@
+# 1.1.15
+
+* Updated the install/uninstall function to work with VSCode v1.78.0
+
 # 1.1.14
 
 * No code changes, re-deploying a failed build due to a broken badge URL in README.
