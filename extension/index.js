@@ -268,12 +268,18 @@ function activate(context) {
   async function installHTML() {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
 
-    const newHTML = HTML.replace(
-      /<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'; trusted-types (.+);">/g,
-      (_, trustedTypes) => {
-        return `<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script';  trusted-types ${trustedTypes} VscodeVibrancy;">`;
-      }
-    );
+    const metaTagRegex = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([\s\S]+?)">/;
+    const trustedTypesRegex = /(trusted-types)(\r\n|\r|\n)/;
+  
+    const metaTagMatch = HTML.match(metaTagRegex);
+  
+    if (metaTagMatch) {
+      const currentContent = metaTagMatch[0];
+
+      const newContent = currentContent.replace(trustedTypesRegex, "$1 VscodeVibrancy\n");
+  
+      newHTML = HTML.replace(metaTagRegex, newContent);
+    }
 
     if (HTML !== newHTML) {
       await fs.writeFile(HTMLFile, newHTML, 'utf-8');
@@ -292,9 +298,9 @@ function activate(context) {
 
   async function uninstallHTML() {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
-    const needClean = / VscodeVibrancy;/.test(HTML);
+    const needClean = /trusted-types VscodeVibrancy/.test(HTML);
     if (needClean) {
-      const newHTML = HTML.replace(" VscodeVibrancy;", ";").replace(";  trusted-types", "; trusted-types")
+      const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
       await fs.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
