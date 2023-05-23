@@ -1,3 +1,8 @@
+# 1.1.16
+
+* Added input validation to the opacity setting
+* Updated the description to clarify that -1 means use theme-specified opacity.
+
 # 1.1.15
 
 * Updated the install/uninstall function to work with VSCode v1.78.0
