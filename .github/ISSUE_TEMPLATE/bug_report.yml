@@ -41,10 +41,12 @@ body:
         - **OS**: IBM OS/2
         - **VSCode**: 1.2.3
         - **Extension**: 1.2.3
+        - **Theme**: Dark++
     value: |
         - OS:
         - VSCode:
         - Extension:
+        - Theme:
     render: markdown
   validations:
     required: false
