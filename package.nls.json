@@ -13,7 +13,7 @@
   "configuration.type.sidebar.description": "(MacOS only)",
   "configuration.type.medium-light.description": "(MacOS only)",
   "configuration.type.ultra-dark.description": "(MacOS only)",
-  "configuration.opacity.description": "Opacity of Vibrancy Effect.",
+  "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
   "configuration.refreshInterval.description": "Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.",

@@ -89,7 +89,9 @@
         "vscode_vibrancy.opacity": {
           "description": "%configuration.opacity.description%",
           "type": "number",
-          "default": "-1"
+          "default": "-1",
+          "minimum": "-1",
+          "maximum": "1"
         },
         "vscode_vibrancy.theme": {
           "description": "%configuration.theme.description%",
