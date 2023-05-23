@@ -96,7 +96,7 @@
         "vscode_vibrancy.theme": {
           "description": "%configuration.theme.description%",
           "type": "string",
-          "default": "default dark",
+          "default": "Default Dark",
           "enum": [
             "Default Dark",
             "Dark (Only Subbar)",
