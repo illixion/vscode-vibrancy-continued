@@ -36,5 +36,6 @@
   "messages.reloadIde": "再読み込み",
   "messages.changeColorThemeIde": "配色テーマを変更する",
   "messages.noIde": "いいえ",
-  "messages.importError": "エラーオープニングファイル: \"%1\""
+  "messages.importError": "エラーオープニングファイル: \"%1\"",
+  "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。"
 }

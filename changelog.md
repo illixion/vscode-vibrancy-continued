@@ -1,3 +1,7 @@
+# 1.1.17
+
+* Added a more descriptive error when workbench.html is different from what is expected (fixes `ReferenceError: newHTML is not defined`)
+
 # 1.1.16
 
 * Added input validation to the opacity setting

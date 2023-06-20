@@ -281,8 +281,12 @@ function activate(context) {
       newHTML = HTML.replace(metaTagRegex, newContent);
     }
 
-    if (HTML !== newHTML) {
-      await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+    try {
+      if (HTML !== newHTML) {
+        await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+      }
+    } catch (ReferenceError) {
+      throw localize('messages.htmlError');
     }
   }
 

@@ -36,5 +36,6 @@
   "messages.reloadIde": "重新加载",
   "messages.changeColorThemeIde": "改变颜色主题",
   "messages.noIde": "不要",
-  "messages.importError": "错误打开文件: \"%1\""
+  "messages.importError": "错误打开文件: \"%1\"",
+  "messages.htmlError": "workbench.html文件与预期的不同。请确保你没有其他的扩展程序来修改workbench.html文件。"
 }

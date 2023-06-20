@@ -36,5 +36,6 @@
   "messages.reloadIde": "Reload",
   "messages.changeColorThemeIde": "Change The Color Theme",
   "messages.noIde": "No",
-  "messages.importError": "Couldn't open custom import file: \"%1\""
+  "messages.importError": "Couldn't open custom import file: \"%1\"",
+  "messages.htmlError": "The workbench.html file is different from what is expected. Please ensure that you don't have other extensions that modify the workbench.html file."
 }
