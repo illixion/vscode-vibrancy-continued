@@ -99,3 +99,10 @@ body {
 .monaco-editor .margin {
   background-color: rgba(0, 53, 69, 0.3) !important;
 }
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container,
+.margin-view-overlays,
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: transparent !important;
+}

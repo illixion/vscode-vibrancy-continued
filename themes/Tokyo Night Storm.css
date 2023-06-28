@@ -124,3 +124,10 @@ body {
 .mtk4,.mtk9.mtk10,.mtk11,.mtk12,.mtk14,.mtk18,.mtk20,.mtk22 {
   text-shadow: 0 0 8px, 0 0 2px #000;
 }
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container,
+.margin-view-overlays,
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: transparent !important;
+}

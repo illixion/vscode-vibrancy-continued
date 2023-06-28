@@ -207,3 +207,10 @@ body {
 .monaco-workbench.fullscreen {
 	background-color: #ffffff !important;
 }
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container,
+.margin-view-overlays,
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: transparent !important;
+}
