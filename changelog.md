@@ -1,3 +1,7 @@
+# 1.1.18
+
+* Added support for Jupyter notebook files (by @dike-okayama)
+
 # 1.1.17
 
 * Added a more descriptive error when workbench.html is different from what is expected (fixes `ReferenceError: newHTML is not defined`)
