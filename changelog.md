@@ -1,3 +1,7 @@
+# 1.1.19
+
+* Set visualEffectState of the VSCode window to enable transparency while not in focus on macOS
+
 # 1.1.18
 
 * Added support for Jupyter notebook files (by @dike-okayama)
