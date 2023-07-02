@@ -163,6 +163,7 @@ function activate(context) {
 
   var HTMLFile = appDir + '/vs/code/electron-sandbox/workbench/workbench.html';
   var JSFile = appDir + '/main.js';
+  var ElectronJSFile = appDir + '/vs/code/electron-main/main.js';
 
   var runtimeVersion = 'v6';
   var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
@@ -263,6 +264,11 @@ function activate(context) {
       + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
     await fs.writeFile(JSFile, newJS, 'utf-8');
+    
+    // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
+    const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+    const newElectronJS = ElectronJS.replace(/v8CacheOptions/g, 'visualEffectState:"active",v8CacheOptions');
+    await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
   }
 
   async function installHTML() {
@@ -298,6 +304,10 @@ function activate(context) {
         .replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
       await fs.writeFile(JSFile, newJS, 'utf-8');
     }
+    // remove visualEffectState option
+    const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+    const newElectronJS = ElectronJS.replace(/visualEffectState:"active",v8CacheOptions/g, 'v8CacheOptions');
+    await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
   }
 
   async function uninstallHTML() {
