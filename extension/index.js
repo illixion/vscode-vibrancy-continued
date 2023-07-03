@@ -267,8 +267,10 @@ function activate(context) {
     
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
     const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    const newElectronJS = ElectronJS.replace(/v8CacheOptions/g, 'visualEffectState:"active",v8CacheOptions');
-    await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+    if (!ElectronJS.includes('visualEffectState')) {
+      const newElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
+      await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+    }
   }
 
   async function installHTML() {
@@ -306,7 +308,9 @@ function activate(context) {
     }
     // remove visualEffectState option
     const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    const newElectronJS = ElectronJS.replace(/visualEffectState:"active",v8CacheOptions/g, 'v8CacheOptions');
+    const newElectronJS = ElectronJS
+      .replace(/visualEffectState:"active",v8CacheOptions/g, 'v8CacheOptions') // old selector fixup
+      .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
     await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
   }
 
