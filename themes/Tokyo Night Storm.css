@@ -34,6 +34,7 @@
 .monaco-workbench .part > .title,
 .monaco-workbench,
 .monaco-workbench .part,
+.monaco-workbench .pane-header,
 body {
   background: transparent !important;
 }
@@ -82,6 +83,7 @@ body {
 
 .monaco-editor .view-overlays .current-line {
   border-color: rgba(51, 70, 124, 0.2) !important;
+  background-color: rgba(51, 70, 124, 0.2) !important;
 }
 
 .extension-editor,
