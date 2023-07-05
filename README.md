@@ -72,6 +72,14 @@ Opacity of Vibrancy Effect.
 
 *value: 0.0 ~ 1*
 
+#### vscode_vibrancy.imports
+
+Import custom CSS/JS files into VSCode, as file paths.
+
+EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
+
+*value: array[]*
+
 #### vscode_vibrancy.preventFlash
 
 Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
@@ -108,14 +116,6 @@ Select Vibrancy theme:
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
-#### vscode_vibrancy.imports
-
-Import CSS/JS files, as file paths.
-
-EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
-
-*value: array[]*
-
 # FAQs
 
 ### How to uninstall Vibrancy?
@@ -132,11 +132,13 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
-### VSCode window loses transparency for a brief moment after resizing
+### `EROFS: read-only file system` when enabling Vibrancy on macOS
 
-This is caused by VSCode refreshing the background color whenever a repaint is triggered, for example when resizing the window or closing side panes.
+Your installation of VSCode is affected by App Translocation. To fix this, either use the Finder and move VSCode to `/Applications` (or move it out of `/Applications` and then back in), or run the following terminal command:
 
-You can update the `vibrancy_code.refreshInterval` config variable to change how quickly the background will be changed back to be transparent, with 1ms being imperceptible. Please note that values lower than 10ms will cause a noticeable increase in CPU usage.
+```shell
+sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
+```
 
 # Contributing
 
