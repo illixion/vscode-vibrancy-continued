@@ -1,5 +1,10 @@
 @import url(./catppuccin.css);
 
+:root {
+  --base-background: rgba(30, 30, 46, 0.01) !important;
+  --editor-background: transparent !important;
+}
+
 .scroll-decoration {
   box-shadow: none !important;
 }
@@ -10,7 +15,7 @@
 }
 
 .editor-container {
-  background-color: rgba(30, 30, 46, 0.3) !important;
+  background-color: var(--base-background) !important;
 }
 
 .search-view .search-widget .input-box,
@@ -37,15 +42,15 @@
 .monaco-workbench,
 .monaco-workbench .part,
 body {
-  background: transparent !important;
+  background: var(--editor-background) !important;
 }
 
 .editor-group-container > .tabs {
-  background-color: transparent !important;
+  background-color: var(--base-background) !important;
 }
 
 .editor-group-container > .tabs .tab {
-  background-color: transparent !important;
+  background-color: var(--base-background) !important;
 }
 
 .editor-group-container > .tabs .tab.active,
@@ -71,7 +76,7 @@ body {
 }
 
 .monaco-list.settings-editor-tree .monaco-list-row {
-  background-color: transparent !important;
+  background-color: var(--base-background) !important;
   outline-color: transparent !important;
 }
 
@@ -107,11 +112,11 @@ body {
 .monaco-editor,
 .monaco-editor .inputarea.ime-input,
 .monaco-list .monaco-list-rows {
-  background: transparent !important;
+  background: var(--base-background) !important;
 }
 
 .monaco-workbench .part.sidebar {
-  background-color: rgba(30, 30, 46, 0.3) !important;
+  background-color: var(--base-background) !important;
 }
 
 .editor-group-container > .tabs .tab {
@@ -121,7 +126,7 @@ body {
 .terminal-outer-container,
 .xterm-viewport,
 .xterm-rows {
-  background-color: transparent !important;
+  background-color: var(--base-background) !important;
 }
 
 .monaco-workbench.fullscreen {
@@ -132,11 +137,11 @@ body {
 .cell-statusbar-container,
 .margin-view-overlays,
 .monaco-list-row:hover:not(.selected):not(.focused) {
-  background-color: transparent !important;
+  background-color: var(--base-background) !important;
 }
 
 .pane-header {
-  background-color: rgba(30, 30, 46, 0.3) !important;
+  background-color: var(--base-background) !important;
 }
 
 .minimap,
@@ -144,6 +149,15 @@ body {
   opacity: 0 !important;
 }
 
-.editor-group-container .empty .active {
-  background-color: rgba(30, 30, 46, 0.3) !important;
+#workbench\.parts\.editor
+  > div.content.empty
+  > div
+  > div
+  > div
+  > div
+  > div.monaco-scrollable-element.mac
+  > div.split-view-container
+  > div
+  > div {
+  background-color: var(--base-background) !important;
 }
