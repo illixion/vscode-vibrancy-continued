@@ -81,11 +81,11 @@ body {
 }
 
 .monaco-editor .selected-text {
-  background-color: rgba(137, 180, 250, 0.6) !important;
+  background-color: rgba(114, 135, 253, 0.4) !important;
 }
 
 .monaco-editor .focused .selected-text {
-  background-color: rgba(4, 165, 229, 0.6) !important;
+  background-color: rgba(137, 180, 250, 0.4) !important;
 }
 
 .monaco-editor .view-overlays .current-line {
@@ -134,10 +134,6 @@ body {
 .margin-view-overlays,
 .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: transparent !important;
-}
-
-#workbench.parts.activitybar {
-  background-color: rgba(30, 30, 46, 0.3) !important;
 }
 
 .pane-header {
