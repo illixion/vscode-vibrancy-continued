@@ -1,7 +1,7 @@
 {
-  "name": "vscode-vibrancy-continued-cm",
-  "displayName": "Vibrancy Continued-cm",
-  "description": "Vibrancy Effect for Visual Studio Code with Catppuccin theme",
+  "name": "vscode-vibrancy-continued",
+  "displayName": "Vibrancy Continued",
+  "description": "Vibrancy Effect for Visual Studio Code",
   "version": "1.1.25",
   "publisher": "illixion",
   "author": {
