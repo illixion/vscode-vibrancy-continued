@@ -1,5 +1,3 @@
-@import url(./catppuccin.css);
-
 :root {
   --base-background: rgba(30, 30, 46, 0.01) !important;
   --editor-background: transparent !important;
