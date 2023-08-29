@@ -62,7 +62,13 @@ body {
 .monaco-list .monaco-list-row.selected,
 .monaco-list.settings-toc-tree:not(.drop-target)
   .monaco-list-row:hover:not(.selected):not(.focused) {
-  background-color: rgb(204, 208, 218, 0.6) !important;
+  background-color: rgb(69, 71, 90, 0.8) !important;
+}
+
+.monaco-list.list_id_2:not(.drop-target):not(.dragging)
+  .monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: rgb(127, 132, 156, 0.8) !important;
+  color: rgb(186, 187, 241) !important;
 }
 
 .monaco-list.settings-editor-tree .monaco-list-row {
@@ -128,4 +134,12 @@ body {
 .margin-view-overlays,
 .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: transparent !important;
+}
+
+#workbench.parts.activitybar {
+  background-color: rgba(30, 30, 46, 0.3) !important;
+}
+
+.pane-header {
+  background-color: rgba(30, 30, 46, 0.3) !important;
 }
