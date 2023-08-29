@@ -10,7 +10,7 @@
 }
 
 .editor-container {
-  background: transparent !important;
+  background-color: rgba(30, 30, 46, 0.3) !important;
 }
 
 .search-view .search-widget .input-box,
@@ -142,4 +142,9 @@ body {
 
 .pane-header {
   background-color: rgba(30, 30, 46, 0.3) !important;
+}
+
+.minimap,
+.editor-scrollable > .decorationsOverviewRuler {
+  opacity: 0 !important;
 }
