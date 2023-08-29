@@ -65,8 +65,7 @@ body {
   background-color: rgb(69, 71, 90, 0.8) !important;
 }
 
-.monaco-list.list_id_2:not(.drop-target):not(.dragging)
-  .monaco-list-row:hover:not(.selected):not(.focused) {
+.monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: rgb(127, 132, 156, 0.8) !important;
   color: rgb(186, 187, 241) !important;
 }
@@ -112,7 +111,7 @@ body {
 }
 
 .monaco-workbench .part.sidebar {
-  background-color: rgba(204, 208, 218, 0.3) !important;
+  background-color: rgba(30, 30, 46, 0.3) !important;
 }
 
 .editor-group-container > .tabs .tab {
@@ -143,4 +142,8 @@ body {
 .minimap,
 .editor-scrollable > .decorationsOverviewRuler {
   opacity: 0 !important;
+}
+
+.editor-group-container .empty .active {
+  background-color: rgba(30, 30, 46, 0.3) !important;
 }
