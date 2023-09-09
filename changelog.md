@@ -1,3 +1,8 @@
+# 1.1.21
+
+* Updated Tokyo Night Storm theme to fix a few visual issues (#81)
+* Fixed extension not working on Windows (VSCode 1.82.0) (#95)
+
 # 1.1.20
 
 * Fix implementation bug of background window transparency on macOS
