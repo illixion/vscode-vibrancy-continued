@@ -68,9 +68,9 @@ Native method of Vibrancy Effect.
 
 #### vscode_vibrancy.opacity
 
-Opacity of Vibrancy Effect.
+Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 1 will remove all transparency.
 
-*value: 0.0 ~ 1*
+*value: -1.0 ~ 1.0*
 
 #### vscode_vibrancy.imports
 
