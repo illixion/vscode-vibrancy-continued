@@ -1,10 +1,6 @@
 # Visual Studio Code Extension - Vibrancy Continued
 
-> The original extension has been deprecated, this version will continue to be supported and receive community updates.
-
-> Windows 10 users may have a slight mouse lag when moving the window, [please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
-
-> For questions about installation and uninstallation, please read [FAQs](#FAQs).
+> For questions about troubleshooting, installing or uninstalling Vibrancy Continued, please check the [FAQs](#FAQs).
 
 Enable Acrylic/Glass effect in VS Code.
 
@@ -14,7 +10,7 @@ Enable Acrylic/Glass effect in VS Code.
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
-![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.70.2-Tested%20%E2%9C%94%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
+![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.80.4-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
@@ -23,7 +19,7 @@ Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual
 
 [中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
 
-# Warning
+# "Your VSCode installation appears to be corrupt"
 
 This extension works by editing VS Code's checksum-verified CSS file, which means that a warning prompt will appear after installing and enabling `vscode-vibrancy-continued`. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
@@ -38,23 +34,23 @@ Windows 11 ✔
 
 Windows 10 ✔
 
-MacOS ✔
+macOS ✔
 
 # Getting Started
 
-1. Make sure the color theme you selected is the 'Dark+ (default)'
+1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancy.theme)
 
 ![step-1](./step-1.png)
 
-2. Install this extension from [the Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
+2. Install the extension from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
-3. Press F1 and Activate command "Reload Vibrancy".
+3. Press F1 and activate command "Reload Vibrancy."
 
 ![step-3](./step-3.png)
 
-4. Restart.
+4. Restart VSCode when prompted.
 
-Every time after VS Code is updated, please re-enable Vibrancy.
+Each time VS Code is updated, please re-enable Vibrancy using the same steps.
 
 ## Options
 
@@ -74,7 +70,7 @@ Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 
 
 #### vscode_vibrancy.imports
 
-Import custom CSS/JS files into VSCode, as file paths.
+Import custom CSS/JS files into VSCode, as file paths. The files will be imported in the order they are listed.
 
 EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
@@ -82,13 +78,13 @@ EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
 #### vscode_vibrancy.preventFlash
 
-Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
+Use a new method for preventing window flashing during resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
 
 *boolean, default is true*
 
 #### vscode_vibrancy.refreshInterval
 
-Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. Ignored when using "Prevent Flash" method.
+Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. **Ignored when using "Prevent Flash" method.**
 
 *value: 1 ~ 1000, default is 10*
 
@@ -113,6 +109,7 @@ Select Vibrancy theme:
 | Tokyo Night Storm | ![](./theme-tokyo-night-storm.png) |
 | Tokyo Night Storm (Only Subbar) | ![](./theme-tokyo-night-storm-outer.png) |
 | Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./theme-solarized-dark%2B.png)
+| Catpuccin Mocha | ![](./theme-catpuccin-mocha.png) |
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
@@ -140,6 +137,10 @@ Your installation of VSCode is affected by App Translocation. To fix this, eithe
 sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 ```
 
+### I'm on Windows 10 and I'm experiencing lag when dragging the window
+
+[Please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
+
 ### Effect doesn't work, but there aren't any errors
 
 Ensure that you don't have transparency effects disabled globally through your OS settings. This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
@@ -165,7 +166,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ## Thanks ⭐
 
-[EYHN](https://github.com/EYHN) : for making the original extension that this is a fork of
+[EYHN](https://github.com/EYHN) : for making the original Vibrancy that this is a fork of
 
 [be5invis/vscode-custom-css](https://github.com/be5invis/vscode-custom-css) : The basis of this extension program
 
