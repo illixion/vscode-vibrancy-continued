@@ -1,0 +1,161 @@
+:root {
+  --base-background: rgba(30, 30, 46, 0.01) !important;
+  --editor-background: transparent !important;
+}
+
+.scroll-decoration {
+  box-shadow: none !important;
+}
+
+.minimap,
+.editor-scrollable > .decorationsOverviewRuler {
+  opacity: 0.6;
+}
+
+.editor-container {
+  background-color: var(--base-background) !important;
+}
+
+.search-view .search-widget .input-box,
+.search-view .search-widget .input-box .monaco-inputbox,
+.monaco-workbench
+  .part.editor
+  > .content
+  > .one-editor-silo
+  > .container
+  > .title
+  .tabs-container
+  > .tab,
+.monaco-editor-background,
+.monaco-editor .margin,
+.monaco-workbench .part > .content,
+.monaco-workbench .editor > .content > .one-editor-silo.editor-one,
+.monaco-workbench
+  .part.editor
+  > .content
+  > .one-editor-silo
+  > .container
+  > .title,
+.monaco-workbench .part > .title,
+.monaco-workbench,
+.monaco-workbench .part,
+body {
+  background: var(--editor-background) !important;
+}
+
+.editor-group-container > .tabs {
+  background-color: var(--base-background) !important;
+}
+
+.editor-group-container > .tabs .tab {
+  background-color: var(--base-background) !important;
+}
+
+.editor-group-container > .tabs .tab.active,
+.editor-group-container > .tabs .monaco-breadcrumbs {
+  background-color: rgba(108, 112, 134, 0.3) !important;
+}
+
+.monaco-list.settings-toc-tree .monaco-list-row.focused {
+  outline-color: rgb(108, 112, 134, 0.6) !important;
+}
+
+.monaco-list.settings-toc-tree .monaco-list-row.selected,
+.monaco-list.settings-toc-tree .monaco-list-row.focused,
+.monaco-list .monaco-list-row.selected,
+.monaco-list.settings-toc-tree:not(.drop-target)
+  .monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: rgb(69, 71, 90, 0.8) !important;
+}
+
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: rgb(127, 132, 156, 0.8) !important;
+  color: rgb(186, 187, 241) !important;
+}
+
+.monaco-list.settings-editor-tree .monaco-list-row {
+  background-color: var(--base-background) !important;
+  outline-color: transparent !important;
+}
+
+.monaco-inputbox {
+  background-color: rgba(147, 153, 178, 0.2) !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: rgba(114, 135, 253, 0.4) !important;
+}
+
+.monaco-editor .focused .selected-text {
+  background-color: rgba(137, 180, 250, 0.4) !important;
+}
+
+.monaco-editor .view-overlays .current-line {
+  border-color: rgba(204, 208, 218, 0.2) !important;
+}
+
+.extension-editor,
+.monaco-workbench
+  .part.editor
+  > .content
+  > .one-editor-silo
+  > .container
+  > .title
+  .tabs-container
+  > .tab.active,
+.preferences-editor > .preferences-header,
+.preferences-editor
+  > .preferences-editors-container.side-by-side-preferences-editor
+  .preferences-header-container,
+.monaco-editor,
+.monaco-editor .inputarea.ime-input,
+.monaco-list .monaco-list-rows {
+  background: var(--base-background) !important;
+}
+
+.monaco-workbench .part.sidebar {
+  background-color: var(--base-background) !important;
+}
+
+.editor-group-container > .tabs .tab {
+  border: none !important;
+}
+
+.terminal-outer-container,
+.xterm-viewport,
+.xterm-rows {
+  background-color: var(--base-background) !important;
+}
+
+.monaco-workbench.fullscreen {
+  background-color: #1e1e2e !important;
+}
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container,
+.margin-view-overlays,
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: var(--base-background) !important;
+}
+
+.pane-header {
+  background-color: var(--base-background) !important;
+}
+
+.minimap,
+.editor-scrollable > .decorationsOverviewRuler {
+  opacity: 0 !important;
+}
+
+#workbench\.parts\.editor
+  > div.content.empty
+  > div
+  > div
+  > div
+  > div
+  > div.monaco-scrollable-element.mac
+  > div.split-view-container
+  > div
+  > div {
+  background-color: var(--base-background) !important;
+}

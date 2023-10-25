@@ -106,7 +106,8 @@
             "Tokyo Night Storm (Outer)",
             "Noir et blanc",
             "Dark (Exclude Tab Line)",
-            "Solarized Dark+"
+            "Solarized Dark+",
+            "Catppuccin Mocha"
           ]
         },
         "vscode_vibrancy.imports": {
