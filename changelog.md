@@ -1,3 +1,7 @@
+# 1.1.22
+
+* Added Catppuccin Mocha theme (#92)
+
 # 1.1.21
 
 * Updated Tokyo Night Storm theme to fix a few visual issues (#81)
