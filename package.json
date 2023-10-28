@@ -107,7 +107,8 @@
             "Noir et blanc",
             "Dark (Exclude Tab Line)",
             "Solarized Dark+",
-            "Catppuccin Mocha"
+            "Catppuccin Mocha",
+            "GitHub Dark Default"
           ]
         },
         "vscode_vibrancy.imports": {
