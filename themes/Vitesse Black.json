@@ -1,0 +1,12 @@
+{
+  "type": {
+    "win10": "acrylic",
+    "macos": "ultra-dark"
+  },
+  "background": "000000",
+  "opacity": {
+    "win10": 0.7,
+    "macos": 0.7
+  },
+  "colorTheme": "Vitesse Black"
+}
