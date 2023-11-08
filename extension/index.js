@@ -24,7 +24,8 @@ var themeStylePaths = {
   'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).css',
   'Noir et blanc': '../themes/Noir et blanc.css',
   'Solarized Dark+': '../themes/Solarized Dark+.css',
-  'Catppuccin Mocha' : '../themes/Catppuccin Mocha.css'
+  'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
+  'Vitesse Black': '../themes/Vitesse Black.css',
 }
 
 const themeConfigPaths = {
@@ -37,7 +38,8 @@ const themeConfigPaths = {
   'Tokyo Night Storm (Outer)': '../themes/Tokyo Night Storm (Outer).json',
   'Noir et blanc': '../themes/Noir et blanc.json',
   'Solarized Dark+': '../themes/Solarized Dark+.json',
-  'Catppuccin Mocha' : '../themes/Catppuccin Mocha.json'
+  'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
+  'Vitesse Black': '../themes/Vitesse Black.json',
 }
 
 var defaultTheme = 'Default Dark';
