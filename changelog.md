@@ -1,3 +1,7 @@
+# 1.1.23
+
+* Added "Custom theme" option to simplify development of new themes (#106)
+
 # 1.1.22
 
 * Added Catppuccin Mocha theme (#92)
