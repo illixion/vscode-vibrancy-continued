@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -108,7 +108,8 @@
             "Dark (Exclude Tab Line)",
             "Solarized Dark+",
             "Catppuccin Mocha",
-            "GitHub Dark Default"
+            "GitHub Dark Default",
+            "Custom theme (use imports)"
           ]
         },
         "vscode_vibrancy.imports": {

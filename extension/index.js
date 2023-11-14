@@ -25,7 +25,8 @@ var themeStylePaths = {
   'Noir et blanc': '../themes/Noir et blanc.css',
   'Solarized Dark+': '../themes/Solarized Dark+.css',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
-  'GitHub Dark Default': '../themes/GitHub Dark Default.css'
+  'GitHub Dark Default': '../themes/GitHub Dark Default.css',
+  'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
 
 const themeConfigPaths = {
@@ -39,7 +40,8 @@ const themeConfigPaths = {
   'Noir et blanc': '../themes/Noir et blanc.json',
   'Solarized Dark+': '../themes/Solarized Dark+.json',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
-  'GitHub Dark Default': '../themes/GitHub Dark Default.json'
+  'GitHub Dark Default': '../themes/GitHub Dark Default.json',
+  'Custom theme (use imports)': '../themes/Custom Theme.json',
 }
 
 var defaultTheme = 'Default Dark';
@@ -76,6 +78,12 @@ async function promptRestart() {
 async function checkColorTheme() {
   // Get the current color theme and target theme from configuration files
   const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+
+  // if theme is "Custom theme (use imports)", skip the check
+  if (currentTheme === 'Custom theme (use imports)') {
+    return;
+  }
+
   const themeConfig = require(path.join(__dirname, themeConfigPaths[currentTheme]));
   const targetTheme = themeConfig.colorTheme;
   const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
