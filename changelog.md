@@ -1,3 +1,9 @@
+# 1.1.24
+
+* Updated first load check to ignore extension patch updates (#34)
+* Added a custom message for updates vs first time installation
+* Added GitHub Dark Default theme (#102)
+
 # 1.1.23
 
 * Added "Custom theme" option to simplify development of new themes (#106)
