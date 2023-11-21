@@ -25,6 +25,7 @@ var themeStylePaths = {
   'Noir et blanc': '../themes/Noir et blanc.css',
   'Solarized Dark+': '../themes/Solarized Dark+.css',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
+  'GitHub Dark Default': '../themes/GitHub Dark Default.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
 
@@ -39,6 +40,7 @@ const themeConfigPaths = {
   'Noir et blanc': '../themes/Noir et blanc.json',
   'Solarized Dark+': '../themes/Solarized Dark+.json',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
+  'GitHub Dark Default': '../themes/GitHub Dark Default.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
 }
 
