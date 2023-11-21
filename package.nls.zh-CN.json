@@ -23,6 +23,7 @@
   "extension.updateVibrancy.title": "重新安装毛玻璃效果",
 
   "messages.firstload": "欢迎使用 Vibrancy，请先阅读 README，单击下面的按钮进行安装。",
+  "messages.updateNeeded": "Vibrancy 需要更新。点击下面的按钮进行更新。",
   "messages.configupdate": "配置已更改，是否要重新加载。",
   "messages.enabled": "已安装毛玻璃效果，重启后才能生效。如果 Visual Studio Code 提示”安装似乎损坏“，请点击“不再提示”。有关详细信息，请参阅自述文件。",
   "messages.disabled": "毛玻璃已卸载并恢复为默认值。重启才能生效。",

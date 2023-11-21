@@ -23,6 +23,7 @@
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",
 
   "messages.firstload": "Vibrancy へようこそ。はじめに README をご覧ください。ボタンをクリックして、インストールを開始します。",
+  "messages.updateNeeded": "Vibrancyのアップデートが必要です。下のボタンをクリックして更新してください。",
   "messages.configupdate": "設定が変更されました。反映させるには、再読み込みします。",
   "messages.enabled": "Vibrancy が有効化されました。設定は再起動の後に反映されます。もし Visual Studio Code が破損を検出した場合、\"今後表示しない\" をクリックします。詳細については README をご確認ください。",
   "messages.disabled": "Vibrancy が無効化されました。再起動することで、元の状態に戻ります。",

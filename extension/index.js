@@ -2,7 +2,6 @@ var vscode = require('vscode');
 var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
 var path = require('path');
-var lockPath = path.join(__dirname, '../firstload.lock');
 
 /**
  * @type {(info: string) => string}
@@ -141,17 +140,14 @@ function isPrimitive(obj) {
   return (obj !== Object(obj));
 }
 
-function isFirstload() {
-  try {
-    fs.readFileSync(lockPath);
-    return false
-  } catch (err) {
-    return true
-  }
-}
+// Check if runtime and asset updates are necessary based on version numbers
+function checkRuntimeUpdate(current, last) {
+  // Split the versions into major and minor numbers
+  const [currentMajor, currentMinor] = current.split('.').slice(0, 2);
+  const [lastMajor, lastMinor] = last.split('.').slice(0, 2);
 
-function lockFirstload() {
-  fs.writeFileSync(lockPath, '', () => { });
+  // Convert the numbers to integers and compare them
+  return (parseInt(currentMajor) !== parseInt(lastMajor)) || (parseInt(currentMinor) !== parseInt(lastMinor));
 }
 
 function activate(context) {
@@ -413,8 +409,19 @@ function activate(context) {
   context.subscriptions.push(uninstallVibrancy);
   context.subscriptions.push(updateVibrancy);
 
-  if (isFirstload()) {
-    vscode.window.showInformationMessage(localize('messages.firstload'), { title: localize('messages.installIde') })
+  const currentVersion = context.extension.packageJSON.version;
+  let lastVersion = context.globalState.get('lastVersion');
+  let updateMsg = "messages.updateNeeded"
+
+  // Detect first time install
+  if (!lastVersion) {
+    lastVersion = '0.0.0';
+    updateMsg = "messages.firstload"
+  }
+
+  // Check if the current version is a minor update from the last version
+  if (checkRuntimeUpdate(currentVersion, lastVersion)) {
+    vscode.window.showInformationMessage(localize(updateMsg), { title: localize('messages.installIde') })
       .then(async (msg) => {
         if (msg) {
           await Update();
@@ -422,7 +429,8 @@ function activate(context) {
           enabledRestart();
         }
       });
-    lockFirstload();
+    // Update the global state with the current version
+    context.globalState.update('lastVersion', currentVersion);
   }
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
@@ -441,7 +449,7 @@ function activate(context) {
             enabledRestart();
           }
         });
-      lockFirstload();
+      context.globalState.update('lastVersion', currentVersion);
     }
   });
 }
