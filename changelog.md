@@ -2,6 +2,7 @@
 
 * Updated first load check to ignore extension patch updates (#34)
 * Added a custom message for updates vs first time installation
+* Prevent installation on ARM Windows due to VSCode crashes (#9)
 * Added GitHub Dark Default theme (#102)
 
 # 1.1.23

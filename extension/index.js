@@ -340,6 +340,12 @@ function activate(context) {
       throw new Error('unsupported');
     }
 
+    // BUG: prevent installation on ARM Windows (#9)
+    if (process.arch.startsWith("arm") && process.platform === 'win32') {
+      vscode.window.showInformationMessage(localize('messages.unsupported'));
+      throw new Error('unsupported');
+    }
+
     try {
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
