@@ -21,7 +21,7 @@ Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual
 
 # "Your VSCode installation appears to be corrupt"
 
-This extension works by editing VS Code's checksum-verified CSS file, which means that a warning prompt will appear after installing and enabling `vscode-vibrancy-continued`. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
+This extension works by editing VS Code's checksum-verified CSS file, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
 ![screenshot](./warn.png)
 ![screenshot](./warnfix.png)
@@ -29,6 +29,8 @@ This extension works by editing VS Code's checksum-verified CSS file, which mean
 To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
 # Supported Operating Systems
+
+> **Warning**: Windows on ARM is currently unsupported, see #9 for more details
 
 Windows 11 ✔
 
@@ -128,7 +130,7 @@ Check your settings. You should change the renderer type of the terminal to dom.
 
 ### Prompt "Run Visual Studio Code with administrator privileges"?
 
-It usually appears on windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
+It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
 ### `EROFS: read-only file system` when enabling Vibrancy on macOS
 
