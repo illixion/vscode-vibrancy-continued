@@ -5,9 +5,16 @@ on:
       version:
         description: 'Enter version or major/minor/patch'
         required: true
+        default: 'patch'
       registry:
         description: 'Enter registry to publish to: vsce, openvsx or both'
         required: true
+        default: 'both'
+        type: choice
+        options:
+          - vsce
+          - openvsx
+          - both
 jobs:
   publish:
     runs-on: ubuntu-latest
