@@ -1,0 +1,52 @@
+name: Publish Extension
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Enter version or major/minor/patch'
+        required: true
+      registry:
+        description: 'Enter registry to publish to: vsce, openvsx or both'
+        required: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Install vsce
+        run: npm install @vscode/vsce
+      - name: Install ovsx
+        run: npm install ovsx
+      - name: Bump version and create git tag
+        run: npm version ${{ github.event.inputs.version }}
+      - name: Package extension
+        run: npx vsce package
+      - name: Publish extension to VSCE
+        if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
+        run: npx vsce publish --allow-star-activation --packagePath *.vsix
+      - name: Publish extension to Open VSX
+        if: ${{ github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both' }}
+        env:
+          OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
+        run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Push changes
+        run: |
+          git config --global user.name "GitHubActions"
+          git config --global user.email "ghactions@illixion.com"
+          git add package.json
+          git commit -m "[Auto] update version"
+          git push --tags origin master
