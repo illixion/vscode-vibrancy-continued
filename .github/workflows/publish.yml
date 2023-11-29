@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Enter version or major/minor/patch'
+        description: 'Enter version or major/minor/patch/none'
         required: true
         default: 'patch'
       registry:
@@ -31,6 +31,7 @@ jobs:
       - name: Install ovsx
         run: npm install ovsx
       - name: Bump version and create git tag
+        if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
       - name: Package extension
         run: npx vsce package
@@ -51,6 +52,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Push changes
+        if: ${{ github.event.inputs.version != 'none' }}
         run: |
           git config --global user.name "GitHubActions"
           git config --global user.email "ghactions@illixion.com"
