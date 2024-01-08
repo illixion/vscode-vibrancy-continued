@@ -27,6 +27,8 @@ const app = global.vscode_vibrancy_plugin;
 // @ts-check
 
 const macosType = [
+  'under-window',
+  'fullscreen-ui',
   'appearance-based',
   'light',
   'dark',
