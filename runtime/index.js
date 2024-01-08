@@ -8,7 +8,7 @@ const transparencyMethods = require('./methods');
  * @type {{
  *  os: string,
  *  config: {
- *    type:  "auto" | "acrylic" | "appearance-based" | "light" | "dark" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "medium-light" | "ultra-dark",
+ *    type:  "auto" | "acrylic" | "under-window" | "fullscreen-ui" | "appearance-based" | "light" | "dark" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "medium-light" | "ultra-dark",
  *    opacity: number,
  *    theme: "Default Dark" | "Dark (Only Subbar)" | "Default Light" | "Light (Only Subbar)" | "Tokyo Night Storm" | "Tokyo Night Storm (Outer)" | "Noir et blanc" | "Dark (Exclude Tab Line)" | "Solarized Dark+",
  *    imports: string[],

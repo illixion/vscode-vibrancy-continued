@@ -60,6 +60,8 @@
           "enum": [
             "auto",
             "acrylic",
+            "under-window",
+            "fullscreen-ui",
             "appearance-based",
             "light",
             "dark",
@@ -74,6 +76,8 @@
           "enumDescriptions": [
             "%configuration.type.auto.description%",
             "%configuration.type.acrylic.description%",
+            "%configuration.type.under-window.description%",
+            "%configuration.type.fullscreen-ui.description%",
             "%configuration.type.appearance-based.description%",
             "%configuration.type.light.description%",
             "%configuration.type.dark.description%",

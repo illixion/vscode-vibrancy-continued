@@ -62,7 +62,8 @@ Native method of Vibrancy Effect.
 
 * auto : Automatically switch with system version.
 * acrylic : (Windows 10 only) Fluent Design blur.
-* appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
+* under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
+  * Note that many of these types will be deprecated in VSC 1.86
 
 #### vscode_vibrancy.opacity
 

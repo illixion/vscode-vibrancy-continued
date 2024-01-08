@@ -3,6 +3,8 @@
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
+  "configuration.type.under-window.description": "(MacOS only)",
+  "configuration.type.fullscreen-ui.description": "(MacOS only)",
   "configuration.type.appearance-based.description": "(MacOS only)",
   "configuration.type.light.description": "(MacOS only)",
   "configuration.type.dark.description": "(MacOS only)",

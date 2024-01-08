@@ -3,6 +3,8 @@
   "configuration.type.description": "すりガラス効果の適用方法を制御します。",
   "configuration.type.auto.description": "自動",
   "configuration.type.acrylic.description": "(Windows 10 のみ) Fluent Design のブラー効果を使用します",
+  "configuration.type.under-window.description": "(MacOS のみ)",
+  "configuration.type.fullscreen-ui.description": "(MacOS のみ)",
   "configuration.type.appearance-based.description": "(MacOS のみ)",
   "configuration.type.light.description": "(MacOS のみ)",
   "configuration.type.dark.description": "(MacOS のみ)",

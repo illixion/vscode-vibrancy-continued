@@ -3,6 +3,8 @@
   "configuration.type.description": "设置毛玻璃效果的类型。",
   "configuration.type.auto.description": "自动",
   "configuration.type.acrylic.description": "(仅限 Windows 10) Fluent design blur",
+  "configuration.type.under-window.description": "(仅限 MacOS)",
+  "configuration.type.fullscreen-ui.description": "(仅限 MacOS)",
   "configuration.type.appearance-based.description": "(仅限 MacOS)",
   "configuration.type.light.description": "(仅限 MacOS)",
   "configuration.type.dark.description": "(仅限 MacOS)",
