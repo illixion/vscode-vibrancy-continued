@@ -43,9 +43,7 @@ jobs:
         run: npx vsce package
       - name: Publish extension to VSCE
         if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
-        env:
-          VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
-        run: npx vsce publish --allow-star-activation --packagePath *.vsix
+        run: npx vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix
       - name: Publish extension to Open VSX
         if: ${{ github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both' }}
         env:
