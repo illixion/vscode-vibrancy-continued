@@ -30,6 +30,9 @@ jobs:
         run: npm install @vscode/vsce
       - name: Install ovsx
         run: npm install ovsx
+      - name: Ensure clean working directory
+        if: ${{ github.event.inputs.version != 'none' }}
+        run: git reset --hard HEAD
       - name: Bump version and create git tag
         if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
