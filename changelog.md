@@ -1,22 +1,26 @@
+# 1.1.25
+
+* Added `fullscreen-ui` and `under-window` types to fix Vibrancy on VSC 1.86 ([#116](https://github.com/illixion/vscode-vibrancy-continued/issues/116))
+
 # 1.1.24
 
-* Updated first load check to ignore extension patch updates (#34)
+* Updated first load check to ignore extension patch updates ([#34](https://github.com/illixion/vscode-vibrancy-continued/issues/34))
 * Added a custom message for updates vs first time installation
-* Prevent installation on ARM Windows due to VSCode crashes (#9)
-* Added GitHub Dark Default theme (#102)
+* Prevent installation on ARM Windows due to VSCode crashes ([#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9))
+* Added GitHub Dark Default theme ([#102](https://github.com/illixion/vscode-vibrancy-continued/issues/102))
 
 # 1.1.23
 
-* Added "Custom theme" option to simplify development of new themes (#106)
+* Added "Custom theme" option to simplify development of new themes ([#106](https://github.com/illixion/vscode-vibrancy-continued/issues/106))
 
 # 1.1.22
 
-* Added Catppuccin Mocha theme (#92)
+* Added Catppuccin Mocha theme ([#92](https://github.com/illixion/vscode-vibrancy-continued/issues/92))
 
 # 1.1.21
 
-* Updated Tokyo Night Storm theme to fix a few visual issues (#81)
-* Fixed extension not working on Windows (VSCode 1.82.0) (#95)
+* Updated Tokyo Night Storm theme to fix a few visual issues ([#81](https://github.com/illixion/vscode-vibrancy-continued/issues/81))
+* Fixed extension not working on Windows (VSCode 1.82.0) ([#95](https://github.com/illixion/vscode-vibrancy-continued/issues/95))
 
 # 1.1.20
 
