@@ -30,9 +30,12 @@ jobs:
         run: npm install @vscode/vsce
       - name: Install ovsx
         run: npm install ovsx
-      - name: Ensure clean working directory
+      - name: Configure git and clean repo
         if: ${{ github.event.inputs.version != 'none' }}
-        run: git reset --hard HEAD
+        run: |
+          git reset --hard HEAD
+          git config --global user.name "GitHubActions"
+          git config --global user.email "ghactions@illixion.com"
       - name: Bump version and create git tag
         if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
@@ -49,6 +52,7 @@ jobs:
           OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
         run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix
       - name: Configure SSH key
+        if: ${{ github.event.inputs.version != 'none' }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
@@ -57,8 +61,4 @@ jobs:
       - name: Push changes
         if: ${{ github.event.inputs.version != 'none' }}
         run: |
-          git config --global user.name "GitHubActions"
-          git config --global user.email "ghactions@illixion.com"
-          git add package.json
-          git commit -m "[Auto] update version"
           git push --tags origin master
