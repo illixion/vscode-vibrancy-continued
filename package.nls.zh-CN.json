@@ -3,18 +3,8 @@
   "configuration.type.description": "设置毛玻璃效果的类型。",
   "configuration.type.auto.description": "自动",
   "configuration.type.acrylic.description": "(仅限 Windows 10) Fluent design blur",
-  "configuration.type.under-window.description": "(仅限 MacOS)",
-  "configuration.type.fullscreen-ui.description": "(仅限 MacOS)",
-  "configuration.type.appearance-based.description": "(仅限 MacOS)",
-  "configuration.type.light.description": "(仅限 MacOS)",
-  "configuration.type.dark.description": "(仅限 MacOS)",
-  "configuration.type.titlebar.description": "(仅限 MacOS)",
-  "configuration.type.selection.description": "(仅限 MacOS)",
-  "configuration.type.menu.description": "(仅限 MacOS)",
-  "configuration.type.popover.description": "(仅限 MacOS)",
-  "configuration.type.sidebar.description": "(仅限 MacOS)",
-  "configuration.type.medium-light.description": "(仅限 MacOS)",
-  "configuration.type.ultra-dark.description": "(仅限 MacOS)",
+  "configuration.type.macos-only.description": "(仅限 macOS)",
+  "configuration.type.macos-only-legacy.description": "已在 VSCode 1.86 中删除 (仅限 macOS)",
   "configuration.opacity.description": "毛玻璃效果的透明度。",
   "configuration.theme.description": "毛玻璃效果的主题样式。",
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
@@ -40,5 +30,6 @@
   "messages.changeColorThemeIde": "改变颜色主题",
   "messages.noIde": "不要",
   "messages.importError": "错误打开文件: \"%1\"",
-  "messages.htmlError": "workbench.html文件与预期的不同。请确保你没有其他的扩展程序来修改workbench.html文件。"
+  "messages.htmlError": "workbench.html文件与预期的不同。请确保你没有其他的扩展程序来修改workbench.html文件。",
+  "messages.electronDeprecatedType": "在此版本的 VSCode 中，\"%1\" 类型已被弃用。请更新配置，使用受支持的类型。目前不支持灯光模式。"
 }

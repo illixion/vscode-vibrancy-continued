@@ -102,6 +102,38 @@ async function checkColorTheme() {
   }
 }
 
+// Electron 26 changed the available vibrancy types, this ensures that upgrading users switch
+async function checkElectronDeprecatedType() {
+  let electronVersion = process.versions.electron;
+  let majorVersion = parseInt(electronVersion.split('.')[0]);
+
+  if (majorVersion > 25) {
+    const currentType = vscode.workspace.getConfiguration("vscode_vibrancy").type;
+    const deprecatedTypes = [
+      "appearance-based",
+      "dark",
+      "ultra-dark",
+      "light",
+      "medium-light"
+    ];
+  
+    if (deprecatedTypes.includes(currentType)) {
+      vscode.window.showWarningMessage(
+        localize('messages.electronDeprecatedType').replace('%1', currentType),
+        { title: "Dark" },
+        { title: "Ultra Dark" }
+      ).then(async (msg) => {
+        if (msg) {
+          const newType = msg.title === "Dark" ? "fullscreen-ui" : "under-window";
+          await vscode.workspace
+            .getConfiguration("vscode_vibrancy")
+            .update("type", newType, vscode.ConfigurationTarget.Global);
+        }
+      });
+    }
+  }
+}
+
 function deepEqual(obj1, obj2) {
   if (obj1 === obj2) {
     // Objects are the same
@@ -432,12 +464,16 @@ function activate(context) {
         if (msg) {
           await Update();
           await checkColorTheme();
+          await checkElectronDeprecatedType();
           enabledRestart();
         }
       });
     // Update the global state with the current version
     context.globalState.update('lastVersion', currentVersion);
   }
+
+  // Check type compatibility with current Electron
+  checkElectronDeprecatedType();
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
@@ -446,7 +482,8 @@ function activate(context) {
     if (!deepEqual(lastConfig, newConfig)) {
       lastConfig = newConfig;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
-        .then(async (msg) => {
+      .then(async (msg) => {
+          await checkElectronDeprecatedType();
           if (msg) {
             await Update();
             if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {

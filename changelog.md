@@ -1,3 +1,14 @@
+# 1.1.26
+
+* Added all currently available BrowserWindow Electron types
+* Added deprecation notice for old themes
+* Updated themes to use the new types (since they're already available in VSCode 1.85)
+* Updated localization files
+
+### Known issues:
+
+* Light mode is currently broken as macOS deprecated all light vibrancy types. `selection` is the best alternative at this time, but themes will need to be updated to work with it.
+
 # 1.1.25
 
 * Added `fullscreen-ui` and `under-window` types to fix Vibrancy on VSC 1.86 ([#116](https://github.com/illixion/vscode-vibrancy-continued/issues/116))

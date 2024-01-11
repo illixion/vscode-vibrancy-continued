@@ -3,18 +3,8 @@
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
-  "configuration.type.under-window.description": "(MacOS only)",
-  "configuration.type.fullscreen-ui.description": "(MacOS only)",
-  "configuration.type.appearance-based.description": "(MacOS only)",
-  "configuration.type.light.description": "(MacOS only)",
-  "configuration.type.dark.description": "(MacOS only)",
-  "configuration.type.titlebar.description": "(MacOS only)",
-  "configuration.type.selection.description": "(MacOS only)",
-  "configuration.type.menu.description": "(MacOS only)",
-  "configuration.type.popover.description": "(MacOS only)",
-  "configuration.type.sidebar.description": "(MacOS only)",
-  "configuration.type.medium-light.description": "(MacOS only)",
-  "configuration.type.ultra-dark.description": "(MacOS only)",
+  "configuration.type.macos-only.description": "(macOS only)",
+  "configuration.type.macos-only-legacy.description": "DEPRECATED in VS 1.86 (macOS only)",
   "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
@@ -40,5 +30,6 @@
   "messages.changeColorThemeIde": "Change The Color Theme",
   "messages.noIde": "No",
   "messages.importError": "Couldn't open custom import file: \"%1\"",
-  "messages.htmlError": "The workbench.html file is different from what is expected. Please ensure that you don't have other extensions that modify the workbench.html file."
+  "messages.htmlError": "The workbench.html file is different from what is expected. Please ensure that you don't have other extensions that modify the workbench.html file.",
+  "messages.electronDeprecatedType": "The \"%1\" type is deprecated in this version of VSCode. Please update your configuration to use a supported type. Light mode is currently unsupported."
 }

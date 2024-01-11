@@ -8,7 +8,7 @@ const transparencyMethods = require('./methods');
  * @type {{
  *  os: string,
  *  config: {
- *    type:  "auto" | "acrylic" | "under-window" | "fullscreen-ui" | "appearance-based" | "light" | "dark" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "medium-light" | "ultra-dark",
+ *    type:  "auto" | "acrylic" | "under-window" | "fullscreen-ui" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "content" | "header" | "hud" | "sheet" | "tooltip" | "under-page" | "window" | "appearance-based" | "dark" | "ultra-dark" | "light" | "medium-light",
  *    opacity: number,
  *    theme: "Default Dark" | "Dark (Only Subbar)" | "Default Light" | "Light (Only Subbar)" | "Tokyo Night Storm" | "Tokyo Night Storm (Outer)" | "Noir et blanc" | "Dark (Exclude Tab Line)" | "Solarized Dark+",
  *    imports: string[],
@@ -29,16 +29,23 @@ const app = global.vscode_vibrancy_plugin;
 const macosType = [
   'under-window',
   'fullscreen-ui',
-  'appearance-based',
-  'light',
-  'dark',
   'titlebar',
   'selection',
   'menu',
   'popover',
   'sidebar',
-  'medium-light',
+  'content',
+  'header',
+  'hud',
+  'sheet',
+  'tooltip',
+  'under-page',
+  'window',
+  'appearance-based',
+  'dark',
   'ultra-dark',
+  'light',
+  'medium-light'
 ];
 
 const windowsType = ['acrylic'];

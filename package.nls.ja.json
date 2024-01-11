@@ -3,18 +3,8 @@
   "configuration.type.description": "すりガラス効果の適用方法を制御します。",
   "configuration.type.auto.description": "自動",
   "configuration.type.acrylic.description": "(Windows 10 のみ) Fluent Design のブラー効果を使用します",
-  "configuration.type.under-window.description": "(MacOS のみ)",
-  "configuration.type.fullscreen-ui.description": "(MacOS のみ)",
-  "configuration.type.appearance-based.description": "(MacOS のみ)",
-  "configuration.type.light.description": "(MacOS のみ)",
-  "configuration.type.dark.description": "(MacOS のみ)",
-  "configuration.type.titlebar.description": "(MacOS のみ)",
-  "configuration.type.selection.description": "(MacOS のみ)",
-  "configuration.type.menu.description": "(MacOS のみ)",
-  "configuration.type.popover.description": "(MacOS のみ)",
-  "configuration.type.sidebar.description": "(MacOS のみ)",
-  "configuration.type.medium-light.description": "(MacOS のみ)",
-  "configuration.type.ultra-dark.description": "(MacOS のみ)",
+  "configuration.type.macos-only.description": "(macOS のみ)",
+  "configuration.type.macos-only-legacy.description": "VSCode 1.86 で廃止。(macOS のみ)",
   "configuration.opacity.description": "すりガラス効果の透明度を制御します。",
   "configuration.theme.description": "Vibrancy のテーマを制御します。",
   "configuration.imports.description": "インポートする CSS/JS ファイルのパスを指定します。",
@@ -40,5 +30,6 @@
   "messages.changeColorThemeIde": "配色テーマを変更する",
   "messages.noIde": "いいえ",
   "messages.importError": "エラーオープニングファイル: \"%1\"",
-  "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。"
+  "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。",
+  "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。ライトモードは現在サポートされていません。"
 }

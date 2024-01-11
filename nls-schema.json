@@ -11,34 +11,10 @@
     "configuration.type.acrylic.description": {
       "type": "string"
     },
-    "configuration.type.appearance-based.description": {
+    "configuration.type.macos-only.description": {
       "type": "string"
     },
-    "configuration.type.light.description": {
-      "type": "string"
-    },
-    "configuration.type.dark.description": {
-      "type": "string"
-    },
-    "configuration.type.titlebar.description": {
-      "type": "string"
-    },
-    "configuration.type.selection.description": {
-      "type": "string"
-    },
-    "configuration.type.menu.description": {
-      "type": "string"
-    },
-    "configuration.type.popover.description": {
-      "type": "string"
-    },
-    "configuration.type.sidebar.description": {
-      "type": "string"
-    },
-    "configuration.type.medium-light.description": {
-      "type": "string"
-    },
-    "configuration.type.ultra-dark.description": {
+    "configuration.type.macos-only-legacy.description": {
       "type": "string"
     },
     "configuration.opacity.description": {
@@ -48,6 +24,12 @@
       "type": "string"
     },
     "configuration.imports.description": {
+      "type": "string"
+    },
+    "configuration.refreshInterval.description": {
+      "type": "string"
+    },
+    "configuration.preventFlash.description": {
       "type": "string"
     },
     "extension.installVibrancy.title": {
@@ -60,6 +42,9 @@
       "type": "string"
     },
     "messages.firstload": {
+      "type": "string"
+    },
+    "messages.updateNeeded": {
       "type": "string"
     },
     "messages.configupdate": {
@@ -100,29 +85,33 @@
     },
     "messages.noIde": {
       "type": "string"
+    },
+    "messages.importError": {
+      "type": "string"
+    },
+    "messages.htmlError": {
+      "type": "string"
+    },
+    "messages.electronDeprecatedType": {
+      "type": "string"
     }
   },
   "required": [
     "configuration.type.description",
     "configuration.type.auto.description",
     "configuration.type.acrylic.description",
-    "configuration.type.appearance-based.description",
-    "configuration.type.light.description",
-    "configuration.type.dark.description",
-    "configuration.type.titlebar.description",
-    "configuration.type.selection.description",
-    "configuration.type.menu.description",
-    "configuration.type.popover.description",
-    "configuration.type.sidebar.description",
-    "configuration.type.medium-light.description",
-    "configuration.type.ultra-dark.description",
+    "configuration.type.macos-only.description",
+    "configuration.type.macos-only-legacy.description",
     "configuration.opacity.description",
     "configuration.theme.description",
     "configuration.imports.description",
+    "configuration.refreshInterval.description",
+    "configuration.preventFlash.description",
     "extension.installVibrancy.title",
     "extension.uninstallVibrancy.title",
     "extension.updateVibrancy.title",
     "messages.firstload",
+    "messages.updateNeeded",
     "messages.configupdate",
     "messages.enabled",
     "messages.disabled",
@@ -135,6 +124,9 @@
     "messages.installIde",
     "messages.reloadIde",
     "messages.changeColorThemeIde",
-    "messages.noIde"
+    "messages.noIde",
+    "messages.importError",
+    "messages.htmlError",
+    "messages.electronDeprecatedType"
   ]
 }
