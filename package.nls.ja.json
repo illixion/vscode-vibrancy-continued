@@ -31,5 +31,5 @@
   "messages.noIde": "いいえ",
   "messages.importError": "エラーオープニングファイル: \"%1\"",
   "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。",
-  "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。ライトモードは現在サポートされていません。"
+  "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。"
 }

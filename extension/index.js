@@ -120,11 +120,11 @@ async function checkElectronDeprecatedType() {
     if (deprecatedTypes.includes(currentType)) {
       vscode.window.showWarningMessage(
         localize('messages.electronDeprecatedType').replace('%1', currentType),
-        { title: "Dark" },
-        { title: "Ultra Dark" }
+        { title: "Default" },
+        { title: "Transparent" }
       ).then(async (msg) => {
         if (msg) {
-          const newType = msg.title === "Dark" ? "fullscreen-ui" : "under-window";
+          const newType = msg.title === "Default" ? "under-window" : "fullscreen-ui";
           await vscode.workspace
             .getConfiguration("vscode_vibrancy")
             .update("type", newType, vscode.ConfigurationTarget.Global);

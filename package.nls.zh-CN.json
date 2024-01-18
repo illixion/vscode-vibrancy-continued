@@ -31,5 +31,5 @@
   "messages.noIde": "不要",
   "messages.importError": "错误打开文件: \"%1\"",
   "messages.htmlError": "workbench.html文件与预期的不同。请确保你没有其他的扩展程序来修改workbench.html文件。",
-  "messages.electronDeprecatedType": "在此版本的 VSCode 中，\"%1\" 类型已被弃用。请更新配置，使用受支持的类型。目前不支持灯光模式。"
+  "messages.electronDeprecatedType": "在此版本的 VSCode 中，\"%1\" 类型已被弃用。请更新配置，使用受支持的类型。"
 }
