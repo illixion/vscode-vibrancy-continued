@@ -1,3 +1,8 @@
+# 1.1.28
+
+* Update readme with a notice for Windows users (bug [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122))
+* No code changes
+
 # 1.1.27
 
 * Clarified that light mode works as expected with new vibrancy types
