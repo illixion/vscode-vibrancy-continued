@@ -291,12 +291,20 @@ function activate(context) {
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
     await fs.writeFile(JSFile, newJS, 'utf-8');
     
+    // Load Electron JS for BrowserWindow option modification
+    let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+    
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
-    const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
     if (!ElectronJS.includes('visualEffectState')) {
-      const newElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
-      await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+      ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
     }
+    // enable frameless window on Windows w/ Electron 27 (bug #122)
+    const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);  
+    if (!ElectronJS.includes('frame:false,') && process.platform === 'win32' && electronMajorVersion >= 27) {
+      ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
+    }
+
+    await fs.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
 
   async function installHTML() {
@@ -335,7 +343,7 @@ function activate(context) {
     // remove visualEffectState option
     const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
     const newElectronJS = ElectronJS
-      .replace(/visualEffectState:"active",v8CacheOptions/g, 'v8CacheOptions') // old selector fixup
+      .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
       .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
     await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
   }

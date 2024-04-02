@@ -1,3 +1,7 @@
+# 1.1.29
+
+* Implement workaround for VSCode 1.86.x on Windows (bug [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122))
+
 # 1.1.28
 
 * Update readme with a notice for Windows users (bug [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122))

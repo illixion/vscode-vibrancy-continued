@@ -10,24 +10,24 @@ Enable Acrylic/Glass effect in VS Code.
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
-![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.80.4-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
+![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.87.2-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
 
 Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
-[中文教程 (Chinese README)](https://eyhn.in/vscode-vibrancy/)
-
 # Important notice for Windows users
 
-VSCode 1.86.x is incompatible on Windows 10/11 due to Electron 27 introducing breaking changes to how transparent windows are handled. If you wish to use Vibrancy, please downgrade to VSCode 1.85.2, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
+VSCode 1.86 and newer has known issues on Windows 10/11 due to Electron 27 introducing breaking changes to how transparent windows are handled. Your VSCode windows will **not be snappable or maximizable** if Vibrancy is applied on Windows, and you must also use "custom" for `window.titleBarStyle` setting. Some users have reported that [AltSnap](https://github.com/RamonUnch/AltSnap) may be able to solve this issue.
+
+If this is undesired, please downgrade to VSCode 1.85.2, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
 
 For more information, see issue [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
 # "Your VSCode installation appears to be corrupt"
 
-This extension works by editing VS Code's checksum-verified HTML file, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
+This extension works by editing VS Code's checksum-verified HTML files, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
 ![screenshot](./warn.png)
 ![screenshot](./warnfix.png)
@@ -36,7 +36,7 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 # Supported Operating Systems
 
-> **Warning**: Windows on ARM is currently unsupported, see #9 for more details
+> **Warning**: Windows on ARM is currently unsupported, see [#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9) for more details
 
 ✔ Windows 11 (up to 1.85.x)
 
