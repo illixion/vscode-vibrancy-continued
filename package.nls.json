@@ -7,6 +7,8 @@
   "configuration.type.macos-only-legacy.description": "DEPRECATED in VS 1.86 (macOS only)",
   "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",
   "configuration.theme.description": "Select Vibrancy theme.",
+  "configuration.preferedDarkTheme.description": "When \"window.autoDetectColorScheme\" enable, change os theme to dark will led Vibrancy change to this theme.",
+  "configuration.preferedLightTheme.description": "When \"window.autoDetectColorScheme\" enable, change os theme to light will led Vibrancy change to this theme.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",
   "configuration.refreshInterval.description": "Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.",
   "configuration.preventFlash.description": "Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.",

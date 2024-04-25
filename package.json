@@ -130,6 +130,44 @@
             "Custom theme (use imports)"
           ]
         },
+        "vscode_vibrancy.preferedDarkTheme": {
+          "description": "%configuration.preferedDarkTheme.description%",
+          "type": "string",
+          "default": "Default Dark",
+          "enum": [
+            "Default Dark",
+            "Dark (Only Subbar)",
+            "Default Light",
+            "Light (Only Subbar)",
+            "Tokyo Night Storm",
+            "Tokyo Night Storm (Outer)",
+            "Noir et blanc",
+            "Dark (Exclude Tab Line)",
+            "Solarized Dark+",
+            "Catppuccin Mocha",
+            "GitHub Dark Default",
+            "Custom theme (use imports)"
+          ]
+        },
+        "vscode_vibrancy.preferedLightTheme": {
+          "description": "%configuration.preferedDarkTheme.description%",
+          "type": "string",
+          "default": "Default Light",
+          "enum": [
+            "Default Light",
+            "Dark (Only Subbar)",
+            "Default Dark",
+            "Light (Only Subbar)",
+            "Tokyo Night Storm",
+            "Tokyo Night Storm (Outer)",
+            "Noir et blanc",
+            "Dark (Exclude Tab Line)",
+            "Solarized Dark+",
+            "Catppuccin Mocha",
+            "GitHub Dark Default",
+            "Custom theme (use imports)"
+          ]
+        },
         "vscode_vibrancy.imports": {
           "description": "%configuration.imports.description%",
           "type": "array",
@@ -154,11 +192,14 @@
     "build-win10": "node-gyp rebuild"
   },
   "dependencies": {
+    "@vscode/vsce": "^2.26.0",
+    "dark-mode-listener": "^0.1.2",
     "fs-extra": "^10.1.0",
-    "mz": "^2.7.0"
+    "mz": "^2.7.0",
+    "ovsx": "^0.9.1"
   },
   "devDependencies": {
     "node-addon-api": "^5.0.0",
-    "node-gyp": "^9.1.0"
+    "node-gyp": "^9.4.1"
   }
 }

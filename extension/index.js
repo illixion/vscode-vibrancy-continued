@@ -501,8 +501,28 @@ function activate(context) {
           }
         });
       context.globalState.update('lastVersion', currentVersion);
-    }
+      }
   });
+    
+    DarkModeModule = require('dark-mode-listener');
+    DarkModeModule.on('change', (value) => {
+        // Check current theme
+        const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
+        const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredDarkColorTheme")
+        const preferredLightColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredLightColorTheme")
+        const vscode_vibrancyThemeDark = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme")
+        const vscode_vibrancyThemeLight = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme")
+        // Check if the theme is Dark or Light
+        if (value === 'dark' && currentColorTheme === preferredLightColorTheme) {
+            vscode.workspace.getConfiguration().update("workbench.colorTheme", preferredDarkColorTheme, vscode.ConfigurationTarget.Global);
+            vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", vscode_vibrancyThemeDark, vscode.ConfigurationTarget.Global);
+        } else if (value === 'light' && currentColorTheme === preferredDarkColorTheme) {
+            vscode.workspace.getConfiguration().update("workbench.colorTheme", preferredLightColorTheme, vscode.ConfigurationTarget.Global);
+            vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", vscode_vibrancyThemeLight, vscode.ConfigurationTarget.Global);
+
+        }
+    });
+
 }
 exports.activate = activate;
 
