@@ -130,6 +130,44 @@
             "Custom theme (use imports)"
           ]
         },
+        "vscode_vibrancy.preferedDarkTheme": {
+          "description": "%configuration.preferedDarkTheme.description%",
+          "type": "string",
+          "default": "Default Dark",
+          "enum": [
+            "Default Dark",
+            "Dark (Only Subbar)",
+            "Default Light",
+            "Light (Only Subbar)",
+            "Tokyo Night Storm",
+            "Tokyo Night Storm (Outer)",
+            "Noir et blanc",
+            "Dark (Exclude Tab Line)",
+            "Solarized Dark+",
+            "Catppuccin Mocha",
+            "GitHub Dark Default",
+            "Custom theme (use imports)"
+          ]
+        },
+        "vscode_vibrancy.preferedLightTheme": {
+          "description": "%configuration.preferedDarkTheme.description%",
+          "type": "string",
+          "default": "Default Light",
+          "enum": [
+            "Default Light",
+            "Dark (Only Subbar)",
+            "Default Dark",
+            "Light (Only Subbar)",
+            "Tokyo Night Storm",
+            "Tokyo Night Storm (Outer)",
+            "Noir et blanc",
+            "Dark (Exclude Tab Line)",
+            "Solarized Dark+",
+            "Catppuccin Mocha",
+            "GitHub Dark Default",
+            "Custom theme (use imports)"
+          ]
+        },
         "vscode_vibrancy.imports": {
           "description": "%configuration.imports.description%",
           "type": "array",

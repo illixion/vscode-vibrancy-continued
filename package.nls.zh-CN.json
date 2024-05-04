@@ -7,6 +7,8 @@
   "configuration.type.macos-only-legacy.description": "已在 VSCode 1.86 中删除 (仅限 macOS)",
   "configuration.opacity.description": "毛玻璃效果的透明度。",
   "configuration.theme.description": "毛玻璃效果的主题样式。",
+  "configuration.preferedDarkTheme.description": "当 \"window.autoDetectColorScheme\" 启用时，更改 os 主题为暗色将导致毛玻璃效果更改为此主题。",
+  "configuration.preferedLightTheme.description": "当 \"window.autoDetectColorScheme\" 启用时，更改 os 主题为亮色将导致毛玻璃效果更改为此主题。",
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
   "configuration.refreshInterval.description": "试验性功能：改变背景颜色刷新率以避免在改变窗口大小后出现的闪屏，更改后需要 [卸载 -> 重启 -> 安装 -> 重启]才会生效",
   "configuration.preventFlash.description": "另一种启用的途径，可以防止在改变窗口大小时闪屏。启用后不需要“刷新率”设置，但在某些情况下兼容性可能会降低。",

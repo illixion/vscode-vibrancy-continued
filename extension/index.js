@@ -49,6 +49,25 @@ function getCurrentTheme(config) {
   return config.theme in themeStylePaths ? config.theme : defaultTheme;
 }
 
+function checkDarkLightMode(theme) {
+  {
+    const currentTheme = theme.kind;
+    const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
+    const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredDarkColorTheme");
+    const preferredLightColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredLightColorTheme");
+    const vscode_vibrancyThemeDark = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
+    const vscode_vibrancyThemeLight = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
+  
+    const targetTheme = currentTheme === vscode.ColorThemeKind.Dark ? preferredDarkColorTheme : preferredLightColorTheme;
+    const targetVibrancyTheme = currentTheme === vscode.ColorThemeKind.Dark ? vscode_vibrancyThemeDark : vscode_vibrancyThemeLight;
+  
+    if (currentColorTheme !== targetTheme) {
+      vscode.workspace.getConfiguration().update("workbench.colorTheme", targetTheme, vscode.ConfigurationTarget.Global);
+      vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", targetVibrancyTheme, vscode.ConfigurationTarget.Global);
+    }
+  }
+}
+
 async function changeTerminalRendererType() {
   // Check if "terminal.integrated.gpuAcceleration" has a global value
   const terminalConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
@@ -501,8 +520,11 @@ function activate(context) {
           }
         });
       context.globalState.update('lastVersion', currentVersion);
-    }
+      }
   });
+  
+  checkDarkLightMode(vscode.window.activeColorTheme.kind)
+  vscode.window.onDidChangeActiveColorTheme(checkDarkLightMode);
 }
 exports.activate = activate;
 
