@@ -1,3 +1,7 @@
+# 1.1.30
+
+* Add automatic dark/light mode switch (PR [#146](https://github.com/illixion/vscode-vibrancy-continued/pull/146))
+
 # 1.1.29
 
 * Implement workaround for VSCode 1.86.x on Windows (bug [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122))
