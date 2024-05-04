@@ -192,14 +192,11 @@
     "build-win10": "node-gyp rebuild"
   },
   "dependencies": {
-    "@vscode/vsce": "^2.26.0",
-    "dark-mode-listener": "^0.1.2",
     "fs-extra": "^10.1.0",
-    "mz": "^2.7.0",
-    "ovsx": "^0.9.1"
+    "mz": "^2.7.0"
   },
   "devDependencies": {
     "node-addon-api": "^5.0.0",
-    "node-gyp": "^9.4.1"
+    "node-gyp": "^9.1.0"
   }
 }
