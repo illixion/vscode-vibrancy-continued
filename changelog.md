@@ -1,3 +1,8 @@
+# 1.1.31
+
+* Fix automatic dark/light mode switch not working
+* Allow toggling auto dark/light mode setting
+
 # 1.1.30
 
 * Add automatic dark/light mode switch (PR [#146](https://github.com/illixion/vscode-vibrancy-continued/pull/146))

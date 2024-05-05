@@ -130,8 +130,12 @@
             "Custom theme (use imports)"
           ]
         },
+        "vscode_vibrancy.enableAutoTheme": {
+          "description": "%configuration.enableAutoTheme.description%",
+          "type": "boolean",
+          "default": false
+        },
         "vscode_vibrancy.preferedDarkTheme": {
-          "description": "%configuration.preferedDarkTheme.description%",
           "type": "string",
           "default": "Default Dark",
           "enum": [
@@ -150,7 +154,6 @@
           ]
         },
         "vscode_vibrancy.preferedLightTheme": {
-          "description": "%configuration.preferedDarkTheme.description%",
           "type": "string",
           "default": "Default Light",
           "enum": [

@@ -50,21 +50,26 @@ function getCurrentTheme(config) {
 }
 
 function checkDarkLightMode(theme) {
-  {
-    const currentTheme = theme.kind;
-    const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
-    const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredDarkColorTheme");
-    const preferredLightColorTheme = vscode.workspace.getConfiguration().get("workbench.preferredLightColorTheme");
-    const vscode_vibrancyThemeDark = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
-    const vscode_vibrancyThemeLight = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
-  
-    const targetTheme = currentTheme === vscode.ColorThemeKind.Dark ? preferredDarkColorTheme : preferredLightColorTheme;
-    const targetVibrancyTheme = currentTheme === vscode.ColorThemeKind.Dark ? vscode_vibrancyThemeDark : vscode_vibrancyThemeLight;
-  
-    if (currentColorTheme !== targetTheme) {
-      vscode.workspace.getConfiguration().update("workbench.colorTheme", targetTheme, vscode.ConfigurationTarget.Global);
-      vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", targetVibrancyTheme, vscode.ConfigurationTarget.Global);
-    }
+  const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
+  if (!enableAutoTheme) return;
+
+  const currentTheme = theme.kind;
+
+  const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
+  const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
+  const preferredLightColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
+
+  let targetVibrancyTheme;
+  if (currentTheme === vscode.ColorThemeKind.Dark) {
+    targetVibrancyTheme = preferredDarkColorTheme;
+  } else if (currentTheme === vscode.ColorThemeKind.Light) {
+    targetVibrancyTheme = preferredLightColorTheme;}
+  else {
+    return;
+  }
+
+  if (currentColorTheme !== targetVibrancyTheme) {
+    vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", targetVibrancyTheme, vscode.ConfigurationTarget.Global);
   }
 }
 
@@ -513,9 +518,9 @@ function activate(context) {
           await checkElectronDeprecatedType();
           if (msg) {
             await Update();
-            if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
-              await checkColorTheme();
-            }
+            // if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
+            //   await checkColorTheme();
+            // }
             enabledRestart();
           }
         });
@@ -524,7 +529,9 @@ function activate(context) {
   });
   
   checkDarkLightMode(vscode.window.activeColorTheme.kind)
-  vscode.window.onDidChangeActiveColorTheme(checkDarkLightMode);
+  vscode.window.onDidChangeActiveColorTheme((theme) => {
+    checkDarkLightMode(theme)
+  });
 }
 exports.activate = activate;
 
