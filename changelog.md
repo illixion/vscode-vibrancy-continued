@@ -1,3 +1,9 @@
+# 1.1.32
+
+* Pre-releases now available
+* Main branch renamed
+* No code changes
+
 # 1.1.31
 
 * Fix automatic dark/light mode switch not working
