@@ -97,6 +97,15 @@ Refresh interval (in milliseconds) for making the background transparent after w
 
 *value: 1 ~ 1000, default is 10*
 
+#### vscode_vibrancy.enableAutoTheme
+
+Enable automatic dark/light mode switching based on OS mode. Requires `window.autoDetectColorScheme` VSCode setting to also be enabled.
+*boolean, default is false*
+
+#### vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme
+
+Select which themes to use for light and dark modes, they will be used instead of the main Vibrancy theme selected.
+
 #### vscode_vibrancy.theme
 
 Select Vibrancy theme:
@@ -163,9 +172,10 @@ Please see [Important notice for Windows users](#important-notice-for-windows-us
 
 # Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Vibrancy relies on user contributions, and as such, any contributions you make are **greatly appreciated**.
 
 If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+
 Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project
@@ -173,6 +183,8 @@ Don't forget to give the project a star! Thanks again!
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+**When creating a PR**, please target the `development` branch.
 
 # License
 
