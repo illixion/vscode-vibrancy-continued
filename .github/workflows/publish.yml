@@ -64,4 +64,4 @@ jobs:
       - name: Push changes
         if: ${{ github.event.inputs.version != 'none' }}
         run: |
-          git push --tags origin master
+          git push --tags origin main
