@@ -1,3 +1,12 @@
+# 1.1.34
+
+* Add changes from 1.1.33
+* Fix GitHub Actions workflow syntax that made previous version pre-release by accident
+
+# 1.1.33 (pre-release)
+
+* Fixed bug where minimap was not visible in the catppuccin mocha theme (PR [#134](https://github.com/illixion/vscode-vibrancy-continued/pull/134))
+
 # 1.1.32
 
 * Pre-releases now available
