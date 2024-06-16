@@ -2,6 +2,8 @@
 
 > For questions about troubleshooting, installing or uninstalling Vibrancy Continued, please check the [FAQs](#FAQs).
 
+> ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
+
 Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
@@ -10,22 +12,24 @@ Enable Acrylic/Glass effect in VS Code.
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
 
-![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.87.2-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
+![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.90.1-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
 
 Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
-# Important notice for Windows users
+# ❗️ Important notice for 🪟Windows 10/11 users
 
-VSCode 1.86 and newer has known issues on Windows 10/11 due to Electron 27 introducing breaking changes to how transparent windows are handled. Your VSCode windows will **not be snappable or maximizable** if Vibrancy is applied on Windows, and you must also use "custom" for `window.titleBarStyle` setting. Some users have reported that [AltSnap](https://github.com/RamonUnch/AltSnap) may be able to solve this issue.
+### tl;dr YOU WON'T BE ABLE TO RESIZE THE VSCODE WINDOW unless you downgrade VSCode to 1.85.2
 
-If this is undesired, please downgrade to VSCode 1.85.2, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
+VSCode 1.86 and newer has known issues on Windows 10/11 due to breaking changes in Electron 27. Your VSCode windows **may stop being resizable, snappable or maximizable** if Vibrancy is applied on Windows, and you must also use "custom" for `window.titleBarStyle` setting. Some users have reported that [AltSnap](https://github.com/RamonUnch/AltSnap) may be able to solve this issue.
+
+If this is undesired, **please downgrade to VSCode 1.85.2**, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
 
 For more information, see issue [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
-# "Your VSCode installation appears to be corrupt"
+# ⚠️ "Your VSCode installation appears to be corrupt"
 
 This extension works by editing VS Code's checksum-verified HTML files, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
@@ -134,13 +138,15 @@ Select Vibrancy theme:
 
 # FAQs
 
-### How to uninstall Vibrancy?
+### How to uninstall Vibrancy? (or: I've uninstalled Vibrancy and the effect is still there)
 
-Press F1 or ⌘+Shift+P and activate command "Disable Vibrancy", then restart Visual Studio Code.
+Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restart Visual Studio Code.
+
+Just removing the extension without performing this step doesn't run the necessary cleanup code.
 
 ### Effect doesn't work for terminal?
 
-Check your settings. You should change the renderer type of the terminal to dom.
+Check your settings. You should change the renderer type of the terminal to `dom`.
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
@@ -160,15 +166,15 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 [Please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
 
+### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
+
+Please see [Important notice for Windows users](#️-important-notice-for-windows-1011-users) at the top of the description.
+
 ### Effect doesn't work, but there aren't any errors
 
 Ensure that you don't have transparency effects disabled globally through your OS settings. This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
 
 If nothing else worked, try reinstalling VSCode, you won't lose any settings and this will ensure that your VSCode installation is consistent.
-
-### Window is opaque and text is blurry while scrolling
-
-Please see [Important notice for Windows users](#important-notice-for-windows-users) at the top of the description.
 
 # Contributing
 

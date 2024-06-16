@@ -1,3 +1,8 @@
+# 1.1.35
+
+* Updated readme to enhance Windows warning visibility
+* No code changes
+
 # 1.1.34
 
 * Add changes from 1.1.33
