@@ -19,7 +19,7 @@ Enable Acrylic/Glass effect in VS Code.
 
 Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
-# ❗️ Important notice for 🪟Windows 10/11 users
+# ❗️ Important notice for Windows 10/11 users
 
 ### tl;dr YOU WON'T BE ABLE TO RESIZE THE VSCODE WINDOW unless you downgrade VSCode to 1.85.2
 
@@ -27,7 +27,7 @@ VSCode 1.86 and newer has known issues on Windows 10/11 due to breaking changes 
 
 If this is undesired, **please downgrade to VSCode 1.85.2**, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
 
-For more information, see issue [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
+For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
 # ⚠️ "Your VSCode installation appears to be corrupt"
 
