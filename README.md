@@ -150,6 +150,14 @@ Check your settings. You should change the renderer type of the terminal to `dom
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
+Or open the settings file and add `"terminal.background": "#00000000"` inside `"workbench.colorCustomizations"`.
+
+`"workbench.colorCustomizations": {
+    "terminal.background": "#00000000"
+  }`
+
+Open color picker and set tranparency from the slider there.
+
 ### Prompt "Run Visual Studio Code with administrator privileges"?
 
 It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
