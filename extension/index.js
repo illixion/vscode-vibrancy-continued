@@ -87,6 +87,38 @@ async function changeTerminalRendererType() {
   }
 }
 
+async function changeTerminalBackground() {
+  // Get the current terminal color customizations
+  const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+
+  // Initialize an empty object if "workbench.colorCustomizations" is missing
+  const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+
+  // Get the current terminal.background value
+  const currentBackground = currentColorCustomizations["terminal.background"];
+
+  // Only update if the current terminal.background is not already "#00000000"
+  if (currentBackground !== "#00000000") {
+    const newColorCustomization = {
+      ...currentColorCustomizations,
+      "terminal.background": "#00000000"
+    };
+
+    await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
+
+    // Get the current applyToAllProfiles setting
+    const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
+    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue || [];
+
+    // Append "workbench.colorCustomizations" if it's not already in the list
+    if (!currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
+      currentApplyToAllProfiles.push("workbench.colorCustomizations");
+
+      await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", currentApplyToAllProfiles, vscode.ConfigurationTarget.Global);
+    }
+  }
+}
+
 async function promptRestart() {
   // Store the current value of "window.titleBarStyle"
   const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
@@ -422,6 +454,7 @@ function activate(context) {
       await installJS();
       await installHTML();
       await changeTerminalRendererType();
+      await changeTerminalBackground();
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
@@ -506,6 +539,9 @@ function activate(context) {
 
   // Check type compatibility with current Electron
   checkElectronDeprecatedType();
+
+  // Ensure correct config
+  changeTerminalBackground();
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
