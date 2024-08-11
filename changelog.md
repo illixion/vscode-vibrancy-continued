@@ -1,3 +1,7 @@
+# 1.1.36
+
+* Automatically set terminal transparency (fix for VSCode 1.92, see [#155](https://github.com/illixion/vscode-vibrancy-continued/issues/155))
+
 # 1.1.35
 
 * Updated readme to enhance Windows warning visibility
