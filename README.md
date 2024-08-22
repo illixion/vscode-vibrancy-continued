@@ -106,7 +106,7 @@ Refresh interval (in milliseconds) for making the background transparent after w
 Enable automatic dark/light mode switching based on OS mode. Requires `window.autoDetectColorScheme` VSCode setting to also be enabled.
 *boolean, default is false*
 
-#### vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme
+#### vscode_vibrancy.preferredDarkTheme / vscode_vibrancy.preferredLightTheme
 
 Select which themes to use for light and dark modes, they will be used instead of the main Vibrancy theme selected.
 
@@ -115,9 +115,9 @@ Select which themes to use for light and dark modes, they will be used instead o
 Select Vibrancy theme:
 
 * Default Dark
-* Dark (Only Subbar)
+* Dark (Only Sub-bar)
 * Default Light
-* Light (Only Subbar)
+* Light (Only Sub-bar)
 * Noir et blanc
 * Tokyo Night Storm
 * Tokyo Night Storm (Outer)
