@@ -62,7 +62,7 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 4. Restart VSCode when prompted.
 
-Each time VS Code is updated, please re-enable Vibrancy using the same steps.
+Each time VS Code is updated, please re-enable Vibrancy using the same steps. If you're experiencing issues, please check the [FAQs](#faqs).
 
 ## Options
 
@@ -73,7 +73,6 @@ Native method of Vibrancy Effect.
 * auto : Automatically switch with system version.
 * acrylic : (Windows 10 only) Fluent Design blur.
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
-  * Note that many of these types will be deprecated in VSC 1.86
 
 #### vscode_vibrancy.opacity
 
@@ -138,7 +137,7 @@ Select Vibrancy theme:
 
 # FAQs
 
-### How to uninstall Vibrancy? (or: I've uninstalled Vibrancy and the effect is still there)
+### How to uninstall Vibrancy?
 
 Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restart Visual Studio Code.
 
@@ -149,14 +148,6 @@ Just removing the extension without performing this step doesn't run the necessa
 Check your settings. You should change the renderer type of the terminal to `dom`.
 
 `"terminal.integrated.gpuAcceleration": "off"`
-
-Or open the settings file and add `"terminal.background": "#00000000"` inside `"workbench.colorCustomizations"`.
-
-`"workbench.colorCustomizations": {
-    "terminal.background": "#00000000"
-  }`
-
-Open color picker and set tranparency from the slider there.
 
 ### Prompt "Run Visual Studio Code with administrator privileges"?
 
@@ -178,7 +169,7 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 Please see [Important notice for Windows users](#️-important-notice-for-windows-1011-users) at the top of the description.
 
-### Effect doesn't work, but there aren't any errors
+### Effect doesn't work, but there are no errors
 
 Ensure that you don't have transparency effects disabled globally through your OS settings. This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
 
