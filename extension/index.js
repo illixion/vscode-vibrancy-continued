@@ -564,7 +564,7 @@ function activate(context) {
       }
   });
   
-  checkDarkLightMode(vscode.window.activeColorTheme.kind)
+  checkDarkLightMode(vscode.window.activeColorTheme)
   vscode.window.onDidChangeActiveColorTheme((theme) => {
     checkDarkLightMode(theme)
   });
