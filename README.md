@@ -50,7 +50,7 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 # Getting Started
 
-1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancy.theme)
+1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancytheme)
 
 ![step-1](./step-1.png)
 
