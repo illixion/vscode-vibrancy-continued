@@ -241,9 +241,23 @@ function checkRuntimeUpdate(current, last) {
 function activate(context) {
   console.log('vscode-vibrancy is active!');
 
-  var appDir = path.dirname(require.main.filename);
+  var appDir;
+  try {
+    appDir = path.dirname(require.main.filename);
+  } catch {
+    appDir = _VSCODE_FILE_ROOT;
+  }
 
-  var HTMLFile = appDir + '/vs/code/electron-sandbox/workbench/workbench.html';
+  // VSC 1.94 and forward use Esm path
+  const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
+  const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
+  var HTMLFile;
+  if (fs.existsSync(workbenchHtmlPath)) {
+      HTMLFile = workbenchHtmlPath;
+  } else {
+      HTMLFile = workbenchEsmHtmlPath;
+  }
+
   var JSFile = appDir + '/main.js';
   var ElectronJSFile = appDir + '/vs/code/electron-main/main.js';
 
