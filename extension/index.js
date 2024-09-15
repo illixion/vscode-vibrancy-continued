@@ -318,65 +318,82 @@ function activate(context) {
   async function installJS() {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
-    const themeConfig = require(path.resolve(__dirname, themeConfigPaths[currentTheme]));
-    const themeCSS = await fs.readFile(path.join(__dirname, themeStylePaths[currentTheme]), 'utf-8');
-
+    const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
+    const themeConfig = require(themeConfigPath);
+    const themeStylePath = path.join(__dirname, themeStylePaths[currentTheme]);
+    const themeCSS = await fs.readFile(themeStylePath, 'utf-8');
     const JS = await fs.readFile(JSFile, 'utf-8');
-
-    // generate imports by reading all files in config.imports
-    const imports = {
-      css: "",
-      js: "",
-    };
-    for (let i = 0; i < config.imports.length; i++) {
-      if (config.imports[i] === "/path/to/file") continue;
-
-      try {
-        const importContent = await fs.readFile(config.imports[i], 'utf-8');
-
-        if (config.imports[i].endsWith('.css')) {
-          imports.css += `<style>${importContent}</style>`;
-        } else {
-          imports.js += `<script>${importContent}</script>`;
-        }
-      } catch (err) {
-        vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
-      }
-    }
-
+  
+    const imports = await generateImports(config);
+  
     const injectData = {
       os: os,
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
       imports: imports,
-    }
-
+    };
+  
     const base = __filename;
-
+    const newJS = generateNewJS(JS, base, injectData);
+  
+    await fs.writeFile(JSFile, newJS, 'utf-8');
+    await modifyElectronJSFile(ElectronJSFile);
+  }
+  
+  async function generateImports(config) {
+    const imports = {
+      css: "",
+      js: "",
+    };
+  
+    for (let i = 0; i < config.imports.length; i++) {
+      if (config.imports[i] === "/path/to/file") continue;
+  
+      try {
+        const importContent = await fs.readFile(config.imports[i], 'utf-8');
+  
+        if (config.imports[i].endsWith('.css')) {
+          imports.css += `<style>${importContent}</style>`;
+        } else {
+          imports.js += `<script>${importContent}</script>`;
+        }
+      } catch (err) {
+          vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
+        }
+    }
+  
+    return imports;
+  }
+  
+  function generateNewJS(JS, base, injectData) {
     const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
       + '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
-      + `if (!require(\'fs\').existsSync(${JSON.stringify(base)})) return;\n`
-      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ require(${JSON.stringify(runtimeDir)}); } catch (err) {console.error(err)}\n`
+      + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
+      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import(${JSON.stringify(runtimeDir)} + "/index.mjs"); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
-    await fs.writeFile(JSFile, newJS, 'utf-8');
-    
-    // Load Electron JS for BrowserWindow option modification
+  
+    return newJS;
+  }
+  
+  // BrowserWindow option modification
+  async function modifyElectronJSFile(ElectronJSFile) {
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    
+  
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
     if (!ElectronJS.includes('visualEffectState')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
     }
+
     // enable frameless window on Windows w/ Electron 27 (bug #122)
-    const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);  
+    const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     if (!ElectronJS.includes('frame:false,') && process.platform === 'win32' && electronMajorVersion >= 27) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
-
+  
     await fs.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
-
+  
   async function installHTML() {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
 

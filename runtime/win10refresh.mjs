@@ -1,6 +1,6 @@
-const { VerticalRefreshRateContext } = require('./displayconfig')
-const electron = require('electron')
-const process = require('process')
+import { VerticalRefreshRateContext } from './displayconfig.mjs';
+import electron from 'electron';
+import process from 'process';
 
 function sleep(duration) {
 	return new Promise(resolve => setTimeout(resolve, duration));
