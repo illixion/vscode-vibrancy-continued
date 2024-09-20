@@ -106,6 +106,7 @@ electron.app.on('browser-window-created', (_, window) => {
       if (
         !(
           currentURL.includes('workbench.html') ||
+          currentURL.includes('workbench.esm.html') ||
           currentURL.includes('workbench-monkey-patch.html')
         )
       ) {
@@ -129,6 +130,7 @@ electron.app.on('browser-window-created', (_, window) => {
     if (
       !(
         currentURL.includes('workbench.html') ||
+        currentURL.includes('workbench.esm.html') ||
         currentURL.includes('workbench-monkey-patch.html')
       )
     ) {
