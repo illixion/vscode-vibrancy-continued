@@ -1,3 +1,8 @@
+# 1.1.38 (pre-release)
+
+* Added support for VSCode 1.94 (Insiders)
+* Refactored code to support the ESM version of workbench.html
+
 # 1.1.37
 
 * Fixed bug that prevented auto dark/light mode from detecting changes when VSCode is closed
