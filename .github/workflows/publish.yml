@@ -69,4 +69,6 @@ jobs:
       - name: Push changes
         if: ${{ github.event.inputs.version != 'none' }}
         run: |
-          git push --tags origin main
+          # Extract the branch name from the GITHUB_REF
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          git push --tags origin $BRANCH_NAME
