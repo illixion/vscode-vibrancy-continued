@@ -1,3 +1,7 @@
+# 1.1.39
+
+* Add VSCode 1.94 fixes from pre-release version
+
 # 1.1.38 (pre-release)
 
 * Added support for VSCode 1.94 (Insiders)
