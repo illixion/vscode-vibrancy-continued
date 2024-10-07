@@ -3,6 +3,7 @@ import electron from 'electron';
  * @type {(window) => Record<'interval' | 'overwrite', {install: () => void, uninstall: () => void>}
  */
 import transparencyMethods from './methods/index.mjs';
+import { createRequire } from 'module';
 
 /**
  * @type {{
@@ -88,17 +89,23 @@ electron.app.on('browser-window-created', (_, window) => {
   const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
-    const bindings = require('./vibrancy.mjs');
-    bindings.setVibrancy(
-      window.getNativeWindowHandle().readInt32LE(0),
-      1,
-      backgroundRGB.r,
-      backgroundRGB.g,
-      backgroundRGB.b,
-      0
-    );
-    const win10refresh = require('./win10refresh.mjs');
-    win10refresh(window, 60);
+    const require = createRequire(import.meta.url);
+    const addon = require('./vibrancy.node');
+    addon.setVibrancy(
+        window.getNativeWindowHandle().readInt32LE(0),
+        1,
+        backgroundRGB.r,
+        backgroundRGB.g,
+        backgroundRGB.b,
+        0
+      );
+    import('./win10refresh.mjs')
+      .then((module) => {
+        module.default(window, 60);
+      })
+      .catch((error) => {
+        console.error('Error loading module:', error);
+      });
 
     window.webContents.once('dom-ready', () => {
       const currentURL = window.webContents.getURL();

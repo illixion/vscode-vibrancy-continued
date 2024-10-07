@@ -2,6 +2,7 @@ var vscode = require('vscode');
 var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
 var path = require('path');
+var { pathToFileURL } = require('url')
 
 /**
  * @type {(info: string) => string}
@@ -258,11 +259,11 @@ function activate(context) {
       HTMLFile = workbenchEsmHtmlPath;
   }
 
-  var JSFile = appDir + '/main.js';
-  var ElectronJSFile = appDir + '/vs/code/electron-main/main.js';
+  var JSFile = path.join(appDir, '/main.js');
+  var ElectronJSFile = path.join(appDir, '/vs/code/electron-main/main.js');
 
   var runtimeVersion = 'v6';
-  var runtimeDir = appDir + '/vscode-vibrancy-runtime-' + runtimeVersion;
+  var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
 
   async function installRuntime() {
     // if runtimeDir exists, recurse through it and delete all files
@@ -367,10 +368,11 @@ function activate(context) {
   }
   
   function generateNewJS(JS, base, injectData) {
+    const runtimePath = pathToFileURL(path.join(runtimeDir, "index.mjs"))
     const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
       + '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
       + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
-      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import(${JSON.stringify(runtimeDir)} + "/index.mjs"); } catch (err) {console.error(err)}\n`
+      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${runtimePath}"); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
   
     return newJS;

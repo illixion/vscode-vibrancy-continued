@@ -1,7 +1,10 @@
 "use strict";
-import addon from './displayconfig.node';
+import { createRequire } from 'module';
 
-const exportableObject = {};
+const require = createRequire(import.meta.url);
+const addon = require('./displayconfig.node');
+
+const displayConfig = {};
 
 /**
  * Represents a numeric error code returned from the Win32 API.
@@ -15,7 +18,7 @@ class Win32Error extends Error {
   }
 }
 
-exportableObject.Win32Error = Win32Error;
+displayConfig.Win32Error = Win32Error;
 
 /**
  * @typedef AdapterId
@@ -185,7 +188,7 @@ exportableObject.Win32Error = Win32Error;
  *   A Promise, resolving to { pathArray: [...], modeInfoArray: [...], nameArray: [...] },
  *   or rejecting with a {@link Win32Error} if something goes wrong.
  */
-exportableObject.queryDisplayConfig = () => {
+displayConfig.queryDisplayConfig = () => {
   return new Promise((resolve, reject) => {
     const ran = addon.win32_queryDisplayConfig((err, result) => {
       if (err !== null) {
@@ -237,8 +240,8 @@ exportableObject.queryDisplayConfig = () => {
  * @returns {Promise<ExtractedDisplayConfig>} A Promise, resolving to display configuration information
  *   or rejecting with a {@link Win32Error} if something goes wrong.
  */
-exportableObject.extractDisplayConfig = async () => {
-  const config = await exportableObject.queryDisplayConfig();
+displayConfig.extractDisplayConfig = async () => {
+  const config = await displayConfig.queryDisplayConfig();
   const ret = [];
   for (const { value, buffer: pathBuffer } of config.pathArray) {
     let inUse = value.flags & (1 === 1) ? true : false;
@@ -356,12 +359,12 @@ async function win32_toggleEnabledDisplays(args) {
  *
  * @param {ToggleEnabledDisplaysArgs} args
  */
-exportableObject.toggleEnabledDisplays = async (args) => {
+displayConfig.toggleEnabledDisplays = async (args) => {
   const { persistent, enable: enablePaths, disable: disablePaths } = args;
   const enable = [];
   const disable = [];
 
-  const displayConfig = await exportableObject.extractDisplayConfig();
+  const displayConfig = await displayConfig.extractDisplayConfig();
   for (const { devicePath, targetConfigId } of displayConfig) {
     if (Array.isArray(enablePaths) && enablePaths.indexOf(devicePath) >= 0) {
       enable.push(targetConfigId);
@@ -415,8 +418,8 @@ function devicePathLookupForEnabledDisplayConfig(conf) {
  *
  * @returns {DisplayRestorationConfigurationEntry[]}
  */
-exportableObject.displayConfigForRestoration = async () => {
-  const currentConfig = await exportableObject.extractDisplayConfig();
+displayConfig.displayConfigForRestoration = async () => {
+  const currentConfig = await displayConfig.extractDisplayConfig();
   const ret = [];
 
   for (const entry of currentConfig) {
@@ -476,11 +479,11 @@ async function win32_restoreDisplayConfig(configs, persistent) {
  *
  * @param {RestoreDisplayConfigArgs} args
  */
-exportableObject.restoreDisplayConfig = async (args) => {
+displayConfig.restoreDisplayConfig = async (args) => {
   const devicePathNames = args.config
     .filter(({ targetModeBuffer }) => targetModeBuffer !== undefined)
     .map(({ devicePath }) => devicePath);
-  const currentConfig = await exportableObject.extractDisplayConfig();
+  const currentConfig = await displayConfig.extractDisplayConfig();
 
   const givenAsSet = new Set(currentConfig.map(({ devicePath }) => devicePath));
   const expectedEnabledAsSet = new Set(devicePathNames);
@@ -545,7 +548,7 @@ exportableObject.restoreDisplayConfig = async (args) => {
       }
     }
 
-    await exportableObject.toggleEnabledDisplays({
+    await displayConfig.toggleEnabledDisplays({
       enable,
       disable,
       persistent: args.persistent,
@@ -558,7 +561,7 @@ const displayChangeCallbacks = new Set();
 
 async function updateDisplayStateAndNotifyCallbacks() {
   try {
-    currentDisplayConfig = await exportableObject.extractDisplayConfig();
+    currentDisplayConfig = await displayConfig.extractDisplayConfig();
     for (const callback of Array.from(displayChangeCallbacks)) {
       callback(null, currentDisplayConfig);
     }
@@ -596,7 +599,7 @@ function setupListenForDisplayChanges() {
  * @param {function(Error | null, ExtractedDisplayConfig | undefined): void} listener
  * @returns {function(Error | null, ExtractedDisplayConfig | undefined): void} the listener argument as passed
  */
-exportableObject.addDisplayChangeListener = (listener) => {
+displayConfig.addDisplayChangeListener = (listener) => {
   if (displayChangeCallbacks.size === 0) {
     setupListenForDisplayChanges();
   }
@@ -618,7 +621,7 @@ exportableObject.addDisplayChangeListener = (listener) => {
  *
  * @param {function(Error | null, ExtractedDisplayConfig | undefined): void} listener previously passed to {@link addDisplayChangeListener}
  */
-exportableObject.removeDisplayChangeListener = (listener) => {
+displayConfig.removeDisplayChangeListener = (listener) => {
   displayChangeCallbacks.delete(listener);
   if (displayChangeCallbacks.size === 0) {
     addon.win32_stopListeningForDisplayChanges();
@@ -678,7 +681,7 @@ class VerticalRefreshRateContext {
       readyPromiseResolver();
     };
 
-    this.changeListener = exportableObject.addDisplayChangeListener(
+    this.changeListener = displayConfig.addDisplayChangeListener(
       computeDisplayGeometryFromConfig
     );
   }
@@ -720,10 +723,10 @@ class VerticalRefreshRateContext {
    * work items off of the event loop as per {@link removeDisplayChangeListener}.
    */
   close() {
-    exportableObject.removeDisplayChangeListener(this.changeListener);
+    displayConfig.removeDisplayChangeListener(this.changeListener);
   }
 }
 
-exportableObject.VerticalRefreshRateContext = VerticalRefreshRateContext;
+displayConfig.VerticalRefreshRateContext = VerticalRefreshRateContext;
 
-export default exportableObject;
+export default displayConfig;
