@@ -10,7 +10,7 @@
     "url": "https://illixion.com"
   },
   "engines": {
-    "vscode": "^1.94.0"
+    "vscode": "^1.63.0"
   },
   "categories": [
     "Other",

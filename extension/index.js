@@ -248,7 +248,19 @@ function activate(context) {
   } catch {
     appDir = _VSCODE_FILE_ROOT;
   }
+  let useEsmRuntime = false;
+  var JSFile = path.join(appDir, '/main.js');
+  var ElectronJSFile = path.join(appDir, '/vs/code/electron-main/main.js');
 
+  // VSC 1.95 merges these main.js files
+  if (!fs.existsSync(ElectronJSFile)) {
+    ElectronJSFile = JSFile;
+  }
+  
+  var runtimeVersion = 'v6';
+  var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
+  var runtimeSrcDir = "../runtime-pre-esm"
+  
   // VSC 1.94 and forward use Esm path
   const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
   const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
@@ -257,13 +269,9 @@ function activate(context) {
       HTMLFile = workbenchHtmlPath;
   } else {
       HTMLFile = workbenchEsmHtmlPath;
+      useEsmRuntime = true;
+      runtimeSrcDir = "../runtime"
   }
-
-  var JSFile = path.join(appDir, '/main.js');
-  var ElectronJSFile = path.join(appDir, '/vs/code/electron-main/main.js');
-
-  var runtimeVersion = 'v6';
-  var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
 
   async function installRuntime() {
     // if runtimeDir exists, recurse through it and delete all files
@@ -272,7 +280,7 @@ function activate(context) {
     }
 
     await fs.mkdir(runtimeDir);
-    await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+    await fsExtra.copy(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
   }
 
   async function installRuntimeWin() {
@@ -296,23 +304,23 @@ function activate(context) {
       });
 
       // copy all files from runtime to runtimeDir, skipping .node files
-      fs.readdirSync(path.resolve(__dirname, '../runtime')).forEach((file, index) => {
+      fs.readdirSync(path.resolve(__dirname, runtimeSrcDir)).forEach((file, index) => {
         if (file.endsWith('.node')) {
           return;
         }
 
         // if file is a directory
-        if (fs.lstatSync(path.join(path.resolve(__dirname, '../runtime'), file)).isDirectory()) {
-          fsExtra.copySync(path.join(path.resolve(__dirname, '../runtime'), file), path.join(runtimeDir, file));
+        if (fs.lstatSync(path.join(path.resolve(__dirname, runtimeSrcDir), file)).isDirectory()) {
+          fsExtra.copySync(path.join(path.resolve(__dirname, runtimeSrcDir), file), path.join(runtimeDir, file));
           return;
         }
 
-        const curPath = path.join(path.resolve(__dirname, '../runtime'), file);
+        const curPath = path.join(path.resolve(__dirname, runtimeSrcDir), file);
         fs.copyFileSync(curPath, path.join(runtimeDir, file));
       });
     } else {
       await fs.mkdir(runtimeDir).catch(() => { });
-      await fsExtra.copy(path.resolve(__dirname, '../runtime'), path.resolve(runtimeDir));
+      await fsExtra.copy(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
     }
   }
 
@@ -368,11 +376,17 @@ function activate(context) {
   }
   
   function generateNewJS(JS, base, injectData) {
-    const runtimePath = pathToFileURL(path.join(runtimeDir, "index.mjs"))
+    let runtimePath;
+    if (useEsmRuntime) {
+      runtimePath = path.join(runtimeDir, "index.mjs")
+    } else {
+      runtimePath = path.join(runtimeDir, "index.cjs")
+    }
+
     const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
       + '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
       + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
-      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${runtimePath}"); } catch (err) {console.error(err)}\n`
+      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${pathToFileURL(runtimePath)}"); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
   
     return newJS;
