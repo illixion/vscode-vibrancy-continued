@@ -1,3 +1,10 @@
+# 1.1.40
+
+* Fix for VSCode 1.94 on Windows
+  * Refactored ESM code to account for different `import` behavior on Windows compared to macOS ([#166](https://github.com/illixion/vscode-vibrancy-continued/issues/166))
+* Fix for VSCode 1.95-insiders
+  * VSCode 1.95-insiders seems to have reverted the recent change to make workbench.html use ESM. This also restores support for older VSCode versions.
+
 # 1.1.39
 
 * Add VSCode 1.94 fixes from pre-release version
