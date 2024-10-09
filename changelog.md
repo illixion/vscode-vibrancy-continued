@@ -1,3 +1,7 @@
+# 1.1.41
+
+* Fix incorrect syntax in non-ESM runtime, leading to crashing on Windows VSCode with certain versions
+
 # 1.1.40
 
 * Fix for VSCode 1.94 on Windows
