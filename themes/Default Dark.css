@@ -82,6 +82,17 @@ body {
   background-color: rgba(37, 37, 38, 0.3) !important;
 }
 
+.monaco-workbench .part.sidebar > div > div > div > div {
+  background-color: rgba(37, 37, 38, 0.3) !important;
+}
+
+.monaco-workbench .part.sidebar > div > div > div > div > div:nth-child(2) {
+  background-color: rgba(37, 37, 38) !important;
+}
+
+.cursorHintLineWidgetBackground {
+  background-color: transparent !important;
+}
 
 .editor-group-container>.tabs .tab {
   border: none !important;
