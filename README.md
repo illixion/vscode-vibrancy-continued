@@ -4,6 +4,8 @@
 
 > ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
 
+> Vibrancy currently **does not** work on macOS with VSCode 1.96.0 or newer ([more info](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
+
 Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
@@ -42,11 +44,11 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 > **Warning**: Windows on ARM is currently unsupported, see [#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9) for more details
 
-✔ Windows 11 (up to 1.85.x)
+✔ Windows 11 (VSCode 1.85.x)
 
-✔ Windows 10 (up to 1.85.x)
+✔ Windows 10 (VSCode 1.85.x)
 
-✔ macOS
+✔ macOS (VSCode 1.95.x)
 
 # Getting Started
 
@@ -61,6 +63,8 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 ![step-3](./step-3.png)
 
 4. Restart VSCode when prompted.
+
+5. Update your VSCode configuration to include `"terminal.integrated.gpuAcceleration": "off"`
 
 Each time VS Code is updated, please re-enable Vibrancy using the same steps. If you're experiencing issues, please check the [FAQs](#faqs).
 
