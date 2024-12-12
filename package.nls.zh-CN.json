@@ -22,7 +22,7 @@
   "messages.disabled": "毛玻璃已卸载并恢复为默认值。重启才能生效。",
   "messages.already_disabled": "毛玻璃已经禁用。",
   "messages.smthingwrong": "发生了预料之外的错误: ",
-  "messages.unsupported": "操作系统不支持，仅支持 macos 和 win10。",
+  "messages.unsupported": "不支持操作系统，仅支持 macOS 和 Windows 10/11 x86。",
   "messages.admin": "无法应用更改，请使用管理员权限运行 Visual Studio Code，有关详细信息，请参阅自述文件: ",
   "messages.recommendedColorTheme": "你当前的颜色主题是 \"%1\" ，而你的毛玻璃主题是为 \"%2\" 设计的!",
   "messages.restartIde": "重启 Visual Studio Code",

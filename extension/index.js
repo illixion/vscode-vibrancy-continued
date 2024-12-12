@@ -474,6 +474,30 @@ function activate(context) {
       });
   }
 
+  function isVSCodeThisVersionOrNewer(requiredVersion) {
+    const currentVersion = vscode.version; // e.g., "1.96.0"
+
+    // Extract only the numeric parts of the version string (e.g., "1.95.0-insider" -> "1.95.0")
+    const currentVersionCleaned = currentVersion.match(/^\d+\.\d+\.\d+/)[0];
+
+    // Split the version strings into major, minor, and patch numbers
+    const currentParts = currentVersionCleaned.split('.').map(Number);
+    const requiredParts = requiredVersion.split('.').map(Number);
+
+    // Compare each part of the version
+    for (let i = 0; i < requiredParts.length; i++) {
+        if ((currentParts[i] || 0) > requiredParts[i]) {
+            return true;
+        } else if ((currentParts[i] || 0) < requiredParts[i]) {
+            return false;
+        }
+    }
+
+    // If all parts are equal, return true
+    return true;
+}
+
+
   // ####  main commands ######################################################
 
   async function Install() {
@@ -486,6 +510,12 @@ function activate(context) {
     // BUG: prevent installation on ARM Windows (#9)
     if (process.arch.startsWith("arm") && process.platform === 'win32') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
+      throw new Error('unsupported');
+    }
+
+    // BUG: prevent installation on macOS with VSCode 1.96.x and up (#178)
+    if (isVSCodeThisVersionOrNewer("1.96") && process.platform === 'darwin') {
+      vscode.window.showErrorMessage("Vibrancy does not work with VSCode 1.96.x on macOS, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/178) for more info.");
       throw new Error('unsupported');
     }
 

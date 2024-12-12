@@ -1,3 +1,7 @@
+# 1.1.42
+
+* Prevent installation on macOS and VSC 1.96.x ([#178](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
+
 # 1.1.41
 
 * Fix incorrect syntax in non-ESM runtime, leading to crashing on Windows VSCode with certain versions
