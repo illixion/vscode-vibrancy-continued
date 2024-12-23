@@ -261,7 +261,7 @@ function activate(context) {
   var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
   var runtimeSrcDir = "../runtime-pre-esm"
   
-  // VSC 1.94 and forward use Esm path
+  // VSC 1.94 used ESM, 1.95 dropped it
   const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
   const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
   var HTMLFile;
@@ -513,9 +513,9 @@ function activate(context) {
       throw new Error('unsupported');
     }
 
-    // BUG: prevent installation on macOS with VSCode 1.96.x and up (#178)
-    if (isVSCodeThisVersionOrNewer("1.96") && process.platform === 'darwin') {
-      vscode.window.showErrorMessage("Vibrancy does not work with VSCode 1.96.x on macOS, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/178) for more info.");
+    // BUG: prevent installation on macOS with Electron 32.2.6 used in VSCode 1.96 (#178)
+    if (process.versions.electron === "32.2.6" && process.platform === 'darwin') {
+      vscode.window.showErrorMessage("Vibrancy doesn't work with this version of VSCode, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/178) for more info.");
       throw new Error('unsupported');
     }
 

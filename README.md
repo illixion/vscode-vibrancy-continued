@@ -4,7 +4,7 @@
 
 > ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
 
-> Vibrancy currently **does not** work on macOS with VSCode 1.96.0 or newer ([more info](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
+> ❗️ macOS users: Vibrancy **may fail to install** with VSCode versions from 1.95.0 to 1.96.1 due to an Electron bug ([more info](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
 
 Enable Acrylic/Glass effect in VS Code.
 
@@ -13,8 +13,6 @@ Enable Acrylic/Glass effect in VS Code.
 [![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
-
-![](https://img.shields.io/badge/Vistual%20Studio%20Code%20v1.90.1-Tested%20✔%EF%B8%8F-brightgreen?logo=Visual-Studio-Code&logoColor=ffffff)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)

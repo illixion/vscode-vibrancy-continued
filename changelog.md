@@ -1,3 +1,7 @@
+# 1.1.43
+
+* Update install blocking code to check Electron version directly in preparation for a future fix ([#178](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
+
 # 1.1.42
 
 * Prevent installation on macOS and VSC 1.96.x ([#178](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
