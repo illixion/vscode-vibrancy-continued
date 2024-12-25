@@ -21,7 +21,10 @@ Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual
 
 Maintenance of this project is made possible by all the <a href="https://github.com/illixion/vscode-vibrancy-continued/graphs/contributors">contributors</a> and <a href="https://github.com/sponsors/illixion">sponsors</a>. If you'd like to sponsor this project and have your avatar or company logo appear below, <a href="https://github.com/sponsors/illixion">click here</a>. Any support is greatly appreciated 💖
 
+<p align="center">
 <a href="https://github.com/doughayden"><img src="https://avatars.githubusercontent.com/u/110487462?s=120&v=4" width="64px" alt="User avatar of user doughayden" /></a>
+<a href="https://github.com/hjnnjh"><img src="https://avatars.githubusercontent.com/u/37699150?s=64&v=4" width="32px" alt="User avatar of user hjnnjh" /></a>
+</p>
 
 # ❗️ Important notice for Windows 10/11 users
 
@@ -32,6 +35,8 @@ VSCode 1.86 and newer has known issues on Windows 10/11 due to breaking changes 
 If this is undesired, **please downgrade to VSCode 1.85.2**, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
 
 For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
+
+**For uninstallation instructions**, see FAQ: [How to uninstall Vibrancy](#how-to-uninstall-vibrancy)
 
 # ⚠️ "Your VSCode installation appears to be corrupt"
 
@@ -44,13 +49,13 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 # Supported Operating Systems
 
-> **Warning**: Windows on ARM is currently unsupported, see [#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9) for more details
+> **Warning**: Windows on ARM is currently unsupported ([issue](https://github.com/illixion/vscode-vibrancy-continued/issues/9))
 
-✔ Windows 11 (VSCode 1.85.x)
+✔ macOS
 
-✔ Windows 10 (VSCode 1.85.x)
+✔ Windows 11
 
-✔ macOS (VSCode 1.95.x)
+✔ Windows 10
 
 # Getting Started
 
@@ -88,7 +93,7 @@ Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 
 
 #### vscode_vibrancy.imports
 
-Import custom CSS/JS files into VSCode, as file paths. The files will be imported in the order they are listed.
+Import any custom CSS/JS files into VSCode, as file paths. The files will be imported in the order they are listed. On Windows, forward slashes must be used.
 
 EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
 
@@ -109,6 +114,7 @@ Refresh interval (in milliseconds) for making the background transparent after w
 #### vscode_vibrancy.enableAutoTheme
 
 Enable automatic dark/light mode switching based on OS mode. Requires `window.autoDetectColorScheme` VSCode setting to also be enabled.
+
 *boolean, default is false*
 
 #### vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme
@@ -149,7 +155,7 @@ Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restar
 
 Just removing the extension without performing this step doesn't run the necessary cleanup code.
 
-### Effect doesn't work for terminal?
+### Effect doesn't work correctly in VSCode terminal?
 
 Check your settings. You should change the renderer type of the terminal to `dom`.
 
@@ -159,9 +165,19 @@ Check your settings. You should change the renderer type of the terminal to `dom
 
 It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
-### `EROFS: read-only file system` when enabling Vibrancy on macOS
+### `EACCES: permission denied` when enabling Vibrancy on macOS?
 
-Your installation of VSCode is affected by App Translocation. To fix this, either use the Finder and move VSCode to `/Applications` (or move it out of `/Applications` and then back in), or run the following terminal command:
+Your installation of VSCode is owned by another user. Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
+```shell
+sudo chown -R $(whoami):staff "/Applications/Visual Studio Code.app/"
+sudo chmod -R 755 "/Applications/Visual Studio Code.app/"
+```
+
+A reinstallation will also fix this issue without any loss of settings.
+
+### `EROFS: read-only file system` when enabling Vibrancy on macOS?
+
+Your installation of VSCode is affected by [App Translocation](https://eclecticlight.co/2023/05/09/what-causes-app-translocation/). To fix this, either use the Finder and move VSCode to `/Applications` (or move it out of `/Applications` and then back in), or run the following terminal command:
 
 ```shell
 sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
