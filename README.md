@@ -4,8 +4,6 @@
 
 > ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
 
-> ❗️ macOS users: Vibrancy **may fail to install** with VSCode versions from 1.95.0 to 1.96.1 due to an Electron bug ([more info](https://github.com/illixion/vscode-vibrancy-continued/issues/178))
-
 Enable Acrylic/Glass effect in VS Code.
 
 ![screenshot](./screenshot.png)
