@@ -47,9 +47,9 @@ jobs:
       - name: Package extension
         run: npx vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: vscode-vibrancy-continued
+          name: vscode-vibrancy-continued-${{ github.event.inputs.version }}
           path: "*.vsix"
       - name: Publish extension to VSCE
         if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
