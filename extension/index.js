@@ -57,8 +57,8 @@ function checkDarkLightMode(theme) {
   const currentTheme = theme.kind;
 
   const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
-  const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
-  const preferredLightColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
+  const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferredDarkTheme");
+  const preferredLightColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferredLightTheme");
 
   let targetVibrancyTheme;
   if (currentTheme === vscode.ColorThemeKind.Dark) {
