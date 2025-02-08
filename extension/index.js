@@ -74,52 +74,6 @@ function checkDarkLightMode(theme) {
   }
 }
 
-async function changeTerminalRendererType() {
-  // Check if "terminal.integrated.gpuAcceleration" has a global value
-  const terminalConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
-
-  if (terminalConfig?.globalValue === undefined) {
-    return;
-  }
-
-  // If "terminal.integrated.gpuAcceleration" is not enabled, disable it
-  if (!terminalConfig.globalValue) {
-    await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
-  }
-}
-
-async function changeTerminalBackground() {
-  // Get the current terminal color customizations
-  const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
-
-  // Initialize an empty object if "workbench.colorCustomizations" is missing
-  const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-
-  // Get the current terminal.background value
-  const currentBackground = currentColorCustomizations["terminal.background"];
-
-  // Only update if the current terminal.background is not already "#00000000"
-  if (currentBackground !== "#00000000") {
-    const newColorCustomization = {
-      ...currentColorCustomizations,
-      "terminal.background": "#00000000"
-    };
-
-    await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
-
-    // Get the current applyToAllProfiles setting
-    const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
-    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue || [];
-
-    // Append "workbench.colorCustomizations" if it's not already in the list
-    if (!currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
-      currentApplyToAllProfiles.push("workbench.colorCustomizations");
-
-      await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", currentApplyToAllProfiles, vscode.ConfigurationTarget.Global);
-    }
-  }
-}
-
 async function promptRestart() {
   // Store the current value of "window.titleBarStyle"
   const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
@@ -495,8 +449,97 @@ function activate(context) {
 
     // If all parts are equal, return true
     return true;
-}
+  }
 
+  // Fix rendering of terminal by modifying VSCode settings
+  async function changeTerminalSettings() {
+    // Get the current settings
+    const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+    const gpuAccelerationConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
+    const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
+
+    // Fetch previous values from global state
+    let previousCustomizations = context.globalState.get('customizations') || {};
+
+    // Store original values if not already saved
+    if (!previousCustomizations.saved) {
+      previousCustomizations = {
+        saved: true,
+        terminalBackground: terminalColorConfig?.globalValue?.["terminal.background"], // Save only the specific key
+        gpuAcceleration: gpuAccelerationConfig?.globalValue || "auto",
+        removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false
+      };
+    }
+
+    // Get current values
+    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+    const currentBackground = currentColorCustomizations["terminal.background"];
+    const currentGpuAcceleration = gpuAccelerationConfig?.globalValue || "auto";
+    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue || [];
+
+    // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there to fix an issue this caused with profiles
+    if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
+      const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
+      await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
+
+      // Notify user of the change
+      vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
+
+    }
+    // Ensure this fix is only applied once
+    previousCustomizations.removedFromApplyToAllProfiles = true;
+
+    // Update settings if necessary
+    if (currentBackground !== "#00000000" || currentGpuAcceleration !== "off") {
+      const newColorCustomization = {
+        ...currentColorCustomizations,
+        "terminal.background": "#00000000"
+      };
+
+      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
+    }
+
+    // Save user customizations
+    await context.globalState.update('customizations', previousCustomizations);
+  }
+
+  // Function to restore previous settings on uninstall
+  async function restorePreviousSettings() {
+    const previousCustomizations = context.globalState.get('customizations');
+
+    // Delete terminal.background from workbench.colorCustomizations if it's #00000000
+    const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+    if (currentColorCustomizations["terminal.background"] === "#00000000") {
+      delete currentColorCustomizations["terminal.background"];
+      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", currentColorCustomizations, vscode.ConfigurationTarget.Global);
+    }
+
+    if (previousCustomizations?.saved) {
+      // Restore only the specific keys we modified
+      const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+      const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+
+      if (previousCustomizations.terminalBackground !== undefined) {
+        const restoredColorCustomizations = { ...currentColorCustomizations };
+        if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
+          delete restoredColorCustomizations["terminal.background"];
+        } else {
+          restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
+        }
+        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+      }
+
+      await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
+
+      // Preserve the removedFromApplyToAllProfiles flag
+      const removedFromApplyToAllProfiles = previousCustomizations.removedFromApplyToAllProfiles;
+
+      // Clear saved state but preserve the removedFromApplyToAllProfiles flag
+      await context.globalState.update('customizations', { removedFromApplyToAllProfiles });
+    }
+  }
 
   // ####  main commands ######################################################
 
@@ -530,8 +573,7 @@ function activate(context) {
       }
       await installJS();
       await installHTML();
-      await changeTerminalRendererType();
-      await changeTerminalBackground();
+      await changeTerminalSettings();
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
@@ -544,6 +586,9 @@ function activate(context) {
   }
 
   async function Uninstall() {
+    // undo settings changes
+    await restorePreviousSettings();
+
     try {
       // uninstall old version
       await fs.stat(HTMLFile);
@@ -616,9 +661,6 @@ function activate(context) {
 
   // Check type compatibility with current Electron
   checkElectronDeprecatedType();
-
-  // Ensure correct config
-  changeTerminalBackground();
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 

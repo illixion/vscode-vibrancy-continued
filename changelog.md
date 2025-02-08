@@ -1,3 +1,8 @@
+# 1.1.44
+
+* Updated the code responsible for updating terminal-related settings to restore original settings on uninstallation
+* Ensure terminal color changes are only applied only to the current profile ([#183](https://github.com/illixion/vscode-vibrancy-continued/issues/183))
+
 # 1.1.43
 
 * Update install blocking code to check Electron version directly in preparation for a future fix ([#178](https://github.com/illixion/vscode-vibrancy-continued/issues/178))

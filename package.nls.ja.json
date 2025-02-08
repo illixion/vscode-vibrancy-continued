@@ -32,5 +32,6 @@
   "messages.noIde": "いいえ",
   "messages.importError": "エラーオープニングファイル: \"%1\"",
   "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。",
-  "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。"
+  "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。",
+  "messages.applyToAllProfiles": "Workbench.settings.applyToAllProfiles` 設定が更新され、`terminal.background` が削除されました。これはVSCodeプロファイルをより良くサポートするための1回限りの変更です。"
 }

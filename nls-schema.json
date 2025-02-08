@@ -94,6 +94,9 @@
     },
     "messages.electronDeprecatedType": {
       "type": "string"
+    },
+    "messages.applyToAllProfiles": {
+      "type": "string"
     }
   },
   "required": [
@@ -127,6 +130,7 @@
     "messages.noIde",
     "messages.importError",
     "messages.htmlError",
-    "messages.electronDeprecatedType"
+    "messages.electronDeprecatedType",
+    "messages.applyToAllProfiles"
   ]
 }
