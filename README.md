@@ -130,7 +130,9 @@ Select Vibrancy theme:
 * Noir et blanc
 * Tokyo Night Storm
 * Tokyo Night Storm (Outer)
+* Catppuccin Mocha
 * Solarized Dark+
+* GitHub Dark Default
 
 | Theme | Screenshot |
 | ---- | ---- |
@@ -140,7 +142,7 @@ Select Vibrancy theme:
 | Tokyo Night Storm | ![](./theme-tokyo-night-storm.png) |
 | Tokyo Night Storm (Only Subbar) | ![](./theme-tokyo-night-storm-outer.png) |
 | Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./theme-solarized-dark%2B.png)
-| Catpuccin Mocha | ![](./theme-catpuccin-mocha.png) |
+| Catppuccin Mocha | ![](./theme-catppuccin-mocha.png) |
 | GitHub Dark Default | ![](./theme-github-dark-default.png) |
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
