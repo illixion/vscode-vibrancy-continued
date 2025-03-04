@@ -124,7 +124,7 @@ Select which themes to use for light and dark modes, they will be used instead o
 #### vscode_vibrancy.theme
 
 Select Vibrancy theme:
-ff
+
 * Default Dark
 * Dark (Only Subbar)
 * Default Light
@@ -132,7 +132,9 @@ ff
 * Noir et blanc
 * Tokyo Night Storm
 * Tokyo Night Storm (Outer)
+* Catppuccin Mocha
 * Solarized Dark+
+* GitHub Dark Default
 
 | Theme | Screenshot |
 | ---- | ---- |
