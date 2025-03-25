@@ -6,7 +6,7 @@
 
 Enable Acrylic/Glass effect in VS Code.
 
-![screenshot](./screenshot.png)
+![screenshot](./images/screenshot.png)
 
 [![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
@@ -40,8 +40,8 @@ For more information, see issues [#140](https://github.com/illixion/vscode-vibra
 
 This extension works by editing VS Code's checksum-verified HTML files, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
 
-![screenshot](./warn.png)
-![screenshot](./warnfix.png)
+![screenshot](./images/warn.png)
+![screenshot](./images/warnfix.png)
 
 To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
 
@@ -55,17 +55,25 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 ✔ Windows 10
 
+# Supported code editors
+
+✔ Visual Studio Code
+
+✔ VSCodium
+
+✔ Cursor (see instructions [here](https://github.com/illixion/vscode-vibrancy-continued/issues/176#issuecomment-2503242180))
+
 # Getting Started
 
 1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancytheme)
 
-![step-1](./step-1.png)
+![step-1](./images/step-1.png)
 
 2. Install the extension from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
 3. Press F1 and activate command "Reload Vibrancy."
 
-![step-3](./step-3.png)
+![step-3](./images/step-3.png)
 
 4. Restart VSCode when prompted.
 
@@ -136,14 +144,14 @@ Select Vibrancy theme:
 
 | Theme | Screenshot |
 | ---- | ---- |
-| Default Dark | ![](./theme-default.jpg) |
-| Dark (Only Subbar) | ![](./theme-subbar.jpg) |
-| Noir et blanc | ![](./theme-noir-et-blanc.jpg) |
-| Tokyo Night Storm | ![](./theme-tokyo-night-storm.png) |
-| Tokyo Night Storm (Only Subbar) | ![](./theme-tokyo-night-storm-outer.png) |
-| Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./theme-solarized-dark%2B.png)
-| Catppuccin Mocha | ![](./theme-catppuccin-mocha.png) |
-| GitHub Dark Default | ![](./theme-github-dark-default.png) |
+| Default Dark | ![](./images/theme-default.jpg) |
+| Dark (Only Subbar) | ![](./images/theme-subbar.jpg) |
+| Noir et blanc | ![](./images/theme-noir-et-blanc.jpg) |
+| Tokyo Night Storm | ![](./images/theme-tokyo-night-storm.png) |
+| Tokyo Night Storm (Only Subbar) | ![](./images/theme-tokyo-night-storm-outer.png) |
+| Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./images/theme-solarized-dark%2B.png)
+| Catppuccin Mocha | ![](./images/theme-catppuccin-mocha.png) |
+| GitHub Dark Default | ![](./images/theme-github-dark-default.png) |
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
