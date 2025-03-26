@@ -1,9 +1,12 @@
+import path from 'path';
 import electron from 'electron';
 /**
  * @type {(window) => Record<'interval' | 'overwrite', {install: () => void, uninstall: () => void>}
  */
 import transparencyMethods from './methods/index.mjs';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+
 
 /**
  * @type {{
@@ -90,15 +93,30 @@ electron.app.on('browser-window-created', (_, window) => {
 
   if (app.os === 'win10') {
     const require = createRequire(import.meta.url);
-    const addon = require('./vibrancy.node');
-    addon.setVibrancy(
-        window.getNativeWindowHandle().readInt32LE(0),
-        1,
-        backgroundRGB.r,
-        backgroundRGB.g,
-        backgroundRGB.b,
-        0
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);    
+    const arch = process.arch; // 'x64', 'arm64', etc.
+
+    try {
+      const addonPath = path.resolve(
+          __dirname,
+          `./vibrancy-${arch}.node`
       );
+      const addon = require(addonPath);
+      addon.setVibrancy(
+        window.getNativeWindowHandle().readInt32LE(0),
+          1,
+          backgroundRGB.r,
+          backgroundRGB.g,
+          backgroundRGB.b,
+          0
+        );
+    } catch (err) {
+        throw new Error(
+            `Failed to load displayconfig for arch ${arch}. Error: ${err.message}`
+        );
+    }
+    
     import('./win10refresh.mjs')
       .then((module) => {
         module.default(window, 60);

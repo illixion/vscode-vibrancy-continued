@@ -239,42 +239,69 @@ function activate(context) {
 
   async function installRuntimeWin() {
     // if runtimeDir exists, recurse through it and delete all files
-    // BUG: skip all .node files as they're locked by the VSCode process (#58)
     if (fs.existsSync(runtimeDir)) {
-      fs.readdirSync(runtimeDir).forEach((file, index) => {
-        if (file.endsWith('.node')) {
-          return;
-        }
-
+      fs.readdirSync(runtimeDir).forEach((file) => {
         const curPath = path.join(runtimeDir, file);
 
-        // if file is a directory, recurse through it and delete all files
-        if (fs.lstatSync(curPath).isDirectory()) {
-          fs.rmSync(curPath, { recursive: true, force: true });
-          return;
+        try {
+          // if file is a directory, recurse through it and delete all files
+          if (fs.lstatSync(curPath).isDirectory()) {
+            fs.rmSync(curPath, { recursive: true, force: true });
+          } else {
+            fs.unlinkSync(curPath);
+          }
+        } catch (err) {
+          if (err.code === 'EBUSY' || err.code === 'EPERM') {
+            // Skip locked files
+            console.warn(`Skipping locked file: ${curPath}`);
+          } else {
+            throw err;
+          }
         }
-
-        fs.unlinkSync(curPath);
-      });
-
-      // copy all files from runtime to runtimeDir, skipping .node files
-      fs.readdirSync(path.resolve(__dirname, runtimeSrcDir)).forEach((file, index) => {
-        if (file.endsWith('.node')) {
-          return;
-        }
-
-        // if file is a directory
-        if (fs.lstatSync(path.join(path.resolve(__dirname, runtimeSrcDir), file)).isDirectory()) {
-          fsExtra.copySync(path.join(path.resolve(__dirname, runtimeSrcDir), file), path.join(runtimeDir, file));
-          return;
-        }
-
-        const curPath = path.join(path.resolve(__dirname, runtimeSrcDir), file);
-        fs.copyFileSync(curPath, path.join(runtimeDir, file));
       });
     } else {
       await fs.mkdir(runtimeDir).catch(() => { });
-      await fsExtra.copy(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
+    }
+
+    // Copy all files from runtimeSrcDir to runtimeDir, skipping locked files
+    fs.readdirSync(path.resolve(__dirname, runtimeSrcDir)).forEach((file) => {
+      const srcPath = path.join(path.resolve(__dirname, runtimeSrcDir), file);
+      const destPath = path.join(runtimeDir, file);
+
+      try {
+        if (fs.lstatSync(srcPath).isDirectory()) {
+          fsExtra.copySync(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      } catch (err) {
+        if (err.code === 'EBUSY' || err.code === 'EPERM') {
+          // Skip locked files
+          console.warn(`Skipping locked file: ${srcPath}`);
+        } else {
+          throw err;
+        }
+      }
+    });
+
+    // Copy native modules for Windows
+    const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
+    if (fs.existsSync(nativePrebuiltDir)) {
+      fs.readdirSync(nativePrebuiltDir).forEach((file) => {
+        const srcPath = path.join(nativePrebuiltDir, file);
+        const destPath = path.join(runtimeDir, file);
+
+        try {
+          fs.copyFileSync(srcPath, destPath);
+        } catch (err) {
+          if (err.code === 'EBUSY' || err.code === 'EPERM') {
+            // Skip locked files
+            console.warn(`Skipping locked file: ${srcPath}`);
+          } else {
+            throw err;
+          }
+        }
+      });
     }
   }
 
@@ -546,12 +573,6 @@ function activate(context) {
   async function Install() {
 
     if (os === 'unknown') {
-      vscode.window.showInformationMessage(localize('messages.unsupported'));
-      throw new Error('unsupported');
-    }
-
-    // BUG: prevent installation on ARM Windows (#9)
-    if (process.arch.startsWith("arm") && process.platform === 'win32') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
       throw new Error('unsupported');
     }

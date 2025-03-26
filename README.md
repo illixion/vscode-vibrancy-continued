@@ -47,13 +47,9 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 # Supported Operating Systems
 
-> **Warning**: Windows on ARM is currently unsupported ([issue](https://github.com/illixion/vscode-vibrancy-continued/issues/9))
+✔ macOS (Intel & Apple Silicon)
 
-✔ macOS
-
-✔ Windows 11
-
-✔ Windows 10
+✔ Windows 10/11 (x64 & ARM64)
 
 # Supported code editors
 

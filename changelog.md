@@ -1,3 +1,7 @@
+# 1.1.45
+
+* Windows on ARM is now supported (resolves [#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9))
+
 # 1.1.44
 
 * Updated the code responsible for updating terminal-related settings to restore original settings on uninstallation
