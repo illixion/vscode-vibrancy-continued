@@ -1,3 +1,8 @@
+# 1.1.46
+
+* Reduced package size by excluding unnecessary files
+* Added an alert when uninstalling without performing the "Disable Vibrancy" action
+
 # 1.1.45
 
 * Windows on ARM is now supported (resolves [#9](https://github.com/illixion/vscode-vibrancy-continued/issues/9))
@@ -205,7 +210,7 @@
 
 # 1.1.1
 
-Add Noir et blanc theme (by [pryter](https://github.com/pryter))
+* Add Noir et blanc theme (by [pryter](https://github.com/pryter))
 
 # 1.1.0
 
@@ -221,6 +226,7 @@ Add Noir et blanc theme (by [pryter](https://github.com/pryter))
 # 1.0.14
 
 * fix: not work with Customize UI
+
 # 1.0.13
 
 * fix: not working in vscode 1.53.0-insider

@@ -1,1 +1,4 @@
 firstload.lock
+build
+images/*
+!images/logo.png

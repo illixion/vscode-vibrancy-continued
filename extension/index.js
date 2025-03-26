@@ -3,6 +3,7 @@ var fs = require('mz/fs');
 var fsExtra = require('fs-extra');
 var path = require('path');
 var { pathToFileURL } = require('url')
+var os = require('os');
 
 /**
  * @type {(info: string) => string}
@@ -12,7 +13,7 @@ const localize = require('./i18n');
 /**
  * @type {'unknown' | 'win10' | 'macos'}
  */
-const os = require('./platform');
+const osType = require('./platform');
 
 var themeStylePaths = {
   'Default Dark': '../themes/Default Dark.css',
@@ -317,7 +318,7 @@ function activate(context) {
     const imports = await generateImports(config);
   
     const injectData = {
-      os: os,
+      os: osType,
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
@@ -568,11 +569,37 @@ function activate(context) {
     }
   }
 
+  async function getActiveFlagPath() {
+    const envPaths = (await import('env-paths')).default;
+
+    const paths = envPaths('vscode-vibrancy');
+    const activeFlagPath = path.join(paths.config, 'active');
+
+    // Ensure the directory exists recursively
+    await fs.mkdir(paths.config, { recursive: true }).catch(() =>
+      console.warn(`Failed to create directory: ${paths.config}`)
+    );
+
+    return activeFlagPath;
+  }
+
+  // This function will create or remove the active flag file
+  async function setActiveFlag(state) {
+    const activeFlagPath = await getActiveFlagPath();
+
+    if (state) {
+      await fs.writeFile(activeFlagPath, '');
+    } else {
+      await fs.unlink(activeFlagPath).catch(() => { });
+    }
+  }
+
+
   // ####  main commands ######################################################
 
   async function Install() {
 
-    if (os === 'unknown') {
+    if (osType === 'unknown') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
       throw new Error('unsupported');
     }
@@ -587,7 +614,7 @@ function activate(context) {
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
 
-      if (os === 'win10') {
+      if (osType === 'win10') {
         await installRuntimeWin();
       } else {
         await installRuntime();
@@ -595,6 +622,7 @@ function activate(context) {
       await installJS();
       await installHTML();
       await changeTerminalSettings();
+      await setActiveFlag(true);
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
@@ -614,6 +642,7 @@ function activate(context) {
       // uninstall old version
       await fs.stat(HTMLFile);
       await uninstallHTML();
+      await setActiveFlag(false);
     } finally {
 
     }
