@@ -139,7 +139,7 @@
           "type": "boolean",
           "default": false
         },
-        "vscode_vibrancy.preferedDarkTheme": {
+        "vscode_vibrancy.preferredDarkTheme": {
           "type": "string",
           "default": "Default Dark",
           "enum": [
@@ -157,7 +157,7 @@
             "Custom theme (use imports)"
           ]
         },
-        "vscode_vibrancy.preferedLightTheme": {
+        "vscode_vibrancy.preferredLightTheme": {
           "type": "string",
           "default": "Default Light",
           "enum": [
