@@ -515,38 +515,42 @@ function activate(context) {
         autoDetectColorScheme: currentAutoDetectColorScheme,
       };
     }
-
-    // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there to fix an issue this caused with profiles
-    if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
-      const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
-      await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
-
-      // Notify user of the change
-      vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
-
-    }
-    // Ensure this fix is only applied once
-    previousCustomizations.removedFromApplyToAllProfiles = true;
-
-    // Update settings if necessary
-    if (currentBackground !== "#00000000" || currentGpuAcceleration !== "off") {
-      const newColorCustomization = {
-        ...currentColorCustomizations,
-        "terminal.background": "#00000000"
-      };
+    
+    try {
+      // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there to fix an issue this caused with profiles
+      if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
+        const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
+        await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
+  
+        // Notify user of the change
+        vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
+  
+      }
+      // Ensure this fix is only applied once
+      previousCustomizations.removedFromApplyToAllProfiles = true;
+  
+      // Update settings if necessary
+      if (currentBackground !== "#00000000" || currentGpuAcceleration !== "off") {
+        const newColorCustomization = {
+          ...currentColorCustomizations,
+          "terminal.background": "#00000000"
+        };
+      }
 
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
-    }
 
-    if (enableAutoTheme) {
-      // Allow VSCode to auto-detect the color theme
-      vscode.workspace.getConfiguration().update("window.systemColorTheme", undefined, vscode.ConfigurationTarget.Global);
-      vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", true, vscode.ConfigurationTarget.Global);
-    } else {
-      // Sync VSCode color theme with Vibrancy theme
-      vscode.workspace.getConfiguration().update("window.systemColorTheme", themeConfig.systemColorTheme, vscode.ConfigurationTarget.Global);
-      vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);    
+      if (enableAutoTheme) {
+        // Allow VSCode to auto-detect the color theme
+        vscode.workspace.getConfiguration().update("window.systemColorTheme", undefined, vscode.ConfigurationTarget.Global);
+        vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", true, vscode.ConfigurationTarget.Global);
+      } else {
+        // Sync VSCode color theme with Vibrancy theme
+        vscode.workspace.getConfiguration().update("window.systemColorTheme", themeConfig.systemColorTheme, vscode.ConfigurationTarget.Global);
+        vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);    
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
     }
 
     // Save user customizations
@@ -557,38 +561,42 @@ function activate(context) {
   async function restorePreviousSettings() {
     const previousCustomizations = context.globalState.get('customizations');
 
-    // Delete terminal.background from workbench.colorCustomizations if it's #00000000
-    const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
-    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-    if (currentColorCustomizations["terminal.background"] === "#00000000") {
-      delete currentColorCustomizations["terminal.background"];
-      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", currentColorCustomizations, vscode.ConfigurationTarget.Global);
-    }
-
-    if (previousCustomizations?.saved) {
-      // Restore only the specific keys we modified
+    try {
+      // Delete terminal.background from workbench.colorCustomizations if it's #00000000
       const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
       const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-
-      if (previousCustomizations.terminalBackground !== undefined) {
-        const restoredColorCustomizations = { ...currentColorCustomizations };
-        if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
-          delete restoredColorCustomizations["terminal.background"];
-        } else {
-          restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
-        }
-        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+      if (currentColorCustomizations["terminal.background"] === "#00000000") {
+        delete currentColorCustomizations["terminal.background"];
+        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", currentColorCustomizations, vscode.ConfigurationTarget.Global);
       }
 
-      await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
-      await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
-      await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
+      if (previousCustomizations?.saved) {
+        // Restore only the specific keys we modified
+        const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+        const currentColorCustomizations = terminalColorConfig?.globalValue || {};
 
-      // Preserve the removedFromApplyToAllProfiles flag
-      const removedFromApplyToAllProfiles = previousCustomizations.removedFromApplyToAllProfiles;
+        if (previousCustomizations.terminalBackground !== undefined) {
+          const restoredColorCustomizations = { ...currentColorCustomizations };
+          if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
+            delete restoredColorCustomizations["terminal.background"];
+          } else {
+            restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
+          }
+          await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+        }
 
-      // Clear saved state but preserve the removedFromApplyToAllProfiles flag
-      await context.globalState.update('customizations', { removedFromApplyToAllProfiles });
+        await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
+        await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
+        await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
+
+        // Preserve the removedFromApplyToAllProfiles flag
+        const removedFromApplyToAllProfiles = previousCustomizations.removedFromApplyToAllProfiles;
+
+        // Clear saved state but preserve the removedFromApplyToAllProfiles flag
+        await context.globalState.update('customizations', { removedFromApplyToAllProfiles });
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
     }
   }
 
