@@ -1,3 +1,7 @@
+# 1.1.47
+
+* Vibrancy will now update `window.systemColorTheme` and `window.autoDetectColorScheme` to fix issues related to dark/light mode auto detection, and restore them on uninstall (resolves [#165](https://github.com/illixion/vscode-vibrancy-continued/issues/165))
+
 # 1.1.46
 
 * Reduced package size by excluding unnecessary files

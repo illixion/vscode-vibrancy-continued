@@ -52,12 +52,11 @@ function getCurrentTheme(config) {
 }
 
 function checkDarkLightMode(theme) {
-  const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
-  if (!enableAutoTheme) return;
-
   const currentTheme = theme.kind;
 
+  // Sync Vibrancy theme with VSCode color theme
   const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
+  const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
   const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
   const preferredLightColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
 
@@ -70,8 +69,8 @@ function checkDarkLightMode(theme) {
     return;
   }
 
-  if (currentColorTheme !== targetVibrancyTheme) {
-    vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", targetVibrancyTheme, vscode.ConfigurationTarget.Global);
+  if (enableAutoTheme && currentColorTheme !== targetVibrancyTheme) {
+      vscode.workspace.getConfiguration("vscode_vibrancy").update("theme", targetVibrancyTheme, vscode.ConfigurationTarget.Global);
   }
 }
 
@@ -479,31 +478,43 @@ function activate(context) {
     return true;
   }
 
-  // Fix rendering of terminal by modifying VSCode settings
-  async function changeTerminalSettings() {
+  // Fix UI rendering by modifying VSCode settings
+  async function changeVSCodeSettings() {
+    // Get theme settings
+    const vibrancyTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+    const themeConfigPath = path.resolve(__dirname, themeConfigPaths[vibrancyTheme]);
+    const themeConfig = require(themeConfigPath);
+    const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
+
     // Get the current settings
     const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
     const gpuAccelerationConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
     const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
+    const systemColorTheme = vscode.workspace.getConfiguration().inspect("window.systemColorTheme");
+    const autoDetectColorScheme = vscode.workspace.getConfiguration().inspect("window.autoDetectColorScheme");
 
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
-
+    
+    // Get current values
+    const currentColorCustomizations = terminalColorConfig?.globalValue;
+    const currentBackground = currentColorCustomizations["terminal.background"];
+    const currentGpuAcceleration = gpuAccelerationConfig?.globalValue;
+    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
+    const currentSystemColorTheme = systemColorTheme?.globalValue;
+    const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
+    
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
       previousCustomizations = {
         saved: true,
-        terminalBackground: terminalColorConfig?.globalValue?.["terminal.background"], // Save only the specific key
-        gpuAcceleration: gpuAccelerationConfig?.globalValue || "auto",
-        removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false
+        terminalBackground: currentBackground,
+        gpuAcceleration: currentGpuAcceleration,
+        removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
+        systemColorTheme: currentSystemColorTheme,
+        autoDetectColorScheme: currentAutoDetectColorScheme,
       };
     }
-
-    // Get current values
-    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-    const currentBackground = currentColorCustomizations["terminal.background"];
-    const currentGpuAcceleration = gpuAccelerationConfig?.globalValue || "auto";
-    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue || [];
 
     // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there to fix an issue this caused with profiles
     if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
@@ -526,6 +537,16 @@ function activate(context) {
 
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
+    }
+
+    if (enableAutoTheme) {
+      // Allow VSCode to auto-detect the color theme
+      vscode.workspace.getConfiguration().update("window.systemColorTheme", undefined, vscode.ConfigurationTarget.Global);
+      vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", true, vscode.ConfigurationTarget.Global);
+    } else {
+      // Sync VSCode color theme with Vibrancy theme
+      vscode.workspace.getConfiguration().update("window.systemColorTheme", themeConfig.systemColorTheme, vscode.ConfigurationTarget.Global);
+      vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);    
     }
 
     // Save user customizations
@@ -560,6 +581,8 @@ function activate(context) {
       }
 
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
 
       // Preserve the removedFromApplyToAllProfiles flag
       const removedFromApplyToAllProfiles = previousCustomizations.removedFromApplyToAllProfiles;
@@ -621,7 +644,9 @@ function activate(context) {
       }
       await installJS();
       await installHTML();
-      await changeTerminalSettings();
+      await changeVSCodeSettings();
+      await checkColorTheme();
+      await checkElectronDeprecatedType();
       await setActiveFlag(true);
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
@@ -632,9 +657,11 @@ function activate(context) {
       }
       throw error;
     }
+
+    enabledRestart();
   }
 
-  async function Uninstall() {
+  async function Uninstall(promptRestart = true) {
     // undo settings changes
     await restorePreviousSettings();
 
@@ -660,24 +687,25 @@ function activate(context) {
       }
       throw error;
     }
+
+    if (promptRestart) {
+      disabledRestart();
+    }
   }
 
   async function Update() {
-    await Uninstall();
+    await Uninstall(false);
     await Install();
   }
 
   var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', async () => {
     await Install();
-    enabledRestart();
   });
   var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', async () => {
     await Uninstall()
-    disabledRestart();
   });
   var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', async () => {
     await Update();
-    enabledRestart();
   });
 
   context.subscriptions.push(installVibrancy);
@@ -700,17 +728,11 @@ function activate(context) {
       .then(async (msg) => {
         if (msg) {
           await Update();
-          await checkColorTheme();
-          await checkElectronDeprecatedType();
-          enabledRestart();
         }
       });
     // Update the global state with the current version
     context.globalState.update('lastVersion', currentVersion);
   }
-
-  // Check type compatibility with current Electron
-  checkElectronDeprecatedType();
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
@@ -720,13 +742,8 @@ function activate(context) {
       lastConfig = newConfig;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
       .then(async (msg) => {
-          await checkElectronDeprecatedType();
           if (msg) {
             await Update();
-            // if (newConfig.theme !== vscode.workspace.getConfiguration("vscode_vibrancy")) {
-            //   await checkColorTheme();
-            // }
-            enabledRestart();
           }
         });
       context.globalState.update('lastVersion', currentVersion);

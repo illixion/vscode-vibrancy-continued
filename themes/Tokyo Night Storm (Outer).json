@@ -8,5 +8,6 @@
     "win10": 0.8,
     "macos": 0.5
   },
-  "colorTheme": "Tokyo Night Storm"
+  "colorTheme": "Tokyo Night Storm",
+  "systemColorTheme": "dark"
 }

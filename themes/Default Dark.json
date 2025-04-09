@@ -8,5 +8,6 @@
     "win10": 0.8,
     "macos": 0.3
   },
-  "colorTheme": "Default Dark+"
+  "colorTheme": "Default Dark+",
+  "systemColorTheme": "dark"
 }
