@@ -1,3 +1,7 @@
+# 1.1.48
+
+* Fix activation bug related to Vibrancy installation and VSCode settings update
+
 # 1.1.47
 
 * Vibrancy will now update `window.systemColorTheme` and `window.autoDetectColorScheme` to fix issues related to dark/light mode auto detection, and restore them on uninstall (resolves [#165](https://github.com/illixion/vscode-vibrancy-continued/issues/165))

@@ -497,8 +497,8 @@ function activate(context) {
     let previousCustomizations = context.globalState.get('customizations') || {};
     
     // Get current values
-    const currentColorCustomizations = terminalColorConfig?.globalValue;
-    const currentBackground = currentColorCustomizations["terminal.background"];
+    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+    const currentBackground = currentColorCustomizations?.["terminal.background"];
     const currentGpuAcceleration = gpuAccelerationConfig?.globalValue;
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
     const currentSystemColorTheme = systemColorTheme?.globalValue;
@@ -530,8 +530,9 @@ function activate(context) {
       previousCustomizations.removedFromApplyToAllProfiles = true;
   
       // Update settings if necessary
+      let newColorCustomization = {};
       if (currentBackground !== "#00000000" || currentGpuAcceleration !== "off") {
-        const newColorCustomization = {
+        newColorCustomization = {
           ...currentColorCustomizations,
           "terminal.background": "#00000000"
         };
