@@ -30,11 +30,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm install
-      - name: Install vsce
-        run: npm install @vscode/vsce
-      - name: Install ovsx
-        run: npm install ovsx
+        run: npm install --omit=dev
       - name: Configure git and clean repo
         if: ${{ github.event.inputs.version != 'none' }}
         run: |
@@ -45,7 +41,7 @@ jobs:
         if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
       - name: Package extension
-        run: npx vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
+        run: npx @vscode/vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -53,7 +49,7 @@ jobs:
           path: "*.vsix"
       - name: Publish extension to VSCE
         if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
-        run: npx vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
+        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Publish extension to Open VSX
         if: ${{ github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both' }}
         env:

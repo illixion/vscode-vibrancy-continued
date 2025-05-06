@@ -1,3 +1,7 @@
+# 1.1.51
+
+* Reduced package size to ~1 MB by not bundling dev dependencies
+
 # 1.1.50
 
 * Vibrancy will now attempt to automatically remove itself when uninstalled without running "Disable Vibrancy"
