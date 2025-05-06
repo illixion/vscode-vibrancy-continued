@@ -1,49 +1,68 @@
-// This script will alert the user on uninstalling Vibrancy without prior cleanup
-// TODO: investigate if we can perform all cleanup steps here including VSCode settings update
-
-const { exec } = require('child_process');
-const fs = require('fs');
+const { spawn, exec } = require('child_process');
+const fs = require('fs').promises; // Use fs.promises for Promise-based APIs
+const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
 
 (async () => {
     const envPaths = (await import('env-paths')).default;
-    const paths = envPaths('vscode-vibrancy');
-    const activeFlagPath = path.join(paths.config, 'active');
-    
-    function isActive() {
-        return fs.existsSync(activeFlagPath);
+    const paths = envPaths('vscode-vibrancy-continued');
+    const configFilePath = path.join(paths.config, 'config.json');
+
+    function loadConfig() {
+        if (fsSync.existsSync(configFilePath)) {
+            return JSON.parse(fsSync.readFileSync(configFilePath, 'utf-8'));
+        }
+        return null;
     }
-    
-    function showWarning(message) {
-        // Escape quotes for macOS/Linux
-        const escapedMessageUnix = message.replace(/"/g, '\\"');
-    
-        if (process.platform === 'win32') {
-            // Use VBScript to generate the alert
-            // PowerShell wasn't used as VSCode terminates the nodejs process, which then closes the alert
-            const vbsPath = path.join(__dirname, 'uninstallHookAlert.vbs');
-    
-            exec(`cscript //nologo "${vbsPath}"`, (err, stdout, stderr) => {
-                if (err) {
-                    console.error('Error executing VBScript:', err);
-                    return;
-                }
-                if (stderr) {
-                    console.error('VBScript error:', stderr);
-                    return;
-                }
-                console.log('VBScript executed successfully:', stdout);
-            });        
-        } else if (process.platform === 'darwin') {
-            // Use AppleScript to show a message box
-            exec(`osascript -e 'display alert "Warning" message "${escapedMessageUnix}" as critical'`);
-        } else {
-            // Use Zenity to show a message box, assumes Linux
-            exec(`zenity --warning --title="Warning" --text="${escapedMessageUnix}"`);
+
+    async function uninstallJS(jsFilePath, electronJsFilePath) {
+        const JS = await fs.readFile(jsFilePath, 'utf-8');
+        const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
+        if (needClean) {
+            const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
+            await fs.writeFile(jsFilePath, newJS, 'utf-8');
+        }
+
+        const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
+        const newElectronJS = ElectronJS
+            .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+            .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+        await fs.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
+    }
+
+    async function uninstallHTML(htmlFilePath) {
+        const HTML = await fs.readFile(htmlFilePath, 'utf-8');
+        const needClean = /trusted-types VscodeVibrancy/.test(HTML);
+        if (needClean) {
+            const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
+            await fs.writeFile(htmlFilePath, newHTML, 'utf-8');
         }
     }
-    
-    if (isActive()) {
-        showWarning("Uninstalling Vibrancy Continued without disabling it first will NOT remove the effect! Please reinstall the extension and disable it using the ⌘+Shift+P action \"Disable Vibrancy\", then uninstall.\n\nCheck Vibrancy Continued description for more information.");
+
+    function showNotification(message) {
+        const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+        if (process.platform === 'win32') {
+            const js = `javascript:var sh=new ActiveXObject('WScript.Shell'); sh.Popup('${escapedMessage}', 0, 'Alert', 64); close()`;
+            const child = spawn('mshta', [js], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
+        } else if (process.platform === 'darwin') {
+            exec(`osascript -e 'display alert "Notification" message "${escapedMessage}" as critical'`);
+        } else {
+            exec(`zenity --info --title="Notification" --text="${escapedMessage}"`);
+        }
     }
-})();  
+
+    const config = loadConfig();
+    if (config) {
+        const { workbenchHtmlPath, jsPath, electronJsPath } = config;
+
+        await uninstallJS(jsPath, electronJsPath);
+        await uninstallHTML(workbenchHtmlPath);
+
+        showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
+    }
+})();

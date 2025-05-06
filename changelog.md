@@ -1,3 +1,10 @@
+# 1.1.50
+
+* Vibrancy will now attempt to automatically remove itself when uninstalled without running "Disable Vibrancy"
+  * This doesn't cover VSCode config changes for now
+* Reduced package size from 70 MB to 764 KB by not bundling node-gyp
+* Fixed a regression that caused activation errors on VSCode 1.85.2
+
 # 1.1.49
 
 * Updated uninstall hook message

@@ -485,7 +485,7 @@ function activate(context) {
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[vibrancyTheme]);
     const themeConfig = require(themeConfigPath);
     const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
-
+  
     // Get the current settings
     const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
     const gpuAccelerationConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
@@ -495,7 +495,7 @@ function activate(context) {
 
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
-    
+  
     // Get current values
     const currentColorCustomizations = terminalColorConfig?.globalValue || {};
     const currentBackground = currentColorCustomizations?.["terminal.background"];
@@ -503,7 +503,7 @@ function activate(context) {
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
     const currentSystemColorTheme = systemColorTheme?.globalValue;
     const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
-    
+  
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
       previousCustomizations = {
@@ -515,16 +515,15 @@ function activate(context) {
         autoDetectColorScheme: currentAutoDetectColorScheme,
       };
     }
-    
+  
     try {
-      // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there to fix an issue this caused with profiles
-      if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles.includes("workbench.colorCustomizations")) {
+      // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there
+      if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles?.includes("workbench.colorCustomizations")) {
         const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
         await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
   
         // Notify user of the change
         vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
-  
       }
       // Ensure this fix is only applied once
       previousCustomizations.removedFromApplyToAllProfiles = true;
@@ -537,23 +536,38 @@ function activate(context) {
           "terminal.background": "#00000000"
         };
       }
-
+  
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
-
+  
+      // Handle auto theme settings
       if (enableAutoTheme) {
-        // Allow VSCode to auto-detect the color theme
-        vscode.workspace.getConfiguration().update("window.systemColorTheme", undefined, vscode.ConfigurationTarget.Global);
-        vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", true, vscode.ConfigurationTarget.Global);
+        try {
+          await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", true, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.autoDetectColorScheme is not supported in this version of VSCode.");
+        }
+        try {
+          await vscode.workspace.getConfiguration().update("window.systemColorTheme", undefined, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.systemColorTheme is not supported in this version of VSCode.");
+        }
       } else {
-        // Sync VSCode color theme with Vibrancy theme
-        vscode.workspace.getConfiguration().update("window.systemColorTheme", themeConfig.systemColorTheme, vscode.ConfigurationTarget.Global);
-        vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);    
+        try {
+          await vscode.workspace.getConfiguration().update("window.systemColorTheme", themeConfig.systemColorTheme, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.systemColorTheme is not supported in this version of VSCode.");
+        }
+        try {
+          await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.autoDetectColorScheme is not supported in this version of VSCode.");
+        }
       }
     } catch (error) {
       console.error("Error updating settings:", error);
     }
-
+  
     // Save user customizations
     await context.globalState.update('customizations', previousCustomizations);
   }
@@ -586,9 +600,17 @@ function activate(context) {
           await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
         }
 
+        try {
+          await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.systemColorTheme is not supported in this version of VSCode.");
+        }
+        try {
+          await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.autoDetectColorScheme is not supported in this version of VSCode.");
+        }
         await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
-        await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
-        await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
 
         // Preserve the removedFromApplyToAllProfiles flag
         const removedFromApplyToAllProfiles = previousCustomizations.removedFromApplyToAllProfiles;
@@ -601,30 +623,33 @@ function activate(context) {
     }
   }
 
-  async function getActiveFlagPath() {
+  async function getLocalConfigPath() {
     const envPaths = (await import('env-paths')).default;
-
-    const paths = envPaths('vscode-vibrancy');
-    const activeFlagPath = path.join(paths.config, 'active');
+    const paths = envPaths('vscode-vibrancy-continued');
+    const configFilePath = path.join(paths.config, 'config.json');
 
     // Ensure the directory exists recursively
     await fs.mkdir(paths.config, { recursive: true }).catch(() =>
       console.warn(`Failed to create directory: ${paths.config}`)
     );
 
-    return activeFlagPath;
-  }
+    return configFilePath;
+}
 
-  // This function will create or remove the active flag file
-  async function setActiveFlag(state) {
-    const activeFlagPath = await getActiveFlagPath();
+async function setLocalConfig(state, paths) {
+    const configFilePath = await getLocalConfigPath();
 
     if (state) {
-      await fs.writeFile(activeFlagPath, '');
+        const configData = {
+            workbenchHtmlPath: paths.workbenchHtmlPath,
+            jsPath: paths.jsPath,
+            electronJsPath: paths.electronJsPath
+        };
+        await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
     } else {
-      await fs.unlink(activeFlagPath).catch(() => { });
+        await fs.unlink(configFilePath).catch(() => { });
     }
-  }
+}
 
 
   // ####  main commands ######################################################
@@ -656,7 +681,11 @@ function activate(context) {
       await changeVSCodeSettings();
       await checkColorTheme();
       await checkElectronDeprecatedType();
-      await setActiveFlag(true);
+      await setLocalConfig(true, {
+        workbenchHtmlPath: HTMLFile,
+        jsPath: JSFile,
+        electronJsPath: ElectronJSFile
+      });
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
@@ -678,7 +707,7 @@ function activate(context) {
       // uninstall old version
       await fs.stat(HTMLFile);
       await uninstallHTML();
-      await setActiveFlag(false);
+      await setLocalConfig(false);
     } finally {
 
     }
