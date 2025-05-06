@@ -41,7 +41,7 @@ jobs:
         if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
       - name: Package extension
-        run: npx vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
+        run: npx @vscode/vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact
         uses: actions/upload-artifact@v4
         with:
