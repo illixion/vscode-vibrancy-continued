@@ -31,10 +31,6 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install
-      - name: Install vsce
-        run: npm install @vscode/vsce
-      - name: Install ovsx
-        run: npm install ovsx
       - name: Configure git and clean repo
         if: ${{ github.event.inputs.version != 'none' }}
         run: |
@@ -51,24 +47,3 @@ jobs:
         with:
           name: vscode-vibrancy-continued-${{ github.event.inputs.version }}
           path: "*.vsix"
-      - name: Publish extension to VSCE
-        if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
-        run: npx vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
-      - name: Publish extension to Open VSX
-        if: ${{ github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both' }}
-        env:
-          OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
-      - name: Configure SSH key
-        if: ${{ github.event.inputs.version != 'none' }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-      - name: Push changes
-        if: ${{ github.event.inputs.version != 'none' }}
-        run: |
-          # Extract the branch name from the GITHUB_REF
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          git push --tags origin $BRANCH_NAME
