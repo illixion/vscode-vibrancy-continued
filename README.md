@@ -26,11 +26,17 @@ Maintenance of this project is made possible by all the <a href="https://github.
 
 # ❗️ Important notice for Windows 10/11 users
 
-### tl;dr YOU WON'T BE ABLE TO RESIZE THE VSCODE WINDOW unless you downgrade VSCode to 1.85.2
+### tl;dr YOU WON'T BE ABLE TO RESIZE THE VSCODE WINDOW unless you do this
 
-VSCode 1.86 and newer has known issues on Windows 10/11 due to breaking changes in Electron 27. Your VSCode windows **may stop being resizable, snappable or maximizable** if Vibrancy is applied on Windows, and you must also use "custom" for `window.titleBarStyle` setting. Some users have reported that [AltSnap](https://github.com/RamonUnch/AltSnap) may be able to solve this issue.
+By default, when Vibrancy is installed on VSCode 1.86 and newer on Windows, your VSCode windows **may stop being resizable, snappable or maximizable**. This is a known issue related to VSCode 1.86 and Electron 27 and it occurs due to hardware acceleration leading to distorted text. Vibrancy will by default apply a mitigation that enables frameless windows, but this also causes issues with window interaction.
 
-If this is undesired, **please downgrade to VSCode 1.85.2**, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
+The correct process to install Vibrancy on Windows is:
+
+1. Update your VSCode shortcut to include `--disable-gpu-compositing` at the end of "Target" field, for example: `"C:\Users\User\AppData\Local\Programs\Microsoft VS Code\Code.exe" --disable-gpu-compositing`
+2. (optional) Update your shell configuration to add the same argument to `code`, needed if VSCode isn't running when you use `code`
+3. Install Vibrancy Continued
+4. Go to settings and check **Disable frameless window** (`vscode_vibrancy.disableFramelessWindow`)
+5. Press F1 and select **Reload Vibrancy**
 
 **Instructionds for removing Vibrancy** can be found here: [How to uninstall Vibrancy](#how-to-uninstall-vibrancy)
 
@@ -109,6 +115,10 @@ EXAMPLES:
 Use a new method for preventing window flashing during resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
 
 *boolean, default is true*
+
+#### Disable Frameless Window (`vscode_vibrancy.disableFramelessWindow`)
+
+Disable frameless window, which is a mitigation that fixes a GPU-related render bug on Windows with VSCode 1.86 and newer. You may see distorted and blurry graphics if you disable this mitigation with an affected GPU. Running VSCode with a `--disable-gpu-compositing` argument, such as via a shortcut, will allow for this mitigation to be safely disabled.
 
 #### Refresh interval (`vscode_vibrancy.refreshInterval`)
 

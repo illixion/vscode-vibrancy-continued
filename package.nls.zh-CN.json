@@ -11,6 +11,7 @@
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",
   "configuration.refreshInterval.description": "试验性功能：改变背景颜色刷新率以避免在改变窗口大小后出现的闪屏，更改后需要 [卸载 -> 重启 -> 安装 -> 重启]才会生效",
   "configuration.preventFlash.description": "另一种启用的途径，可以防止在改变窗口大小时闪屏。启用后不需要“刷新率”设置，但在某些情况下兼容性可能会降低。",
+  "configuration.disableFramelessWindow.description": "禁用 “无框架窗口”，这是一种缓解措施，可修复 Windows VSCode 1.86 及更新版本上与 GPU 相关的渲染错误。如果使用受影响的 GPU 禁用该缓解措施，您可能会看到扭曲和模糊的图形。使用 --disable-gpu-compositing 参数（例如通过快捷方式）运行 VSCode，可以安全地禁用该缓解措施。",
   "extension.installVibrancy.title": "安装毛玻璃效果",
   "extension.uninstallVibrancy.title": "卸载毛玻璃效果",
   "extension.updateVibrancy.title": "重新安装毛玻璃效果",

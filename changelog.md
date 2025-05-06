@@ -1,6 +1,7 @@
 # 1.1.51
 
 * Reduced package size to ~1 MB by not bundling dev dependencies
+* Allow frameless window mitigation to be disabled, which when combined with `--disable-gpu-compositing` on Windows resolves the issue with blurry text on VSCode 1.86 and newer
 
 # 1.1.50
 

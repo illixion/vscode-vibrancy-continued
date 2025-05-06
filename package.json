@@ -191,6 +191,11 @@
           "description": "%configuration.preventFlash.description%",
           "type": "boolean",
           "default": true
+        },
+        "vscode_vibrancy.disableFramelessWindow": {
+          "description": "%configuration.disableFramelessWindow.description%",
+          "type": "boolean",
+          "default": false
         }
       }
     }

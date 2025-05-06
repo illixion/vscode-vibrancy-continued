@@ -375,6 +375,7 @@ function activate(context) {
   
   // BrowserWindow option modification
   async function modifyElectronJSFile(ElectronJSFile) {
+    const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
   
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
@@ -384,7 +385,7 @@ function activate(context) {
 
     // enable frameless window on Windows w/ Electron 27 (bug #122)
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
-    if (!ElectronJS.includes('frame:false,') && process.platform === 'win32' && electronMajorVersion >= 27) {
+    if (!config.disableFramelessWindow && !ElectronJS.includes('frame:false,') && process.platform === 'win32' && electronMajorVersion >= 27) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
   
