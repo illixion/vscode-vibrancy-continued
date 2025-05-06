@@ -32,9 +32,9 @@ VSCode 1.86 and newer has known issues on Windows 10/11 due to breaking changes 
 
 If this is undesired, **please downgrade to VSCode 1.85.2**, which can be downloaded using this URL: https://update.code.visualstudio.com/1.85.2/win32-x64-user/stable
 
-For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
+**Instructionds for removing Vibrancy** can be found here: [How to uninstall Vibrancy](#how-to-uninstall-vibrancy)
 
-**For uninstallation instructions**, see FAQ: [How to uninstall Vibrancy](#how-to-uninstall-vibrancy)
+For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
 # ⚠️ "Your VSCode installation appears to be corrupt"
 
@@ -57,7 +57,7 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 ✔ VSCodium
 
-✔ Cursor (see instructions [here](https://github.com/illixion/vscode-vibrancy-continued/issues/176#issuecomment-2503242180))
+✔ Cursor (work in progress, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/176#issuecomment-2503242180) for more info)
 
 # Getting Started
 
@@ -73,13 +73,11 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 4. Restart VSCode when prompted.
 
-5. Update your VSCode configuration to include `"terminal.integrated.gpuAcceleration": "off"`
-
 Each time VS Code is updated, please re-enable Vibrancy using the same steps. If you're experiencing issues, please check the [FAQs](#faqs).
 
 ## Options
 
-#### vscode_vibrancy.type
+#### Type (`vscode_vibrancy.type`)
 
 Native method of Vibrancy Effect.
 
@@ -87,43 +85,48 @@ Native method of Vibrancy Effect.
 * acrylic : (Windows 10 only) Fluent Design blur.
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
-#### vscode_vibrancy.opacity
+#### Opacity (`vscode_vibrancy.opacity`)
 
 Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 1 will remove all transparency.
 
 *value: -1.0 ~ 1.0*
 
-#### vscode_vibrancy.imports
+#### Custom imports (`vscode_vibrancy.imports`)
 
-Import any custom CSS/JS files into VSCode, as file paths. The files will be imported in the order they are listed. On Windows, forward slashes must be used.
+Import any custom CSS/JS files into the VSCode editor, as file paths. The files will be imported in the order they are listed. On Windows, forward slashes must be used.
 
-EXAMPLE: `C:/Users/MyUserName/Documents/custom.css`
+Use this feature to add a custom Vibrancy Continued theme or modify an existing one.
+
+EXAMPLES:
+
+- Windows: `C:/Users/MyUserName/Documents/custom.css`
+- macOS: `/Users/MyUserName/Documents/custom.css`
 
 *value: array[]*
 
-#### vscode_vibrancy.preventFlash
+#### Prevent Flash (`vscode_vibrancy.preventFlash`)
 
 Use a new method for preventing window flashing during resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.
 
 *boolean, default is true*
 
-#### vscode_vibrancy.refreshInterval
+#### Refresh interval (`vscode_vibrancy.refreshInterval`)
 
 Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. **Ignored when using "Prevent Flash" method.**
 
 *value: 1 ~ 1000, default is 10*
 
-#### vscode_vibrancy.enableAutoTheme
+#### Automatic theme switching (`vscode_vibrancy.enableAutoTheme`)
 
 Enable automatic dark/light mode switching based on OS mode. Requires `window.autoDetectColorScheme` VSCode setting to also be enabled.
 
 *boolean, default is false*
 
-#### vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme
+#### Preferred dark/light theme (`vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme`)
 
-Select which themes to use for light and dark modes, they will be used instead of the main Vibrancy theme selected.
+Select which themes to use for light and dark modes, they will be used instead of the main Vibrancy Continued theme selected.
 
-#### vscode_vibrancy.theme
+#### theme (`vscode_vibrancy.theme`)
 
 Select Vibrancy theme:
 

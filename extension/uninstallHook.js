@@ -44,6 +44,6 @@ const path = require('path');
     }
     
     if (isActive()) {
-        showWarning("Uninstalling Vibrancy Continued without disabling it first will NOT remove the effect! Please reinstall the extension and disable it using the command palette action \"Disable Vibrancy\" first.\n\nCheck Vibrancy Continued description for more information.");
+        showWarning("Uninstalling Vibrancy Continued without disabling it first will NOT remove the effect! Please reinstall the extension and disable it using the ⌘+Shift+P action \"Disable Vibrancy\", then uninstall.\n\nCheck Vibrancy Continued description for more information.");
     }
 })();  

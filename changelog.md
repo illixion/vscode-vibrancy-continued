@@ -1,3 +1,8 @@
+# 1.1.49
+
+* Updated uninstall hook message
+* Updated readme
+
 # 1.1.48
 
 * Fix activation bug related to Vibrancy installation and VSCode settings update
