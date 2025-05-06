@@ -1,3 +1,7 @@
+# 1.1.52
+
+* Updated uninstall hook to also attempt to restore VSCode config settings
+
 # 1.1.51
 
 * Reduced package size to ~1 MB by not bundling dev dependencies

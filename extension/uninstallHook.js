@@ -2,6 +2,116 @@ const { spawn, exec } = require('child_process');
 const fs = require('fs').promises; // Use fs.promises for Promise-based APIs
 const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
+const os = require('os');
+
+function getVSCodeSettingsPath() {
+    const platform = os.platform();
+    const home = os.homedir();
+
+    if (platform === 'win32') {
+        return path.join(process.env.APPDATA, 'Code', 'User', 'settings.json');
+    } else if (platform === 'darwin') {
+        return path.join(home, 'Library', 'Application Support', 'Code', 'User', 'settings.json');
+    } else {
+        // Assume Linux
+        return path.join(home, '.config', 'Code', 'User', 'settings.json');
+    }
+}
+
+// Function to restore previous settings
+// Because VSCode uses JSONC, we need to be careful with comments
+// and formatting. We will use regex to find and replace the specific settings.
+function restorePreviousSettings(previousCustomizations) {
+    const settingsPath = getVSCodeSettingsPath();
+
+    if (!fsSync.existsSync(settingsPath)) {
+        console.error('VSCode settings.json not found!');
+        return;
+    }
+
+    let settingsContent = '';
+    try {
+        settingsContent = fsSync.readFileSync(settingsPath, 'utf-8');
+    } catch (err) {
+        console.error('Failed to read settings.json:', err);
+        return;
+    }
+
+    // Remove transparent terminal background
+    settingsContent = settingsContent.replace(
+        /"terminal\.background"\s*:\s*"#00000000",?\s*/g,
+        ''
+    );
+
+    // Restore saved customizations
+    if (previousCustomizations?.saved) {
+        if (previousCustomizations.terminalBackground !== null) {
+            if (
+                previousCustomizations.terminalBackground === '#00000000'
+            ) {
+                settingsContent = settingsContent.replace(
+                    /"terminal\.background"\s*:\s*".*?",?\s*/g,
+                    ''
+                );
+            } else {
+                settingsContent = settingsContent.replace(
+                    /"terminal\.background"\s*:\s*".*?",?\s*/g,
+                    `"terminal.background": "${previousCustomizations.terminalBackground}",`
+                );
+            }
+        }
+
+        if (previousCustomizations.systemColorTheme !== null) {
+            settingsContent = settingsContent.replace(
+                /"window\.systemColorTheme"\s*:\s*".*?",?\s*/g,
+                previousCustomizations.systemColorTheme === null
+                    ? ''
+                    : `"window.systemColorTheme": "${previousCustomizations.systemColorTheme}",`
+            );
+        } else {
+            settingsContent = settingsContent.replace(
+                /"window\.systemColorTheme"\s*:\s*".*?",?\s*/g,
+                ''
+            );
+        }
+
+        if (previousCustomizations.autoDetectColorScheme !== null) {
+            settingsContent = settingsContent.replace(
+                /"window\.autoDetectColorScheme"\s*:\s*(true|false),?\s*/g,
+                previousCustomizations.autoDetectColorScheme === null
+                    ? ''
+                    : `"window.autoDetectColorScheme": ${previousCustomizations.autoDetectColorScheme},`
+            );
+        } else {
+            settingsContent = settingsContent.replace(
+                /"window\.autoDetectColorScheme"\s*:\s*(true|false),?\s*/g,
+                ''
+            );
+        }
+
+        if (previousCustomizations.gpuAcceleration !== null) {
+            settingsContent = settingsContent.replace(
+                /"terminal\.integrated\.gpuAcceleration"\s*:\s*".*?",?\s*/g,
+                previousCustomizations.gpuAcceleration === null
+                    ? ''
+                    : `"terminal.integrated.gpuAcceleration": "${previousCustomizations.gpuAcceleration}",`
+            );
+        } else {
+            settingsContent = settingsContent.replace(
+                /"terminal\.integrated\.gpuAcceleration"\s*:\s*".*?",?\s*/g,
+                ''
+            );
+        }
+    }
+
+    // Write updated settings back to disk
+    try {
+        fsSync.writeFileSync(settingsPath, settingsContent.trim() + '\n', 'utf-8');
+        console.log('VSCode settings.json successfully reverted.');
+    } catch (err) {
+        console.error('Failed to write settings.json:', err);
+    }
+}
 
 (async () => {
     const envPaths = (await import('env-paths')).default;
@@ -58,10 +168,11 @@ const path = require('path');
 
     const config = loadConfig();
     if (config) {
-        const { workbenchHtmlPath, jsPath, electronJsPath } = config;
+        const { workbenchHtmlPath, jsPath, electronJsPath, previousCustomizations } = config;
 
         await uninstallJS(jsPath, electronJsPath);
         await uninstallHTML(workbenchHtmlPath);
+        restorePreviousSettings(previousCustomizations);
 
         showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
     }

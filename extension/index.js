@@ -531,7 +531,7 @@ function activate(context) {
   
       // Update settings if necessary
       let newColorCustomization = {};
-      if (currentBackground !== "#00000000" || currentGpuAcceleration !== "off") {
+      if (currentBackground !== "#00000000") {
         newColorCustomization = {
           ...currentColorCustomizations,
           "terminal.background": "#00000000"
@@ -571,6 +571,8 @@ function activate(context) {
   
     // Save user customizations
     await context.globalState.update('customizations', previousCustomizations);
+
+    return previousCustomizations;
   }
 
   // Function to restore previous settings on uninstall
@@ -635,22 +637,30 @@ function activate(context) {
     );
 
     return configFilePath;
-}
+  }
 
-async function setLocalConfig(state, paths) {
+  async function setLocalConfig(state, paths, previousCustomizations) {
     const configFilePath = await getLocalConfigPath();
 
+    // Convert undefined values in previousCustomizations to null
+    if (previousCustomizations && typeof previousCustomizations === 'object') {
+      previousCustomizations = Object.fromEntries(
+          Object.entries(previousCustomizations).map(([key, value]) => [key, value === undefined ? null : value])
+      );
+    }
+
     if (state) {
-        const configData = {
-            workbenchHtmlPath: paths.workbenchHtmlPath,
-            jsPath: paths.jsPath,
-            electronJsPath: paths.electronJsPath
-        };
-        await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
+      const configData = {
+        workbenchHtmlPath: paths.workbenchHtmlPath,
+        jsPath: paths.jsPath,
+        electronJsPath: paths.electronJsPath,
+        previousCustomizations,
+      };
+      await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
     } else {
         await fs.unlink(configFilePath).catch(() => { });
     }
-}
+  }
 
 
   // ####  main commands ######################################################
@@ -679,14 +689,13 @@ async function setLocalConfig(state, paths) {
       }
       await installJS();
       await installHTML();
-      await changeVSCodeSettings();
       await checkColorTheme();
       await checkElectronDeprecatedType();
       await setLocalConfig(true, {
         workbenchHtmlPath: HTMLFile,
         jsPath: JSFile,
-        electronJsPath: ElectronJSFile
-      });
+        electronJsPath: ElectronJSFile,
+      }, await changeVSCodeSettings());
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
         vscode.window.showInformationMessage(localize('messages.admin') + error);
