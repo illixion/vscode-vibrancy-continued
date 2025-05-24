@@ -1,3 +1,7 @@
+# 1.1.53
+
+* Added link to known errors and solutions in all error messages.
+
 # 1.1.52
 
 * Updated uninstall hook to also attempt to restore VSCode config settings

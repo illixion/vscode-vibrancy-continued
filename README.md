@@ -1,6 +1,6 @@
 # Visual Studio Code Extension - Vibrancy Continued
 
-> For questions about troubleshooting, installing or uninstalling Vibrancy Continued, please check the [FAQs](#FAQs).
+> Solutions for common issues can be found in the [FAQ](#FAQs) and [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)
 
 > ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
 
@@ -37,8 +37,6 @@ The correct process to install Vibrancy on Windows is:
 3. Install Vibrancy Continued
 4. Go to settings and check **Disable frameless window** (`vscode_vibrancy.disableFramelessWindow`)
 5. Press F1 and select **Reload Vibrancy**
-
-**Instructionds for removing Vibrancy** can be found here: [How to uninstall Vibrancy](#how-to-uninstall-vibrancy)
 
 For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
@@ -170,7 +168,7 @@ Select Vibrancy theme:
 
 Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restart Visual Studio Code.
 
-Just removing the extension without performing this step doesn't run the necessary cleanup code.
+You can also just uninstall the extension and restart VSCode, which will automatically remove Vibrancy.
 
 ### Effect doesn't work correctly in VSCode terminal?
 
@@ -184,7 +182,9 @@ It usually appears on Windows when you are using the VSCode System Installer. Yo
 
 ### `EACCES: permission denied` when enabling Vibrancy on macOS?
 
-Your installation of VSCode is owned by another user. Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
+Your installation of VSCode is owned by another user.
+
+Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
 ```shell
 sudo chown -R $(whoami):staff "/Applications/Visual Studio Code.app/"
 sudo chmod -R 755 "/Applications/Visual Studio Code.app/"
@@ -194,7 +194,9 @@ A reinstallation will also fix this issue without any loss of settings.
 
 ### `EROFS: read-only file system` when enabling Vibrancy on macOS?
 
-Your installation of VSCode is affected by [App Translocation](https://eclecticlight.co/2023/05/09/what-causes-app-translocation/). To fix this, either use the Finder and move VSCode to `/Applications` (or move it out of `/Applications` and then back in), or run the following terminal command:
+Your installation of VSCode is affected by [App Translocation](https://eclecticlight.co/2023/05/09/what-causes-app-translocation/).
+
+To fix this, either use the Finder and move VSCode to `/Applications` (or move it out of `/Applications` and then back in), or run the following terminal command:
 
 ```shell
 sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
@@ -210,7 +212,9 @@ Please see [Important notice for Windows users](#️-important-notice-for-window
 
 ### Effect doesn't work, but there are no errors
 
-Ensure that you don't have transparency effects disabled globally through your OS settings. This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
+Ensure that you don't have transparency effects disabled globally through your OS settings.
+
+This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
 
 If nothing else worked, try reinstalling VSCode, you won't lose any settings and this will ensure that your VSCode installation is consistent.
 

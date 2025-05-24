@@ -696,17 +696,15 @@ function activate(context) {
         jsPath: JSFile,
         electronJsPath: ElectronJSFile,
       }, await changeVSCodeSettings());
+      enabledRestart();
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
-        vscode.window.showInformationMessage(localize('messages.admin') + error);
+        vscode.window.showInformationMessage(localize('messages.admin') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
       }
       else {
-        vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+        vscode.window.showErrorMessage(localize('messages.smthingwrong') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
       }
-      throw error;
     }
-
-    enabledRestart();
   }
 
   async function Uninstall(promptRestart = true) {
@@ -718,26 +716,20 @@ function activate(context) {
       await fs.stat(HTMLFile);
       await uninstallHTML();
       await setLocalConfig(false);
-    } finally {
 
-    }
-
-    try {
       await fs.stat(JSFile);
 
       await uninstallJS();
+      if (promptRestart) {
+        disabledRestart();
+      }
     } catch (error) {
       if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
-        vscode.window.showInformationMessage(localize('messages.admin') + error);
+        vscode.window.showInformationMessage(localize('messages.admin') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
       }
       else {
-        vscode.window.showInformationMessage(localize('messages.smthingwrong') + error);
+        vscode.window.showErrorMessage(localize('messages.smthingwrong') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
       }
-      throw error;
-    }
-
-    if (promptRestart) {
-      disabledRestart();
     }
   }
 
