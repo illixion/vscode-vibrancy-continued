@@ -218,13 +218,17 @@ function activate(context) {
   // VSC 1.94 used ESM, 1.95 dropped it
   const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
   const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
+  // VSC 1.102.0 and later renamed electron-sandbox to electron-browser
+  const workbenchHtmlPath102 = path.join(appDir, 'vs/code/electron-browser/workbench/workbench.html');
   var HTMLFile;
   if (fs.existsSync(workbenchHtmlPath)) {
-      HTMLFile = workbenchHtmlPath;
+    HTMLFile = workbenchHtmlPath;
+  } else if (fs.existsSync(workbenchHtmlPath102)) {
+    HTMLFile = workbenchHtmlPath102;
   } else {
-      HTMLFile = workbenchEsmHtmlPath;
-      useEsmRuntime = true;
-      runtimeSrcDir = "../runtime"
+    HTMLFile = workbenchEsmHtmlPath;
+    useEsmRuntime = true;
+    runtimeSrcDir = "../runtime"
   }
 
   async function installRuntime() {
