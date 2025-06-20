@@ -1,3 +1,7 @@
+# 1.1.54
+
+* Add new workbench HTML location for VSCode 1.102.0-insider
+
 # 1.1.53
 
 * Added link to known errors and solutions in all error messages.
