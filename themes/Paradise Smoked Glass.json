@@ -1,0 +1,13 @@
+{
+  "type": {
+    "win10": "acrylic",
+    "macos": "under-window"
+  },
+  "background": "1e1e1e",
+  "opacity": {
+    "win10": 0.8,
+    "macos": 0.1
+  },
+  "colorTheme": "VSCode Paradise (Dark) - nickesc",
+  "systemColorTheme": "dark"
+}
