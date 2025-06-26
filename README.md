@@ -47,7 +47,7 @@ This extension works by editing VS Code's checksum-verified HTML files, which me
 ![screenshot](./images/warn.png)
 ![screenshot](./images/warnfix.png)
 
-To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this extension: [Fix VSCode Checksums](https://marketplace.visualstudio.com/items?itemName=lehni.vscode-fix-checksums).
+If you don't have the option to hide the alert, or to fix an `[Unsupported]` warning in VSCode's title bar, please refer to this extension: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
 
 # Supported Operating Systems
 
@@ -61,7 +61,7 @@ To fix the "[Unsupported]" warning on VS Code's title bar, please refer to this 
 
 ✔ VSCodium
 
-✔ Cursor (work in progress, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/176#issuecomment-2503242180) for more info)
+✔ Cursor (use [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) to remove [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt))
 
 # Getting Started
 
