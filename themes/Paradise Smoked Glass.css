@@ -85,22 +85,22 @@ body {
 
 /* Rounded Corners */
 .monaco-workbench .part.editor,
-.monaco-workbench .panel,
+.monaco-workbench .panel:not(#terminal),
 .monaco-list .monaco-list-row,
-.monaco-workbench .sidebar {
+.monaco-workbench .sidebar,
+.monaco-workbench .monaco-inputbox,
+.monaco-workbench .monaco-tree-type-filter,
+.monaco-editor .find-widget {
   border-radius: var(--corner) !important;
 }
 
 .monaco-workbench .part.statusbar,
+#status\.host,
 .monaco-sash.vertical:before,
 .monaco-sash.horizontal:before,
 .monaco-scrollable-element>.scrollbar>.slider,
 .monaco-scrollable-element> canvas.decorationsOverviewRuler,
-.xterm .xterm-scrollable-element > .scrollbar > .slider,
-#status\.host,
-.monaco-workbench .monaco-inputbox,
-.monaco-workbench .monaco-tree-type-filter,
-.monaco-editor .find-widget {
+.xterm .xterm-scrollable-element > .scrollbar > .slider {
   border-radius: 100px !important;
 }
 
@@ -116,6 +116,10 @@ body {
 .monaco-workbench .part.editor > .content .monaco-scrollable-element > .split-view-container > .split-view-view:nth-last-child(1) .minimap{
   transform: translate(calc(-1 * var(--border)),0) !important;
   z-index: 1001;
+}
+
+.monaco-workbench .part.editor .content > div {
+  height: calc(100% - calc(-3 * var(--border))) !important;
 }
 
 .monaco-workbench .part.editor .overlayWidgets > .floating-click-widget {
