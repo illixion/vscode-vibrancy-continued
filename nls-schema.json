@@ -35,6 +35,9 @@
     "configuration.disableFramelessWindow.description": {
       "type": "string"
     },
+    "configuration.disableThemeFixes.description": {
+      "type": "string"
+    },
     "extension.installVibrancy.title": {
       "type": "string"
     },
@@ -114,6 +117,7 @@
     "configuration.refreshInterval.description",
     "configuration.preventFlash.description",
     "configuration.disableFramelessWindow.description",
+    "configuration.disableThemeFixes.description",
     "extension.installVibrancy.title",
     "extension.uninstallVibrancy.title",
     "extension.updateVibrancy.title",

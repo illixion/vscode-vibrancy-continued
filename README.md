@@ -118,6 +118,10 @@ Use a new method for preventing window flashing during resizing. Eliminates the 
 
 Disable frameless window, which is a mitigation that fixes a GPU-related render bug on Windows with VSCode 1.86 and newer. You may see distorted and blurry graphics if you disable this mitigation with an affected GPU. Running VSCode with a `--disable-gpu-compositing` argument, such as via a shortcut, will allow for this mitigation to be safely disabled.
 
+#### Disable Theme Fixes (`vscode_vibrancy.disableThemeFixes`)
+
+Disable fixes to Default Dark and Default Light themes for non-VSCode editors like Cursor.
+
 #### Refresh interval (`vscode_vibrancy.refreshInterval`)
 
 Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. **Ignored when using "Prevent Flash" method.**
@@ -169,6 +173,10 @@ Select Vibrancy theme:
 Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restart Visual Studio Code.
 
 You can also just uninstall the extension and restart VSCode, which will automatically remove Vibrancy.
+
+### Nothing happens first time Reload/Enable Vibrancy is used?
+
+There is a known issue with Vibrancy sometimes not working on the first try after VSCode updates, perform the same action again to resolve.
 
 ### Effect doesn't work correctly in VSCode terminal?
 

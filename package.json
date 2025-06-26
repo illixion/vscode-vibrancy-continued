@@ -196,6 +196,11 @@
           "description": "%configuration.disableFramelessWindow.description%",
           "type": "boolean",
           "default": false
+        },
+        "vscode_vibrancy.disableThemeFixes": {
+          "description": "%configuration.disableThemeFixes.description%",
+          "type": "boolean",
+          "default": false
         }
       }
     }
