@@ -52,6 +52,7 @@ body {
 .monaco-workbench.fullscreen {
     background-color: #111111 !important;
 }
+
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
 	background-color: #1e1e1e !important;
@@ -72,7 +73,13 @@ body {
 }
 
 .monaco-workbench .part.panel.bottom > .content {
-    background-color: rgba(5, 5, 5, 0.7);
+    background-color: rgba(5, 5, 5, 0.7) !important;
+}
+
+body:has(.monaco-workbench.fullscreen) {
+    .monaco-workbench .part.panel.bottom > .content {
+        background-color: rgba(5, 5, 5, 0.0) !important;
+    }
 }
 
 #status\.host {
