@@ -4,42 +4,14 @@
   --border: 5px;
   --vscode-sash-size: var(--border);
   --shadow-color: 0deg 0% 6%;
-  --shadow-elevation-low:
-    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.4),
-    0.4px 0.9px 1.1px -1.2px hsl(var(--shadow-color) / 0.4),
-    1.1px 2.2px 2.8px -2.5px hsl(var(--shadow-color) / 0.4);
-  --shadow-elevation-medium:
-    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.42),
-    0.9px 1.7px 2.2px -0.8px hsl(var(--shadow-color) / 0.42),
-    2.2px 4.4px 5.5px -1.7px hsl(var(--shadow-color) / 0.42),
-    5.4px 10.8px 13.6px -2.5px hsl(var(--shadow-color) / 0.42);
-  --shadow-elevation-high:
-    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.39),
-    1.6px 3.3px 4.1px -0.4px hsl(var(--shadow-color) / 0.39),
-    3.1px 6.2px 7.8px -0.7px hsl(var(--shadow-color) / 0.39),
-    5.1px 10.2px 12.8px -1.1px hsl(var(--shadow-color) / 0.39),
-    8.2px 16.4px 20.6px -1.4px hsl(var(--shadow-color) / 0.39),
-    12.8px 25.6px 32.2px -1.8px hsl(var(--shadow-color) / 0.39),
-    19.5px 39px 49.1px -2.1px hsl(var(--shadow-color) / 0.39),
-    28.8px 57.5px 72.3px -2.5px hsl(var(--shadow-color) / 0.39);
-  --shadow-inverted-low:
-    0.4px -0.4px 0.6px hsl(var(--shadow-color) / 0.41),
-    0.7px -0.7px 1.1px -1.2px hsl(var(--shadow-color) / 0.41),
-    1.8px -1.7px 2.8px -2.5px hsl(var(--shadow-color) / 0.41);
-  --shadow-inverted-medium:
-    0.4px -0.4px 0.6px hsl(var(--shadow-color) / 0.44),
-    1.5px -1.4px 2.3px -0.8px hsl(var(--shadow-color) / 0.44),
-    3.7px -3.4px 5.7px -1.7px hsl(var(--shadow-color) / 0.44),
-    9.2px -8.4px 14px -2.5px hsl(var(--shadow-color) / 0.44);
-  --shadow-inverted-high:
-    0.4px -0.4px 0.6px hsl(var(--shadow-color) / 0.4),
-    2.8px -2.6px 4.3px -0.4px hsl(var(--shadow-color) / 0.4),
-    5.4px -4.9px 8.2px -0.7px hsl(var(--shadow-color) / 0.4),
-    8.9px -8.2px 13.6px -1.1px hsl(var(--shadow-color) / 0.4),
-    14.2px -13.1px 21.7px -1.4px hsl(var(--shadow-color) / 0.4),
-    22.3px -20.5px 34.1px -1.8px hsl(var(--shadow-color) / 0.4),
-    33.9px -31.2px 51.8px -2.1px hsl(var(--shadow-color) / 0.4),
-    50px -46px 76.4px -2.5px hsl(var(--shadow-color) / 0.4);
+  --shadow-elevation:
+    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.38),
+    0.4px 0.9px 1.1px -1.2px hsl(var(--shadow-color) / 0.38),
+    1px 2.1px 2.6px -2.5px hsl(var(--shadow-color) / 0.38);
+  --shadow-inverted:
+    0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
+    0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
+    1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
 }
 
 /* Transparent Background */
@@ -57,6 +29,7 @@
 .monaco-workbench .pane-header,
 .monaco-workbench .part.panel.bottom,
 .monaco-workbench .part.panel.bottom > .composite.title,
+.monaco-workbench #terminal,
 body {
   background: transparent !important;
 }
@@ -107,12 +80,12 @@ body {
 }
 
 .monaco-workbench .part.statusbar {
-    background-color: rgb(100, 131, 163, .55) !important;
+    background-color: rgb(100, 131, 163, .6) !important;
 }
 
 body:has(.codicon-debug-stop){
     .monaco-workbench .part.statusbar {
-        background-color: rgb(182, 100, 103, .55) !important;
+        background-color: rgb(182, 100, 103, .6) !important;
     }
 }
 
@@ -121,12 +94,12 @@ body:has(.codicon-debug-stop){
 .monaco-workbench .part.editor,
 .monaco-workbench .part.panel.bottom > .content,
 .context-view.monaco-menu-container {
-  box-shadow: var(--shadow-elevation-low) !important;
+  box-shadow: var(--shadow-elevation) !important;
 }
 
 .monaco-workbench .part.panel.bottom > .content,
 .monaco-workbench .part.statusbar {
-  box-shadow: var(--shadow-inverted-low) !important;
+  box-shadow: var(--shadow-inverted) !important;
 }
 
 .monaco-workbench .part.panel.bottom,
