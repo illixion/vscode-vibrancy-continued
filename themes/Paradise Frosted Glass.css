@@ -1,27 +1,17 @@
 /* Variables */
 :root{
   --corner: 6px;
-  --border: 10px;
+  --border: 5px;
   --vscode-sash-size: var(--border);
   --shadow-color: 0deg 4% 53%;
-  --shadow-elevation-low:
+  --shadow-elevation:
     0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.38),
     0.4px 0.9px 1.1px -1.2px hsl(var(--shadow-color) / 0.38),
     1px 2.1px 2.6px -2.5px hsl(var(--shadow-color) / 0.38);
-  --shadow-elevation-medium:
-    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.4),
-    0.9px 1.7px 2.2px -0.8px hsl(var(--shadow-color) / 0.4),
-    2.1px 4.3px 5.4px -1.7px hsl(var(--shadow-color) / 0.4),
-    5.3px 10.5px 13.2px -2.5px hsl(var(--shadow-color) / 0.4);
-  --shadow-elevation-high:
-    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.37),
-    1.6px 3.2px 4px -0.4px hsl(var(--shadow-color) / 0.37),
-    3px 5.9px 7.4px -0.7px hsl(var(--shadow-color) / 0.37),
-    4.9px 9.8px 12.3px -1.1px hsl(var(--shadow-color) / 0.37),
-    7.8px 15.7px 19.7px -1.4px hsl(var(--shadow-color) / 0.37),
-    12.3px 24.5px 30.8px -1.8px hsl(var(--shadow-color) / 0.37),
-    18.7px 37.3px 46.9px -2.1px hsl(var(--shadow-color) / 0.37),
-    27.5px 55px 69.2px -2.5px hsl(var(--shadow-color) / 0.37);
+  --shadow-inverted:
+    0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
+    0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
+    1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
 }
 
 /* Transparent Background */
@@ -37,6 +27,9 @@
 .monaco-workbench .monaco-inputbox,
 .monaco-workbench .part>.title>.title-actions .start-debug-action-item,
 .monaco-workbench .pane-header,
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .composite.title,
+.monaco-workbench #terminal,
 body {
   background: transparent !important;
 }
@@ -56,38 +49,80 @@ body {
   border-top-color: rgba(0, 0, 0, 0) !important;
 }
 
-.monaco-workbench #terminal {
-    background-color: #151515;
+.monaco-workbench.fullscreen {
+    background-color: #e8e3e3 !important;
 }
-
-.monaco-workbench.fullscreen,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
 	background-color: #e8e3e3 !important;
 }
 
-/*
-.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon {
-  color: rgba(255, 255, 255, 0.5) !important;
+/* .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
+.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label {
+    color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label:not(.codicon) {
     background-color: rgba(255, 255, 255, 0.5) !important;
+} */
+
+.monaco-workbench .panel.bottom .content,
+.monaco-workbench .panel.bottom .monaco-list-row {
+  color: rgb(232, 227, 227) !important;
 }
-*/
+
+.monaco-workbench .panel.bottom .monaco-list-row.focused,
+.monaco-workbench .panel.bottom .monaco-list-row.selected {
+  color: rgb(232, 227, 227) !important;
+}
+
+.monaco-workbench .panel.bottom .monaco-list-row:hover {
+  color: rgb(150, 150, 150) !important;
+}
 
 .monaco-workbench .monaco-inputbox {
   border: rgba(255, 255, 255, 0.5) solid 1px !important;
 }
 
+.monaco-workbench .part.panel.bottom > .content {
+    background-color: rgba(0,0,0, 0.8) !important;
+}
+
+#status\.host {
+    background-color: rgb(127, 180, 126, .75) !important;
+}
+
+.monaco-workbench .part.statusbar {
+    background-color: rgb(50, 103, 160, .55) !important;
+}
+
+body:has(.codicon-debug-stop){
+    .monaco-workbench .part.statusbar {
+        background-color: rgb(203, 84, 88, .55) !important;
+    }
+}
+
 /* Box Shadow */
 .monaco-workbench .part.editor,
-.monaco-workbench .panel.basepanel.bottom,
-.monaco-workbench .part.statusbar,
-.monaco-workbench .panel,
+.monaco-workbench .part.panel.bottom > .content,
 .context-view.monaco-menu-container {
-  box-shadow: var(--shadow-elevation-medium) !important;
+  box-shadow: var(--shadow-elevation) !important;
 }
+
+.monaco-workbench .part.panel.bottom > .content,
+.monaco-workbench .part.statusbar {
+  box-shadow: var(--shadow-inverted) !important;
+}
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content,
+.monaco-workbench .split-view-container:has(> .split-view-view > .part.panel.bottom > .content),
+.monaco-scrollable-element:has(> .split-view-container > .split-view-view > .part.panel.bottom > .content),
+.monaco-workbench .split-view-container:has(> .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content),
+.monaco-workbench .monaco-scrollable-element:has(> .split-view-container > .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content) {
+    overflow: unset !important;
+}
+
 
 /* Rounded Corners */
 .monaco-workbench .part.editor,
@@ -96,12 +131,15 @@ body {
 .monaco-workbench .sidebar,
 .monaco-workbench .monaco-inputbox,
 .monaco-workbench .monaco-tree-type-filter,
-.monaco-editor .find-widget {
+.monaco-editor .find-widget,
+.monaco-workbench .part.panel.bottom > .content,
+.statusbar-item-label {
   border-radius: var(--corner) !important;
 }
 
 .monaco-workbench .part.statusbar,
 #status\.host,
+#status\.host > .statusbar-item-label,
 .monaco-sash.vertical:before,
 .monaco-sash.horizontal:before,
 .monaco-scrollable-element>.scrollbar>.slider,
@@ -110,103 +148,35 @@ body {
   border-radius: 100px !important;
 }
 
-/* Section Borders */
-.monaco-workbench .part.editor {
-  height: calc(100% - calc(3 * var(--border))) !important;
-  margin-bottom: var(--border) !important;
-  width: calc(100% - var(--border)) !important;
+body:not(:has(.visible > .part.panel.bottom)){
+    .monaco-workbench .part.editor {
+        border-bottom-right-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
 }
 
-.monaco-workbench .part.editor > .content .monaco-scrollable-element > .split-view-container > .split-view-view:nth-last-child(1) > .editor-group-container > .editor-container > .editor-instance .editor-scrollable > canvas.decorationsOverviewRuler,
-.monaco-workbench .part.editor > .content .monaco-scrollable-element > .split-view-container > .split-view-view:nth-last-child(1) > .editor-group-container > .editor-container > .editor-instance .editor-scrollable > .scrollbar > .slider,
-.monaco-workbench .part.editor > .content .monaco-scrollable-element > .split-view-container > .split-view-view:nth-last-child(1) .minimap{
-  transform: translate(calc(-1 * var(--border)),0) !important;
-  z-index: 1001;
-}
-
-.monaco-workbench .part.editor .content > div {
-  height: calc(100% - calc(-3 * var(--border))) !important;
-}
-
-.monaco-workbench .part.editor .overlayWidgets > .floating-click-widget {
-  transform: translate(0,calc(-2 * var(--border))) !important;
-}
-
-.monaco-workbench .panel.basepanel.bottom {
-  transform: translate(0,calc(-2 * var(--border))) !important;
-  width: calc(100% - var(--border)) !important;
-}
-
-.webview {
-  width: calc(100% - var(--border)) !important;
-}
-
-.monaco-workbench .monaco-list-rows {
-  margin-right: var(--border) !important;
-  width: calc(100% - var(--border)) !important;
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content {
+    border-bottom-left-radius: 0 !important;
 }
 
 .monaco-workbench .part.statusbar{
-  max-width: calc(100% - calc(2 * var(--border))) !important;
-  margin-left: var(--border) !important;
-  transform: translate(0,calc(-1 * var(--border))) !important;
+    border-bottom-right-radius: var(--corner) !important;
 }
 
-.monaco-workbench .part.activitybar > div.content{
-  max-height: calc(100% - var(--border)) !important;
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content {
+    border-bottom-right-radius: 0 !important;
 }
 
-.monaco-workbench .part.sidebar {
-  transform: translate(0,calc(-1 * var(--border))) !important;
+.monaco-workbench .part.statusbar {
+    border-top-right-radius: 0 !important;
 }
+
+/* Section Borders */
 
 .monaco-workbench .part.sidebar > .content > div,
 .monaco-workbench .part.sidebar {
   width: calc(100% - var(--border)) !important;
-}
-
-body:has(.monaco-workbench .split-view-view .panel.basepanel.bottom > .composite.title.has-composite-bar > .global-actions .codicon-panel-restore) {
-
-  .monaco-workbench .split-view-view:has(.panel.basepanel.bottom > .composite.title.has-composite-bar > .global-actions .codicon-panel-restore) {
-    top: calc(2 * var(--border)) !important;
-  }
-
-  .monaco-workbench .split-view-view:has(.part.activitybar) {
-    top: calc(1.5 * var(--border)) !important;
-  }
-  .monaco-workbench .part.sidebar {
-    transform: translate(0,calc(.5 * var(--border))) !important;
-  }
-
-  .monaco-workbench #terminal {
-    height: calc(100% - calc(2.5 * var(--border))) !important;
-  }
-}
-
-/* Section Resize Sashes */
-.monaco-sash.vertical:before{
-  left: calc(50% - var(--border) / 4) !important;
-  width: calc(var(--border) / 2) !important;
-  top: .1% !important;
-  height: 98.6% !important;
-}
-
-.monaco-sash.horizontal:before{
-  top: calc(50% - var(--border) / 4) !important;
-  height: calc(var(--border) / 2) !important;
-  width: 99% !important;
-  margin-left: .25% !important;
-}
-
-div.monaco-grid-view > div > div > div.monaco-scrollable-element.mac > div.split-view-container > div:nth-child(3) > div > div > div.monaco-scrollable-element.mac > div.split-view-container > div:nth-child(3) > div > div > div.sash-container > div{
-  transform: translate(0,calc(-2.5 * var(--border))) !important;
-}
-
-/* Scrollbars */
-.xterm .xterm-scrollable-element > .scrollbar > .slider {
-  max-width: calc(14px - var(--border)) !important;
-}
-
-.monaco-scrollable-element>.scrollbar>.slider {
-  max-width: calc(24px - var(--border)) !important;
 }
