@@ -116,6 +116,7 @@ body:has(.codicon-debug-stop){
     }
 }
 
+
 /* Box Shadow */
 .monaco-workbench .part.editor,
 .monaco-workbench .part.panel.bottom > .content,
@@ -162,6 +163,13 @@ body:has(.codicon-debug-stop){
   border-radius: 100px !important;
 }
 
+body:not(:has(.visible > .part.panel.bottom)){
+    .monaco-workbench .part.editor {
+        border-bottom-right-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+}
+
 .monaco-workbench .part.panel.bottom,
 .monaco-workbench .part.panel.bottom > .content {
     border-bottom-left-radius: 0 !important;
@@ -171,7 +179,9 @@ body:has(.codicon-debug-stop){
     border-bottom-right-radius: var(--corner) !important;
 }
 
-.monaco-workbench .part.panel.bottom {
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content {
     border-bottom-right-radius: 0 !important;
 }
 
