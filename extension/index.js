@@ -27,6 +27,7 @@ var themeStylePaths = {
   'Solarized Dark+': '../themes/Solarized Dark+.css',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
   'GitHub Dark Default': '../themes/GitHub Dark Default.css',
+  'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
 
@@ -42,6 +43,7 @@ const themeConfigPaths = {
   'Solarized Dark+': '../themes/Solarized Dark+.json',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
   'GitHub Dark Default': '../themes/GitHub Dark Default.json',
+  'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
 }
 
