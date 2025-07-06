@@ -1,0 +1,177 @@
+/* Variables */
+:root{
+  --corner: 6px;
+  --border: 5px;
+  --vscode-sash-size: var(--border);
+  --shadow-color: 0deg 0% 6%;
+  --shadow-elevation:
+    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.38),
+    0.4px 0.9px 1.1px -1.2px hsl(var(--shadow-color) / 0.38),
+    1px 2.1px 2.6px -2.5px hsl(var(--shadow-color) / 0.38);
+  --shadow-inverted:
+    0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
+    0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
+    1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
+}
+
+/* Transparent Background */
+.monaco-workbench,
+.monaco-workbench .sidebar,
+.monaco-workbench .auxiliarybar,
+.monaco-workbench .activitybar,
+.monaco-workbench .titlebar,
+.monaco-workbench .monaco-list-rows,
+.monaco-workbench .part.sidebar>.title,
+.monaco-workbench .part.auxiliarybar>.title,
+.monaco-workbench .part.editor,
+.monaco-workbench .monaco-inputbox,
+.monaco-workbench .part>.title>.title-actions .start-debug-action-item,
+.monaco-workbench .pane-header,
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .composite.title,
+.monaco-workbench #terminal,
+body {
+  background: transparent !important;
+}
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container,
+.margin-view-overlays,
+.monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: transparent !important;
+}
+
+.monaco-workbench .part>.title>.title-actions .start-debug-action-item {
+  border-color: transparent !important;
+}
+
+.monaco-workbench .part.panel.bottom .composite.title {
+  border-top-color: rgba(0, 0, 0, 0) !important;
+}
+
+.monaco-workbench.fullscreen {
+    background-color: #111111 !important;
+}
+
+.monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
+.monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
+	background-color: #1e1e1e !important;
+}
+
+
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
+.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label:not(.codicon) {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.monaco-workbench .monaco-inputbox {
+  border: rgba(255, 255, 255, 0.5) solid 1px !important;
+}
+
+.monaco-workbench .part.panel.bottom > .content {
+    background-color: rgba(5, 5, 5, 0.7) !important;
+}
+
+body:has(.monaco-workbench.fullscreen) {
+    .monaco-workbench .part.panel.bottom > .content {
+        background-color: rgba(5, 5, 5, 0.0) !important;
+    }
+}
+
+#status\.host {
+    background-color: rgb(140, 151, 125, .75) !important;
+}
+
+.monaco-workbench .part.statusbar {
+    background-color: rgb(100, 131, 163, .6) !important;
+}
+
+body:has(.codicon-debug-stop){
+    .monaco-workbench .part.statusbar {
+        background-color: rgb(182, 100, 103, .6) !important;
+    }
+}
+
+
+/* Box Shadow */
+.monaco-workbench .part.editor,
+.monaco-workbench .part.panel.bottom > .content,
+.context-view.monaco-menu-container {
+  box-shadow: var(--shadow-elevation) !important;
+}
+
+.monaco-workbench .part.panel.bottom > .content,
+.monaco-workbench .part.statusbar {
+  box-shadow: var(--shadow-inverted) !important;
+}
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content,
+.monaco-workbench .split-view-container:has(> .split-view-view > .part.panel.bottom > .content),
+.monaco-scrollable-element:has(> .split-view-container > .split-view-view > .part.panel.bottom > .content),
+.monaco-workbench .split-view-container:has(> .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content),
+.monaco-workbench .monaco-scrollable-element:has(> .split-view-container > .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content) {
+    overflow: unset !important;
+}
+
+
+/* Rounded Corners */
+.monaco-workbench .part.editor,
+.monaco-workbench .panel:not(#terminal),
+.monaco-list .monaco-list-row,
+.monaco-workbench .sidebar,
+.monaco-workbench .monaco-inputbox,
+.monaco-workbench .monaco-tree-type-filter,
+.monaco-editor .find-widget,
+.monaco-workbench .part.panel.bottom > .content,
+.statusbar-item-label {
+  border-radius: var(--corner) !important;
+}
+
+.monaco-workbench .part.statusbar,
+#status\.host,
+#status\.host > .statusbar-item-label,
+.monaco-sash.vertical:before,
+.monaco-sash.horizontal:before,
+.monaco-scrollable-element>.scrollbar>.slider,
+.monaco-scrollable-element> canvas.decorationsOverviewRuler,
+.xterm .xterm-scrollable-element > .scrollbar > .slider {
+  border-radius: 100px !important;
+}
+
+body:not(:has(.visible > .part.panel.bottom)){
+    .monaco-workbench .part.editor {
+        border-bottom-right-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+}
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content {
+    border-bottom-left-radius: 0 !important;
+}
+
+.monaco-workbench .part.statusbar{
+    border-bottom-right-radius: var(--corner) !important;
+}
+
+
+.monaco-workbench .part.panel.bottom,
+.monaco-workbench .part.panel.bottom > .content {
+    border-bottom-right-radius: 0 !important;
+}
+
+.monaco-workbench .part.statusbar {
+    border-top-right-radius: 0 !important;
+}
+
+/* Section Borders */
+
+.monaco-workbench .part.sidebar > .content > div,
+.monaco-workbench .part.sidebar {
+  width: calc(100% - var(--border)) !important;
+}

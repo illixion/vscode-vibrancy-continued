@@ -1,0 +1,128 @@
+/* Left Sidebar */
+.monaco-workbench .part.sidebar.left#workbench\.parts\.sidebar {
+    background-color: var(--vibrancy-thin-background) !important;
+    border-right: none !important;
+}
+
+/* Left Sidebar */
+.monaco-workbench .part.sidebar > div,
+.monaco-workbench .part.sidebar > div > div,
+.monaco-workbench .part.sidebar > div > div > div,
+.monaco-workbench .part.sidebar > div > div > div > div,
+.monaco-workbench .part.sidebar > div > div > div > div > div {
+    background-color: transparent !important;
+}
+
+/* Left Sidebar Menu */
+.monaco-workbench .part.sidebar > div > div > div > div > div:nth-child(2) {
+    background-color: var(--vibrancy-opaque-background) !important;
+}
+
+.quick-input-widget {
+    background-color: var(--vibrancy-opaque-background) !important;
+}
+
+.composer-control-panel .composer-bar,
+.composer-control-panel .composer-control-panel-sidebar {
+    background-color: var(--vibrancy-medium-background) !important;
+}
+
+.cursorHintLineWidgetBackground {
+    background-color: transparent !important;
+}
+
+:root {
+    --vscode-commandCenter-inactiveBorder: rgba(157, 157, 157, 0.05) !important;
+    --vscode-commandCenter-activeBorder: rgba(204, 204, 204, 0.1) !important;
+    --vscode-editorWidget-border: rgba(157, 157, 157, 0.05) !important;
+    --vscode-input-border: #252526 !important;
+    --vibrancy-thin-background: rgba(37, 37, 38, 0.1);
+    --vibrancy-soft-background: rgba(37, 37, 38, 0.3);
+    --vibrancy-medium-background: rgba(37, 37, 38, 0.5);
+    --vibrancy-hard-background: rgba(24, 24, 24, 0.8);
+    --vibrancy-opaque-background: rgba(37, 37, 38, 0.95);
+}
+
+.monaco-workbench {
+    --vscode-editor-background: transparent !important;
+    --vscode-multiDiffEditor-headerBackground: transparent !important;
+    --vscode-diffEditor-unchangedRegionShadow: transparent !important;
+    --vscode-diffEditor-unchangedRegionBackground: transparent !important;
+}
+
+.cursorHintLineWidgetBackground {
+    background-color: transparent !important;
+}
+
+.sticky-widget {
+    background-color: var(--vibrancy-medium-background) !important;
+}
+
+#workbench\.parts\.titlebar {
+    border-bottom: none !important;
+}
+
+#workbench\.parts\.auxiliarybar {
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#workbench\.parts\.statusbar {
+    --status-border-top-color: none !important;
+}
+
+.monaco-workbench .part.editor>.content .editor-group-container>.title .tabs-container>.tab.active {
+    --tab-border-top-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar.basepanel.right {
+    background-color: var(--vibrancy-thin-background) !important;
+}
+
+.monaco-workbench .part.auxiliarybar > .content {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composite.title {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .scrollable-div-container {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .conversations {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar [id^='bubble-'] {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composer-bar {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .full-input-box {
+    background-color: var(--vibrancy-soft-background) !important;
+}
+
+.monaco-workbench .part.auxiliarybar .empty-pane-message-area {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composer-message-codeblock {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composer-diff-block {
+    background-color: transparent !important;
+}
+
+.monaco-workbench .part.auxiliarybar .monaco-editor-background {
+    background-color: transparent !important;
+}
+
+.multiDiffEditor {
+    background-color: transparent !important;
+}

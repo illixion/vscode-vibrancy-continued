@@ -27,6 +27,7 @@ var themeStylePaths = {
   'Solarized Dark+': '../themes/Solarized Dark+.css',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
   'GitHub Dark Default': '../themes/GitHub Dark Default.css',
+  'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.css',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
@@ -43,8 +44,16 @@ const themeConfigPaths = {
   'Solarized Dark+': '../themes/Solarized Dark+.json',
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
   'GitHub Dark Default': '../themes/GitHub Dark Default.json',
+  'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.json',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
+}
+
+const themeFixPaths = {
+  'Cursor': {
+    'Default Dark': '../themes/fixes/Cursor Dark.css',
+    'Default Light': '../themes/fixes/Cursor Light.css',
+  }
 }
 
 var defaultTheme = 'Default Dark';
@@ -342,7 +351,26 @@ function activate(context) {
       css: "",
       js: "",
     };
-  
+
+    // Add theme fixes for non-VSCode editors
+    const disableThemeFixes = vscode.workspace.getConfiguration().get("vscode_vibrancy.disableThemeFixes");
+    const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
+    if (
+      !disableThemeFixes &&
+      vscode.env.appName in themeFixPaths &&
+      themeFixPaths[vscode.env.appName][currentColorTheme]
+    ) {
+      let targetPatchTheme = themeFixPaths[vscode.env.appName][currentColorTheme];
+      const themePatchPath = path.join(__dirname, targetPatchTheme);
+      
+      try {
+        const themePatchContent = await fs.readFile(themePatchPath, 'utf-8');
+        imports.css += `<style>${themePatchContent}</style>`;
+      } catch (err) {
+        vscode.window.showWarningMessage(localize('messages.importError').replace('%1', targetPatchTheme));
+      }
+    }
+    
     for (let i = 0; i < config.imports.length; i++) {
       if (config.imports[i] === "/path/to/file") continue;
   
@@ -355,10 +383,10 @@ function activate(context) {
           imports.js += `<script>${importContent}</script>`;
         }
       } catch (err) {
-          vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
-        }
+        vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
+      }
     }
-  
+
     return imports;
   }
   

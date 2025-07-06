@@ -12,6 +12,7 @@
   "configuration.refreshInterval.description": "ウィンドウの透明性のための間隔を更新します。 値が低いと、更新が目立たなくなりますが、CPUの使用量が増加します。",
   "configuration.preventFlash.description": "別の方法で画面サイズ変更時のフラッシュを防止します。更新間隔が不要になりますが、互換性が低下する場合もあります。",
   "configuration.disableFramelessWindow.description": "これは、VSCode 1.86以降のWindowsにおけるGPU関連のレンダリングバグを修正する緩和策です。影響を受けるGPUでこの緩和策を無効にすると、グラフィックスが歪んだりぼやけたりすることがあります。ショートカットなどで--disable-gpu-compositing引数を指定してVSCodeを実行すると、この緩和策を安全に無効にすることができます。",
+  "configuration.disableThemeFixes.description": "カーソルのような非VSCodeエディタ用のデフォルト・ダークおよびデフォルト・ライトテーマの修正を無効にした。",
   "extension.installVibrancy.title": "Vibrancy を有効化",
   "extension.uninstallVibrancy.title": "Vibrancy を無効化",
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",

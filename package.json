@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.54",
+  "version": "1.1.55",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -131,6 +131,7 @@
             "Solarized Dark+",
             "Catppuccin Mocha",
             "GitHub Dark Default",
+            "Paradise Smoked Glass",
             "Paradise Frosted Glass",
             "Custom theme (use imports)"
           ]
@@ -155,6 +156,7 @@
             "Solarized Dark+",
             "Catppuccin Mocha",
             "GitHub Dark Default",
+            "Paradise Smoked Glass",
             "Paradise Frosted Glass",
             "Custom theme (use imports)"
           ]
@@ -174,6 +176,7 @@
             "Solarized Dark+",
             "Catppuccin Mocha",
             "GitHub Dark Default",
+            "Paradise Smoked Glass",
             "Paradise Frosted Glass",
             "Custom theme (use imports)"
           ]
@@ -197,6 +200,11 @@
         },
         "vscode_vibrancy.disableFramelessWindow": {
           "description": "%configuration.disableFramelessWindow.description%",
+          "type": "boolean",
+          "default": false
+        },
+        "vscode_vibrancy.disableThemeFixes": {
+          "description": "%configuration.disableThemeFixes.description%",
           "type": "boolean",
           "default": false
         }

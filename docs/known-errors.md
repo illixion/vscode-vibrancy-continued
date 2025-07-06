@@ -2,6 +2,10 @@
 
 Please check this list for a solution if you're encountering an error when installing Vibrancy Continued.
 
+### Nothing happens first time Reload/Enable Vibrancy is used
+
+There is a known issue with Vibrancy sometimes not working on the first try after VSCode updates, perform the same action again to resolve.
+
 ### `EACCES: permission denied` when enabling Vibrancy on macOS?
 
 Your installation of VSCode is owned by another user. Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:

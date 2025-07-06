@@ -12,6 +12,7 @@
   "configuration.refreshInterval.description": "Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization.",
   "configuration.preventFlash.description": "Use an alternative method to prevent window flashing when resizing. Eliminates the need for a refresh interval, but may be less compatible in some cases.",
   "configuration.disableFramelessWindow.description": "Disable frameless window, which is a mitigation that fixes a GPU-related render bug on Windows with VSCode 1.86 and newer. You may see distorted and blurry graphics if you disable this mitigation with an affected GPU. Running VSCode with a --disable-gpu-compositing argument, such as via a shortcut, will allow for this mitigation to be safely disabled.",
+  "configuration.disableThemeFixes.description": "Disable fixes to Default Dark and Default Light themes for non-VSCode editors like Cursor.",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
   "extension.updateVibrancy.title": "Reload Vibrancy",
