@@ -411,6 +411,7 @@ function activate(context) {
   // BrowserWindow option modification
   async function modifyElectronJSFile(ElectronJSFile) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
+    const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
     let useFrame = false;
 
@@ -433,7 +434,6 @@ function activate(context) {
     }
 
     // enable frameless window on Windows w/ Electron 27 (bug #122)
-    const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     if (useFrame && !ElectronJS.includes('frame:false,')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
