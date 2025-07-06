@@ -28,7 +28,9 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 ### Your code editor is not supported.
 
-See here for the lits of supported editors: [Supported Code Editors](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#supported-code-editors)
+See here for the list of supported editors: [Supported Code Editors](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#supported-code-editors)
+
+If you're using an unsupported code editor and you're on Windows, you must perform these steps prior to activating Vibrancy Continued: [Windows Install Guide](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#%EF%B8%8F-important-notice-for-windows-1011-users)
 
 ### Effect doesn't work correctly in VSCode terminal
 
@@ -46,7 +48,7 @@ It usually appears on Windows when you are using the VSCode System Installer. Yo
 
 ### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
 
-Please see [Important notice for Windows users](#️-important-notice-for-windows-1011-users) at the top of the description.
+Please see [Important notice for Windows users](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#%EF%B8%8F-important-notice-for-windows-1011-users) at the top of the description.
 
 ### Effect doesn't work, but there are no errors
 
