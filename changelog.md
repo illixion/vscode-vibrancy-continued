@@ -1,12 +1,19 @@
+# 1.1.56
+
+* Core:
+  * Fixed startup crash when used on Trae.ai IDE (resolves [#201](https://github.com/illixion/vscode-vibrancy-continued/issues/201))
+* Themes:
+  * Added Paradise dark and light themes by [@nickesc](https://github.com/nickesc)
+
 # 1.1.55
 
-* Add Cursor themes by [@RobbieMinderhoud](https://github.com/RobbieMinderhoud) and [@cncn123](https://github.com/cncn123) (resolves [#176](https://github.com/illixion/vscode-vibrancy-continued/issues/176))
+* Added Cursor themes by [@RobbieMinderhoud](https://github.com/RobbieMinderhoud) and [@cncn123](https://github.com/cncn123) (resolves [#176](https://github.com/illixion/vscode-vibrancy-continued/issues/176))
   * These themes apply on top of Default Dark and Default Light
   * They can be disabled via `vscode_vibrancy.disableThemeFixes`, and otherwise load before custom imports
 
 # 1.1.54
 
-* Add new workbench HTML location for VSCode 1.102.0-insider
+* Added new workbench HTML location for VSCode 1.102.0-insider
 
 # 1.1.53
 
