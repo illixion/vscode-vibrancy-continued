@@ -163,6 +163,7 @@ Select Vibrancy theme:
 | Solarized Dark+ (with theme: [Solarized](https://marketplace.visualstudio.com/items?itemName=ryanolsonx.solarized)) | ![](./images/theme-solarized-dark%2B.png)
 | Catppuccin Mocha | ![](./images/theme-catppuccin-mocha.png) |
 | GitHub Dark Default | ![](./images/theme-github-dark-default.png) |
+| [Paradise](https://marketplace.visualstudio.com/items?itemName=nickesc.vscode-paradise-nickesc) Smoked Glass | ![](./images/theme-paradise-smoked-glass.png) |
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
