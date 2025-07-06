@@ -25,6 +25,7 @@
   "messages.already_disabled": "Vibrancy already disabled.",
   "messages.smthingwrong": "Something went wrong: ",
   "messages.unsupported": "Unsupported operating system, only macOS and Windows 10/11 x86 are supported.",
+  "messages.unsupportedEditor": "Your code editor is not supported, see extension description for the list of supported editors",
   "messages.admin": "Apply changes failed, please run Visual Studio Code with administrator privileges, see description for more details: ",
   "messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
   "messages.restartIde": "Restart Visual Studio Code",

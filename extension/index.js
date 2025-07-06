@@ -56,6 +56,8 @@ const themeFixPaths = {
   }
 }
 
+const knownEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor'];
+
 var defaultTheme = 'Default Dark';
 
 function getCurrentTheme(config) {
@@ -338,12 +340,11 @@ function activate(context) {
       themeCSS: themeCSS,
       imports: imports,
     };
-  
+    
     const base = __filename;
     const newJS = generateNewJS(JS, base, injectData);
-  
+    
     await fs.writeFile(JSFile, newJS, 'utf-8');
-    await modifyElectronJSFile(ElectronJSFile);
   }
   
   async function generateImports(config) {
@@ -411,10 +412,18 @@ function activate(context) {
   async function modifyElectronJSFile(ElectronJSFile) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+    let useFrame = false;
 
-    // On non-VSCode editors, this is risky, use a list of allowed editors
-    const allowedEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor'];
-    if (!allowedEditors.includes(vscode.env.appName)) {
+    if (!config.disableFramelessWindow && process.platform === 'win32' && electronMajorVersion >= 27) {
+      useFrame = true;
+    }
+
+    // On non-VSCode editors, this is risky, check against a list of known working editors
+    if (!knownEditors.includes(vscode.env.appName)) {
+      // If frame was enabled, fail installation
+      if (useFrame) {
+        throw new Error(localize('messages.unsupportedEditor'));
+      }
       return;
     }
   
@@ -425,7 +434,7 @@ function activate(context) {
 
     // enable frameless window on Windows w/ Electron 27 (bug #122)
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
-    if (!config.disableFramelessWindow && !ElectronJS.includes('frame:false,') && process.platform === 'win32' && electronMajorVersion >= 27) {
+    if (useFrame && !ElectronJS.includes('frame:false,')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
   
@@ -466,11 +475,13 @@ function activate(context) {
       await fs.writeFile(JSFile, newJS, 'utf-8');
     }
     // remove visualEffectState option
-    const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    const newElectronJS = ElectronJS
-      .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-      .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-    await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+    if (knownEditors.includes(vscode.env.appName)) {
+      const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+      const newElectronJS = ElectronJS
+        .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+        .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+      await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+    }
   }
 
   async function uninstallHTML() {
@@ -727,6 +738,7 @@ function activate(context) {
       } else {
         await installRuntime();
       }
+      await modifyElectronJSFile(ElectronJSFile);
       await installJS();
       await installHTML();
       await checkColorTheme();

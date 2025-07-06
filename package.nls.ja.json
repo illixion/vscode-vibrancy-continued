@@ -25,6 +25,7 @@
   "messages.already_disabled": "Vibrancy は既に無効です。",
   "messages.smthingwrong": "問題が発生しました: ",
   "messages.unsupported": "サポートされていないオペレーティングシステム、macOSとWindows 10/11 x86のみサポートされています。",
+  "messages.unsupportedEditor": "サポートされているエディタのリストについては、拡張機能の説明を参照してください。",
   "messages.admin": "変更の適用に失敗しました，管理者権限でVSCodeを実行してください，詳細については README をご確認ください: ",
   "messages.recommendedColorTheme": "現在の配色テーマは \"%1\" ですが、選択された Vibrancy テーマには \"%2\" を推奨します。",
   "messages.restartIde": "Visual Studio Code を再起動",

@@ -71,6 +71,9 @@
     "messages.unsupported": {
       "type": "string"
     },
+    "messages.unsupportedEditor": {
+      "type": "string"
+    },
     "messages.admin": {
       "type": "string"
     },
@@ -129,6 +132,7 @@
     "messages.already_disabled",
     "messages.smthingwrong",
     "messages.unsupported",
+    "messages.unsupportedEditor",
     "messages.admin",
     "messages.recommendedColorTheme",
     "messages.restartIde",

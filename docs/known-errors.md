@@ -6,7 +6,7 @@ Please check this list for a solution if you're encountering an error when insta
 
 There is a known issue with Vibrancy sometimes not working on the first try after VSCode updates, perform the same action again to resolve.
 
-### `EACCES: permission denied` when enabling Vibrancy on macOS?
+### `EACCES: permission denied` when enabling Vibrancy on macOS
 
 Your installation of VSCode is owned by another user. Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
 ```shell
@@ -16,7 +16,7 @@ sudo chmod -R 755 "/Applications/Visual Studio Code.app/"
 
 A reinstallation will also fix this issue without any loss of settings.
 
-### `EROFS: read-only file system` when enabling Vibrancy on macOS?
+### `EROFS: read-only file system` when enabling Vibrancy on macOS
 
 Your installation of VSCode is affected by [App Translocation](https://eclecticlight.co/2023/05/09/what-causes-app-translocation/).
 
@@ -26,13 +26,17 @@ To fix this, either use the Finder and move VSCode to `/Applications` (or move i
 sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 ```
 
-### Effect doesn't work correctly in VSCode terminal?
+### Your code editor is not supported.
+
+See here for the lits of supported editors: [Supported Code Editors](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#supported-code-editors)
+
+### Effect doesn't work correctly in VSCode terminal
 
 Check your settings. You should change the renderer type of the terminal to `dom`.
 
 `"terminal.integrated.gpuAcceleration": "off"`
 
-### Prompt "Run Visual Studio Code with administrator privileges"?
+### Prompt "Run Visual Studio Code with administrator privileges"
 
 It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
