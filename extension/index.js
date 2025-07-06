@@ -28,6 +28,7 @@ var themeStylePaths = {
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.css',
   'GitHub Dark Default': '../themes/GitHub Dark Default.css',
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.css',
+  'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
 
@@ -44,6 +45,7 @@ const themeConfigPaths = {
   'Catppuccin Mocha': '../themes/Catppuccin Mocha.json',
   'GitHub Dark Default': '../themes/GitHub Dark Default.json',
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.json',
+  'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
 }
 
