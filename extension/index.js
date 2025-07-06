@@ -411,6 +411,12 @@ function activate(context) {
   async function modifyElectronJSFile(ElectronJSFile) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+
+    // On non-VSCode editors, this is risky, use a list of allowed editors
+    const allowedEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor'];
+    if (!allowedEditors.includes(vscode.env.appName)) {
+      return;
+    }
   
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
     if (!ElectronJS.includes('visualEffectState')) {
