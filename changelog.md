@@ -1,3 +1,8 @@
+# 1.1.57
+
+* Core:
+  * Added setting to force frameless VSCode window to fix rendering issues in some macOS environments (`vscode_vibrancy.forceFramelessWindow`)
+
 # 1.1.56
 
 * Core:

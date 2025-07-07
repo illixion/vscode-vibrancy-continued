@@ -32,6 +32,9 @@
     "configuration.preventFlash.description": {
       "type": "string"
     },
+    "configuration.forceFramelessWindow.description": {
+      "type": "string"
+    },
     "configuration.disableFramelessWindow.description": {
       "type": "string"
     },
@@ -119,6 +122,7 @@
     "configuration.imports.description",
     "configuration.refreshInterval.description",
     "configuration.preventFlash.description",
+    "configuration.forceFramelessWindow.description",
     "configuration.disableFramelessWindow.description",
     "configuration.disableThemeFixes.description",
     "extension.installVibrancy.title",

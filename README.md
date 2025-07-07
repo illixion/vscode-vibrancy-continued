@@ -114,6 +114,10 @@ Use a new method for preventing window flashing during resizing. Eliminates the 
 
 *boolean, default is true*
 
+#### Force Frameless Window (`vscode_vibrancy.forceFramelessWindow`)
+
+Always set VSCode window to use `frame: false`, which can sometimes solve visual rendering issues on Windows/macOS.
+
 #### Disable Frameless Window (`vscode_vibrancy.disableFramelessWindow`)
 
 Disable frameless window, which is a mitigation that fixes a GPU-related render bug on Windows with VSCode 1.86 and newer. You may see distorted and blurry graphics if you disable this mitigation with an affected GPU. Running VSCode with a `--disable-gpu-compositing` argument, such as via a shortcut, will allow for this mitigation to be safely disabled.

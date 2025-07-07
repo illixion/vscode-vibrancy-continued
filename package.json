@@ -198,6 +198,11 @@
           "type": "boolean",
           "default": true
         },
+        "vscode_vibrancy.forceFramelessWindow": {
+          "description": "%configuration.forceFramelessWindow.description%",
+          "type": "boolean",
+          "default": false
+        },
         "vscode_vibrancy.disableFramelessWindow": {
           "description": "%configuration.disableFramelessWindow.description%",
           "type": "boolean",

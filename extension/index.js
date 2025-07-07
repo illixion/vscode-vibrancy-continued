@@ -415,7 +415,14 @@ function activate(context) {
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
     let useFrame = false;
 
-    if (!config.disableFramelessWindow && process.platform === 'win32' && electronMajorVersion >= 27) {
+    if (
+      config.forceFramelessWindow ||
+      (
+        !config.disableFramelessWindow
+        && process.platform === 'win32'
+        && electronMajorVersion >= 27
+      )
+    ) {
       useFrame = true;
     }
 
