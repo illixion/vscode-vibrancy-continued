@@ -60,7 +60,8 @@ body {
 
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
-.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label {
+.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label,
+.monaco-workbench .part.auxiliarybar>.title .monaco-action-bar li.action-item:not(.checked) > .action-label {
     color: rgba(255, 255, 255, 0.5) !important;
 }
 
