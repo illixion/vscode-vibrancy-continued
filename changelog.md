@@ -1,3 +1,8 @@
+# 1.1.58
+
+* Themes:
+  * Fix for Paradise Smoked Glass aux-bar tabs and status-bar color
+
 # 1.1.57
 
 * Core:
