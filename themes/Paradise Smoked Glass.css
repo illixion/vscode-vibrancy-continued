@@ -60,7 +60,8 @@ body {
 
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
-.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label {
+.monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label,
+.monaco-workbench .part.auxiliarybar>.title .monaco-action-bar li.action-item:not(.checked) > .action-label {
     color: rgba(255, 255, 255, 0.5) !important;
 }
 
@@ -83,16 +84,16 @@ body:has(.monaco-workbench.fullscreen) {
 }
 
 #status\.host {
-    background-color: rgb(140, 151, 125, .75) !important;
+    background-color: rgba(178, 197, 152, 0.65) !important;
 }
 
 .monaco-workbench .part.statusbar {
-    background-color: rgb(100, 131, 163, .6) !important;
+    background-color: rgba(155, 205, 255, 0.5) !important;
 }
 
 body:has(.codicon-debug-stop){
     .monaco-workbench .part.statusbar {
-        background-color: rgb(182, 100, 103, .6) !important;
+        background-color: rgba(255, 136, 140, 0.5) !important;
     }
 }
 
