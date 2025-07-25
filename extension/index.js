@@ -88,14 +88,10 @@ function checkDarkLightMode(theme) {
 }
 
 async function promptRestart(enabled = true) {
-  // On Windows, also update window.controlsStyle if available, triggers a restart
+  // On Windows, set window.controlsStyle to custom on enable, triggers a restart
   const controlsStyleExists = vscode.workspace.getConfiguration().inspect("window.controlsStyle")?.defaultValue !== undefined;
-  if (osType === 'win10' && controlsStyleExists) {
-    await vscode.workspace.getConfiguration().update(
-      "window.controlsStyle",
-      enabled ? "custom" : "native",
-      vscode.ConfigurationTarget.Global
-    );
+  if (osType === 'win10' && controlsStyleExists && enabled) {
+    await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
   }
 
   // Store the current value of "window.titleBarStyle"
@@ -691,6 +687,11 @@ function activate(context) {
           await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
         } catch (error) {
           console.warn("window.autoDetectColorScheme is not supported in this version of VSCode.");
+        }
+        try {
+          await vscode.workspace.getConfiguration().update("window.controlsStyle", previousCustomizations.controlsStyle, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.warn("window.controlsStyle is not supported in this version of VSCode.");
         }
         await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
 

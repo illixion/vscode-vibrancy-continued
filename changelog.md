@@ -1,3 +1,10 @@
+# 1.1.59
+
+* Core:
+  * Update `window.controlsStyle` on Windows (resolves [#49](https://github.com/illixion/vscode-vibrancy-continued/issues/49))
+* Docs:
+  * Added a page with screenshots of various [Vibrancy Continued types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md) (`vscode_vibrancy.type`)
+
 # 1.1.58
 
 * Themes:
