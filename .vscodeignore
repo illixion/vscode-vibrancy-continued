@@ -1,4 +1,6 @@
 firstload.lock
 build
 images/*
+images/types/*
 !images/logo.png
+docs/*

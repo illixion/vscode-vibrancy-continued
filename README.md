@@ -83,7 +83,7 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 
 #### Type (`vscode_vibrancy.type`)
 
-Native method of Vibrancy Effect.
+Native method of Vibrancy Effect. You can see this page for screenshots of all available options: [Vibrancy Types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md)
 
 * auto : Automatically switch with system version.
 * acrylic : (Windows 10 only) Fluent Design blur.
