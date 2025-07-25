@@ -87,15 +87,33 @@ function checkDarkLightMode(theme) {
   }
 }
 
-async function promptRestart() {
+async function promptRestart(enabled = true) {
+  // On Windows, also update window.controlsStyle if available, triggers a restart
+  const controlsStyleExists = vscode.workspace.getConfiguration().inspect("window.controlsStyle")?.defaultValue !== undefined;
+  if (osType === 'win10' && controlsStyleExists) {
+    await vscode.workspace.getConfiguration().update(
+      "window.controlsStyle",
+      enabled ? "custom" : "native",
+      vscode.ConfigurationTarget.Global
+    );
+  }
+
   // Store the current value of "window.titleBarStyle"
   const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
 
   // Toggle the value of "window.titleBarStyle" to prompt for a restart
-  await vscode.workspace.getConfiguration().update("window.titleBarStyle", titleBarStyle === "native" ? "custom" : "native", vscode.ConfigurationTarget.Global);
+  await vscode.workspace.getConfiguration().update(
+    "window.titleBarStyle",
+    titleBarStyle === "native" ? "custom" : "native",
+    vscode.ConfigurationTarget.Global
+  );
 
   // Reset the value of "window.titleBarStyle" to its original value
-  await vscode.workspace.getConfiguration().update("window.titleBarStyle", titleBarStyle, vscode.ConfigurationTarget.Global);
+  await vscode.workspace.getConfiguration().update(
+    "window.titleBarStyle",
+    titleBarStyle,
+    vscode.ConfigurationTarget.Global
+  );
 }
 
 async function checkColorTheme() {
@@ -503,14 +521,14 @@ function activate(context) {
   function enabledRestart() {
     vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
-        msg && promptRestart();
+        msg && promptRestart(true);
       });
   }
 
   function disabledRestart() {
     vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
-        msg && promptRestart();
+        msg && promptRestart(false);
       });
   }
 
@@ -551,6 +569,7 @@ function activate(context) {
     const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
     const systemColorTheme = vscode.workspace.getConfiguration().inspect("window.systemColorTheme");
     const autoDetectColorScheme = vscode.workspace.getConfiguration().inspect("window.autoDetectColorScheme");
+    const controlsStyleConfig = vscode.workspace.getConfiguration().inspect("window.controlsStyle");
 
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
@@ -562,6 +581,7 @@ function activate(context) {
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
     const currentSystemColorTheme = systemColorTheme?.globalValue;
     const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
+    const currentControlsStyle = controlsStyleConfig?.globalValue;
   
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
@@ -572,6 +592,7 @@ function activate(context) {
         removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
         systemColorTheme: currentSystemColorTheme,
         autoDetectColorScheme: currentAutoDetectColorScheme,
+        controlsStyle: currentControlsStyle,
       };
     }
   
