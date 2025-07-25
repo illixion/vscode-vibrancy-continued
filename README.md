@@ -86,8 +86,8 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 Native method of Vibrancy Effect. You can see this page for screenshots of all available options: [Vibrancy Types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md)
 
 * auto : Automatically switch with system version.
-* acrylic : (Windows 10 only) Fluent Design blur.
-* under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
+* acrylic, mica, tabbed: (Windows 10 only) Fluent Design blur types.
+* under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: macOS only types.
 
 #### Opacity (`vscode_vibrancy.opacity`)
 

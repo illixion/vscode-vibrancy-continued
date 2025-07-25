@@ -11,6 +11,12 @@
     "configuration.type.acrylic.description": {
       "type": "string"
     },
+    "configuration.type.mica.description": {
+      "type": "string"
+    },
+    "configuration.type.tabbed.description": {
+      "type": "string"
+    },
     "configuration.type.macos-only.description": {
       "type": "string"
     },
@@ -115,6 +121,8 @@
     "configuration.type.description",
     "configuration.type.auto.description",
     "configuration.type.acrylic.description",
+    "configuration.type.mica.description",
+    "configuration.type.tabbed.description",
     "configuration.type.macos-only.description",
     "configuration.type.macos-only-legacy.description",
     "configuration.opacity.description",
