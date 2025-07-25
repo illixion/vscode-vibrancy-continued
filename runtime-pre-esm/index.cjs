@@ -85,18 +85,8 @@ electron.app.on('browser-window-created', (_, window) => {
     opacity = app.theme.opacity[app.os];
   }
 
-  const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
-
   if (app.os === 'win10') {
-    const bindings = require('./vibrancy.cjs');
-    bindings.setVibrancy(
-      window.getNativeWindowHandle().readInt32LE(0),
-      1,
-      backgroundRGB.r,
-      backgroundRGB.g,
-      backgroundRGB.b,
-      0
-    );
+    window.setBackgroundMaterial(type);
     const win10refresh = require('./win10refresh.cjs');
     win10refresh(window, 60);
 
@@ -150,8 +140,6 @@ electron.app.on('browser-window-created', (_, window) => {
       window.setBounds({
         width,
       });
-    } else if (app.os === 'win10') {
-      window.setBackgroundMaterial(type);
     }
 
     injectHTML(window);
