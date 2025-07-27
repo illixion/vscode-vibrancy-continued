@@ -1,0 +1,24 @@
+.composer-bar {
+    background-color: transparent !important;
+}
+
+.bg-composer-modal-input {
+    background-color: var(--semi-opaque) !important;
+}
+
+.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div,
+.composer-bar > div > .full-input-box {
+    background-color: var(--semi-opaque) !important;
+}
+
+.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div {
+    width: calc(100% - calc(var(--border) * 2)) !important;
+    margin-left: var(--border) !important;
+    border-radius: var(--corner) !important;
+    border-bottom: none !important;
+}
+
+.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div > div:has(div > .sidebar-list-item) {
+    background-color: var(--secondary-bg) !important;
+    border-radius: var(--corner) !important;
+}
