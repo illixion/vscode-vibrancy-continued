@@ -22,4 +22,5 @@
 .monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div > div:has(div > .sidebar-list-item) {
     background-color: var(--secondary-bg) !important;
     border-radius: var(--corner) !important;
+    border-bottom: 5px solid var(--semi-opaque) !important;
 }
