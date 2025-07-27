@@ -1,4 +1,5 @@
-.composer-bar {
+.composer-bar,
+.composer-bar .conversations {
     background-color: transparent !important;
 }
 
