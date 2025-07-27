@@ -12,6 +12,11 @@
     0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
     0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
     1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
+  --semi-opaque: rgba(5, 5, 5, 0.7);
+  --semi-opaque-dark: rgba(5, 5, 5, 0.7);
+  --semi-opaque-light: rgba(255, 255, 255, 0.5);
+  --primary-bg: #1e1e1e;
+  --secondary-bg: #111111;
 }
 
 /* Transparent Background */
@@ -50,31 +55,31 @@ body {
 }
 
 .monaco-workbench.fullscreen {
-    background-color: #111111 !important;
+    background-color: var(--secondary-bg) !important;
 }
 
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
-	background-color: #1e1e1e !important;
+	background-color: var(--primary-bg) !important;
 }
 
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
 .monaco-workbench .part.panel.bottom .composite.title .composite-bar .actions-container > .action-item:not(.checked) > .action-label,
 .monaco-workbench .part.auxiliarybar>.title .monaco-action-bar li.action-item:not(.checked) > .action-label {
-    color: rgba(255, 255, 255, 0.5) !important;
+    color: var(--semi-opaque-light) !important;
 }
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label:not(.codicon) {
-    background-color: rgba(255, 255, 255, 0.5) !important;
+    background-color: var(--semi-opaque-light) !important;
 }
 
 .monaco-workbench .monaco-inputbox {
-  border: rgba(255, 255, 255, 0.5) solid 1px !important;
+  border: var(--semi-opaque-light) solid 1px !important;
 }
 
 .monaco-workbench .part.panel.bottom > .content {
-    background-color: rgba(5, 5, 5, 0.7) !important;
+    background-color: var(--semi-opaque-dark) !important;
 }
 
 body:has(.monaco-workbench.fullscreen) {
