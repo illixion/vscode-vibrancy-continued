@@ -38,8 +38,23 @@ jobs:
           rm -rf native/prebuilt
           mkdir -p native/prebuilt
 
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install dependencies
         run: npm install
+
+      - name: Save node_modules cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
 
       - name: Rename .node files with architecture suffix
         run: |
@@ -63,8 +78,9 @@ jobs:
           path: |
             native/prebuilt/
 
-      # Perform UI tests on Windows
+      # Perform UI tests on Windows 2025 only, Win11 has an OOBE running
       - name: Install VSCode from zip (x64 or ARM64)
+        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: |
           $arch = "${{ matrix.os }}"
@@ -84,39 +100,55 @@ jobs:
           echo "$vscodeDir" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Package extension
+        if: matrix.os == 'windows-2025'
         run: npx @vscode/vsce package
         
       - name: Install VSIX on VSCode
+        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: |
           $vsix = Get-ChildItem *.vsix | Select-Object -First 1
           $vscodePath = "$env:USERPROFILE\vscode-portable\Code.exe"
 
-          # Set VIBRANCY_AUTO_INSTALL environment variable
-          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", "true", "Machine")
+          # 1. Start VSCode
+          Start-Process $vscodePath
+          # 2. Wait 5s
+          Start-Sleep -Seconds 5
 
-          # Start with --install-extension $vsix.FullName --force
+          # 3. Install VSIX
           Start-Process $vscodePath -ArgumentList "--install-extension $($vsix.FullName) --force"
-          Start-Sleep -Seconds 10
+          # 4. Wait 5s
+          Start-Sleep -Seconds 5
 
-          # Try to find the process more robustly
+          # 5. Kill VSCode
           $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
-
           if ($null -ne $proc) {
-            Write-Host "Found VSCode process: $($proc.Id), killing..."
+            Write-Host "Killing VSCode process: $($proc.Id)"
             $proc | Stop-Process -Force
-          } else {
-            Write-Warning "VSCode process not found. It may have already exited or failed to launch."
           }
 
-          # Unset VIBRANCY_AUTO_INSTALL
-          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", $null, "Machine")
+          # 6. Set env variable
+          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", "true", "Machine")
 
-          # Wait and restart
+          # 7. Start VSCode
+          Start-Process $vscodePath
+          # 8. Wait 10s
           Start-Sleep -Seconds 10
-          Start-Process $vscodePath -ArgumentList "extension/index.js"
+
+          # 9. Kill VSCode
+          $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
+          if ($null -ne $proc) {
+            Write-Host "Killing VSCode process: $($proc.Id)"
+            $proc | Stop-Process -Force
+          }
+
+          # 10. Start VSCode
+          Start-Process $vscodePath
+          # 11. Wait 5s
+          Start-Sleep -Seconds 5
 
       - name: Take screenshot of VSCode
+        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: |
           $screenshotPath = "screenshot-${{ matrix.os }}.png"
@@ -130,6 +162,7 @@ jobs:
           Write-Host "Screenshot saved to: $screenshotPath"
 
       - name: Upload screenshot as artifact
+        if: matrix.os == 'windows-2025'
         uses: actions/upload-artifact@v4
         with:
           name: vscode-screenshot-${{ matrix.os }}-20.x
