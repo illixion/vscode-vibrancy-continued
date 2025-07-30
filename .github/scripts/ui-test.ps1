@@ -5,6 +5,10 @@ $vscodeCliPath = "$env:USERPROFILE\vscode-portable\bin\code"
 
 # Update VSCode config
 $settingsPath = "$env:APPDATA\Code\User\settings.json"
+if (-Not (Test-Path $settingsPath)) {
+    New-Item -Path $settingsPath -ItemType File -Force
+}
+$settingsContent = @{}
 $settingsContent = @{ "vscode_vibrancy.disableFramelessWindow" = $true }
 $settingsContent | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Force
 
