@@ -86,7 +86,6 @@ electron.app.on('browser-window-created', (_, window) => {
   }
 
   if (app.os === 'win10') {
-    window.setBackgroundMaterial(type);
     const win10refresh = require('./win10refresh.cjs');
     win10refresh(window, 60);
 
@@ -140,6 +139,8 @@ electron.app.on('browser-window-created', (_, window) => {
       window.setBounds({
         width,
       });
+    } else if (app.os === 'win10') {
+      window.setBackgroundMaterial(type);
     }
 
     injectHTML(window);

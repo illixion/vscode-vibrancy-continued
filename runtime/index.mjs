@@ -90,7 +90,6 @@ electron.app.on('browser-window-created', (_, window) => {
   }
 
   if (app.os === 'win10') {
-    window.setBackgroundMaterial(type);
     import('./win10refresh.mjs')
       .then((module) => {
         module.default(window, 60);
@@ -151,6 +150,8 @@ electron.app.on('browser-window-created', (_, window) => {
       window.setBounds({
         width,
       });
+    } else if (app.os === 'win10') {
+      window.setBackgroundMaterial(type);
     }
 
     injectHTML(window);
