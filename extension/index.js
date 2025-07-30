@@ -707,7 +707,16 @@ function activate(context) {
   }
 
   async function getLocalConfigPath() {
-    const envPaths = (await import('env-paths')).default;
+    let envPaths;
+    try {
+      envPaths = (await import('env-paths')).default;
+    } catch (err) {
+      // Fallback: use user's home directory
+      envPaths = () => ({
+        config: path.join(os.homedir(), '.vscode-vibrancy-continued')
+      });
+      console.warn('env-paths import failed, using fallback config path:', envPaths().config);
+    }
     const paths = envPaths('vscode-vibrancy-continued');
     const configFilePath = path.join(paths.config, 'config.json');
 
@@ -739,6 +748,22 @@ function activate(context) {
       await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
     } else {
         await fs.unlink(configFilePath).catch(() => { });
+        // Also delete the directory if it's empty
+        const configDir = path.dirname(configFilePath);
+        fs.readdir(configDir, (err, files) => {
+          if (err) {
+            console.error('Error reading config directory:', err);
+            return;
+          }
+          if (files.length === 0) {
+            fs.rmdir(configDir, (err) => {
+              if (err) {
+                console.error('Error removing config directory:', err);
+              }
+            });
+          }
+        }
+      );
     }
   }
 
@@ -875,14 +900,6 @@ function activate(context) {
   vscode.window.onDidChangeActiveColorTheme((theme) => {
     checkDarkLightMode(theme)
   });
-
-  // CI/CD may define `VIBRANCY_AUTO_INSTALL` env variable to automatically install the extension
-  if (process.env.VIBRANCY_AUTO_INSTALL === 'true') {
-    Install().catch((error) => {
-      console.error("Auto-install failed:", error);
-      vscode.window.showErrorMessage("Auto-install failed: " + error.message);
-    });
-  }
 }
 exports.activate = activate;
 

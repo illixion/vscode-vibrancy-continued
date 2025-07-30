@@ -114,13 +114,20 @@ function restorePreviousSettings(previousCustomizations) {
 }
 
 (async () => {
-    const envPaths = (await import('env-paths')).default;
-    const paths = envPaths('vscode-vibrancy-continued');
-    const configFilePath = path.join(paths.config, 'config.json');
+    const altConfigPath = path.join(os.homedir(), '.vscode-vibrancy-continued');
+    let configPathToUse;
+
+    if (fsSync.existsSync(altConfigPath)) {
+        configPathToUse = altConfigPath;
+    } else {
+        const envPaths = (await import('env-paths')).default;
+        const paths = envPaths('vscode-vibrancy-continued');
+        configPathToUse = path.join(paths.config, 'config.json');
+    }
 
     function loadConfig() {
-        if (fsSync.existsSync(configFilePath)) {
-            return JSON.parse(fsSync.readFileSync(configFilePath, 'utf-8'));
+        if (configPathToUse) {
+            return JSON.parse(fsSync.readFileSync(configPathToUse, 'utf-8'));
         }
         return null;
     }
