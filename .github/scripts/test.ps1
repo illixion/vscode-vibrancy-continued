@@ -1,3 +1,6 @@
+# Wait 1 minute for the system to stabilize
+Start-Sleep -Seconds 60
+
 # Print a list of all currently running processes
 Get-Process | ForEach-Object {
     Write-Host "Process: $($_.ProcessName) (ID: $($_.Id))"
