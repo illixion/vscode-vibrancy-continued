@@ -114,7 +114,7 @@ jobs:
           Start-Process $vscodeCliPath -ArgumentList "--install-extension $($vsix.FullName) --force"
           Start-Sleep -Seconds 3
 
-          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", "true", "Machine")
+          $env:VIBRANCY_AUTO_INSTALL = "true"
 
           Start-Process $vscodePath
           Start-Sleep -Seconds 10
@@ -125,9 +125,9 @@ jobs:
             $proc | Stop-Process -Force
           }
 
-          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", $null, "Machine")
+          $env:VIBRANCY_AUTO_INSTALL = $null
 
-          Start-Process $vscodePath
+          Start-Process $vscodePath -ArgumentList "extension/index.js"
           Start-Sleep -Seconds 10
 
       - name: Take screenshot of VSCode
