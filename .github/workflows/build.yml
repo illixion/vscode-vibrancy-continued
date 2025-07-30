@@ -15,30 +15,31 @@ jobs:
     strategy:
       matrix:
         os: [windows-2025, windows-11-arm]
-        node-version: [20.x]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ matrix.node-version }}
+      - name: Set up Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
 
-      - name: Install node-gyp and node-addon-api
+      - name: Install node-gyp
         run: |
           npm install -g node-gyp
-          npm install node-addon-api
 
       - name: Rename binding.gyp.dist to binding.gyp
         run: mv binding.gyp.dist binding.gyp
         shell: bash
 
+      - name: Clear prebuilt directory
+        shell: bash
+        run: |
+          rm -rf native/prebuilt
+          mkdir -p native/prebuilt
+
       - name: Install dependencies
         run: npm install
-
-      - name: Build native modules
-        run: npm run build-win10
 
       - name: Rename .node files with architecture suffix
         run: |
@@ -50,7 +51,7 @@ jobs:
           fi
           for f in build/Release/*.node; do
             base=$(basename "$f" .node)
-            mv "$f" "build/Release/${base}-${ARCH_SUFFIX}.node"
+            mv "$f" "native/prebuilt/${base}-${ARCH_SUFFIX}.node"
           done
         shell: bash
 
@@ -58,6 +59,53 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: build-output-${{ matrix.os }}-${{ matrix.node-version }}
+          name: build-output-${{ matrix.os }}-20.x
           path: |
-            build/Release/
+            native/prebuilt/
+
+  merge-and-package-vsix:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: npm install --omit=dev
+
+      - name: Clear prebuilt directory
+        shell: bash
+        run: |
+          rm -rf native/prebuilt
+          mkdir -p native/prebuilt
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: combined-prebuilt
+
+      - name: List downloaded files
+        run: ls -R combined-prebuilt
+
+      - name: Combine all .node files into native/prebuilt
+        run: |
+          mkdir -p native/prebuilt
+          find combined-prebuilt -name '*.node' -exec cp {} native/prebuilt/ \;
+
+      - name: Remove temp combined-prebuilt directory
+        run: rm -rf combined-prebuilt
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Upload VSIX package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-vibrancy-continued-${{ github.sha }}
+          path: "*.vsix"
+
