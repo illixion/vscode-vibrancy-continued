@@ -40,10 +40,24 @@ jobs:
       - name: Build native modules
         run: npm run build-win10
 
+      - name: Rename .node files with architecture suffix
+        run: |
+          ARCH_SUFFIX="${{ matrix.os }}"
+          if [[ "$ARCH_SUFFIX" == "windows-11-arm" ]]; then
+            ARCH_SUFFIX="arm64"
+          else
+            ARCH_SUFFIX="x64"
+          fi
+          for f in build/Release/*.node; do
+            base=$(basename "$f" .node)
+            mv "$f" "build/Release/${base}-${ARCH_SUFFIX}.node"
+          done
+        shell: bash
+
       - name: Archive build output
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: build-output-${{ matrix.os }}-${{ matrix.node-version }}
           path: |
-            native/prebuilt/
+            build/Release/
