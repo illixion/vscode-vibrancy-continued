@@ -3,13 +3,19 @@ $vscodePath = "$env:USERPROFILE\vscode-portable\Code.exe"
 $vscodeCliPath = "$env:USERPROFILE\vscode-portable\bin\code"
 
 
+# Update VSCode config
+$settingsPath = "$env:APPDATA\Code\User\settings.json"
+$settingsContent = @{ "vscode_vibrancy.disableFramelessWindow" = $true }
+$settingsContent | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Force
+
+
 # Set up extension
 Start-Process $vscodeCliPath -ArgumentList "--install-extension $($vsix.FullName) --force"
 Start-Sleep -Seconds 3
 
 $env:VIBRANCY_AUTO_INSTALL = "true"
 
-Start-Process $vscodePath
+Start-Process $vscodeCliPath
 Start-Sleep -Seconds 10
 
 $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
@@ -91,5 +97,5 @@ $SPIF_SENDWININICHANGE = 0x02
 
 
 # Launch VSCode
-Start-Process $vscodePath -ArgumentList "--disable-gpu extension/index.js"
+Start-Process $vscodeCliPath -ArgumentList "--disable-gpu extension/index.js"
 Start-Sleep -Seconds 10
