@@ -63,6 +63,51 @@ jobs:
           path: |
             native/prebuilt/
 
+      # Perform UI tests on Windows
+      - name: Install Visual Studio Code
+        run: |
+          winget install --id Microsoft.VisualStudioCode --source winget --accept-source-agreements --accept-package-agreements
+
+      - name: Add VS Code to PATH
+        run: |
+          echo "C:\Program Files\Microsoft VS Code\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Install VSIX on VSCode
+        shell: pwsh
+        run: |
+          $vsix = Get-ChildItem *.vsix | Select-Object -First 1
+          code --install-extension $vsix.FullName --force
+
+      - name: Wait 10s, kill Code.exe, then relaunch
+        shell: pwsh
+        run: |
+          Start-Sleep -Seconds 10
+          Get-Process -Name Code | Stop-Process -Force
+          Start-Process code README.md
+
+      - name: Take screenshot of VSCode
+        shell: pwsh
+        run: |
+          $screenshotPath = "screenshot-${{ matrix.os }}.png"
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+          Write-Host "Screenshot saved to: $screenshotPath"
+
+      - name: Upload screenshot as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-screenshot-${{ matrix.os }}-20.x
+          path: screenshot.png
+
   merge-and-package-vsix:
     runs-on: ubuntu-latest
     needs: build
