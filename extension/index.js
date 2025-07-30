@@ -875,6 +875,14 @@ function activate(context) {
   vscode.window.onDidChangeActiveColorTheme((theme) => {
     checkDarkLightMode(theme)
   });
+
+  // CI/CD may define `VIBRANCY_AUTO_INSTALL` env variable to automatically install the extension
+  if (process.env.VIBRANCY_AUTO_INSTALL === 'true') {
+    Install().catch((error) => {
+      console.error("Auto-install failed:", error);
+      vscode.window.showErrorMessage("Auto-install failed: " + error.message);
+    });
+  }
 }
 exports.activate = activate;
 

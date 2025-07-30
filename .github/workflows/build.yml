@@ -83,24 +83,38 @@ jobs:
           # Add to PATH for this session
           echo "$vscodeDir" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-          # Confirm installed
-          & "$vscodeDir\Code.exe" --version
-
       - name: Package extension
         run: npx @vscode/vsce package
-
+        
       - name: Install VSIX on VSCode
         shell: pwsh
         run: |
           $vsix = Get-ChildItem *.vsix | Select-Object -First 1
-          code --install-extension $vsix.FullName --force
+          $vscodePath = "$env:USERPROFILE\vscode-portable\Code.exe"
 
-      - name: Wait 10s, kill Code.exe, then relaunch
-        shell: pwsh
-        run: |
+          # Set VIBRANCY_AUTO_INSTALL environment variable
+          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", "true", "Machine")
+
+          # Start with --install-extension $vsix.FullName --force
+          Start-Process $vscodePath -ArgumentList "--install-extension $($vsix.FullName) --force"
           Start-Sleep -Seconds 10
-          Get-Process -Name Code | Stop-Process -Force
-          Start-Process code README.md
+
+          # Try to find the process more robustly
+          $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
+
+          if ($null -ne $proc) {
+            Write-Host "Found VSCode process: $($proc.Id), killing..."
+            $proc | Stop-Process -Force
+          } else {
+            Write-Warning "VSCode process not found. It may have already exited or failed to launch."
+          }
+
+          # Unset VIBRANCY_AUTO_INSTALL
+          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", $null, "Machine")
+
+          # Wait and restart
+          Start-Sleep -Seconds 2
+          Start-Process $vscodePath -ArgumentList "extension/index.js"
 
       - name: Take screenshot of VSCode
         shell: pwsh
@@ -142,10 +156,11 @@ jobs:
           rm -rf native/prebuilt
           mkdir -p native/prebuilt
 
-      - name: Download all build artifacts
+      - name: Download all build-output artifacts
         uses: actions/download-artifact@v4
         with:
           path: combined-prebuilt
+          pattern: build-output-*
 
       - name: List downloaded files
         run: ls -R combined-prebuilt
