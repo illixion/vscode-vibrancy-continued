@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2025]
+        os: [windows-11-arm, windows-2025]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,91 +24,44 @@ jobs:
         with:
           node-version: 20.x
 
-      # - name: Install node-gyp
-      #   run: |
-      #     npm install -g node-gyp
+      - name: Install node-gyp
+        run: |
+          npm install -g node-gyp
 
-      # - name: Rename binding.gyp.dist to binding.gyp
-      #   run: mv binding.gyp.dist binding.gyp
-      #   shell: bash
+      - name: Rename binding.gyp.dist to binding.gyp
+        run: mv binding.gyp.dist binding.gyp
+        shell: bash
 
-      # - name: Clear prebuilt directory
-      #   shell: bash
-      #   run: |
-      #     rm -rf native/prebuilt
-      #     mkdir -p native/prebuilt
+      - name: Clear prebuilt directory
+        shell: bash
+        run: |
+          rm -rf native/prebuilt
+          mkdir -p native/prebuilt
 
       - name: Install dependencies
         run: npm install
 
-      # - name: Rename .node files with architecture suffix
-      #   run: |
-      #     ARCH_SUFFIX="${{ matrix.os }}"
-      #     if [[ "$ARCH_SUFFIX" == "windows-11-arm" ]]; then
-      #       ARCH_SUFFIX="arm64"
-      #     else
-      #       ARCH_SUFFIX="x64"
-      #     fi
-      #     for f in build/Release/*.node; do
-      #       base=$(basename "$f" .node)
-      #       mv "$f" "native/prebuilt/${base}-${ARCH_SUFFIX}.node"
-      #     done
-      #   shell: bash
-
-      # - name: Archive build output
-      #   if: success()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: build-output-${{ matrix.os }}-20.x
-      #     path: |
-      #       native/prebuilt/
-
-      # Perform UI tests
-      - name: Install VSCode from zip (x64 or ARM64)
-        shell: pwsh
+      - name: Rename .node files with architecture suffix
         run: |
-          $arch = "${{ matrix.os }}"
-          if ($arch -eq "windows-11-arm") {
-            $vscodeUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-arm64-archive"
-          } else {
-            $vscodeUrl = "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-archive"
-          }
+          ARCH_SUFFIX="${{ matrix.os }}"
+          if [[ "$ARCH_SUFFIX" == "windows-11-arm" ]]; then
+            ARCH_SUFFIX="arm64"
+          else
+            ARCH_SUFFIX="x64"
+          fi
+          for f in build/Release/*.node; do
+            base=$(basename "$f" .node)
+            mv "$f" "native/prebuilt/${base}-${ARCH_SUFFIX}.node"
+          done
+        shell: bash
 
-          $vscodeZip = "$env:USERPROFILE\vscode.zip"
-          $vscodeDir = "$env:USERPROFILE\vscode-portable"
-
-          Invoke-WebRequest -Uri $vscodeUrl -OutFile $vscodeZip
-          Expand-Archive -Path $vscodeZip -DestinationPath $vscodeDir -Force
-
-          # Add to PATH for this session
-          echo "$vscodeDir" | Out-File -FilePath $env:GITHUB_PATH -Append
-
-      - name: Package extension
-        run: npx @vscode/vsce package
-        
-      - name: Run VSCode UI tests
-        shell: pwsh
-        run: .github/scripts/ui-test.ps1
-
-      - name: Take screenshot of VSCode
-        shell: pwsh
-        run: |
-          $screenshotPath = "screenshot-${{ matrix.os }}.png"
-          Add-Type -AssemblyName System.Windows.Forms
-          Add-Type -AssemblyName System.Drawing
-          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
-          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
-          $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-          Write-Host "Screenshot saved to: $screenshotPath"
-
-      - name: Upload screenshot as artifact
+      - name: Archive build output
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-screenshot-${{ matrix.os }}-20.x
+          name: build-output-${{ matrix.os }}-20.x
           path: |
-            screenshot-${{ matrix.os }}.png
+            native/prebuilt/
 
   merge-and-package-vsix:
     runs-on: ubuntu-latest
