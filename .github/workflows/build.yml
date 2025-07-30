@@ -14,10 +14,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2025] #todo add windows-11-arm
+        os: [windows-11-arm]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Run test script
+        if: matrix.os == 'windows-2025'
+        shell: pwsh
+        run: .github/scripts/test.ps1
 
       - name: Set up Node.js 20.x
         uses: actions/setup-node@v4
