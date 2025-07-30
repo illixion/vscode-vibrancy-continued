@@ -38,45 +38,30 @@ jobs:
       #     rm -rf native/prebuilt
       #     mkdir -p native/prebuilt
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Install dependencies
         run: npm install
 
-      - name: Save node_modules cache
-        if: always()
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+      # - name: Rename .node files with architecture suffix
+      #   run: |
+      #     ARCH_SUFFIX="${{ matrix.os }}"
+      #     if [[ "$ARCH_SUFFIX" == "windows-11-arm" ]]; then
+      #       ARCH_SUFFIX="arm64"
+      #     else
+      #       ARCH_SUFFIX="x64"
+      #     fi
+      #     for f in build/Release/*.node; do
+      #       base=$(basename "$f" .node)
+      #       mv "$f" "native/prebuilt/${base}-${ARCH_SUFFIX}.node"
+      #     done
+      #   shell: bash
 
-      - name: Rename .node files with architecture suffix
-        run: |
-          ARCH_SUFFIX="${{ matrix.os }}"
-          if [[ "$ARCH_SUFFIX" == "windows-11-arm" ]]; then
-            ARCH_SUFFIX="arm64"
-          else
-            ARCH_SUFFIX="x64"
-          fi
-          for f in build/Release/*.node; do
-            base=$(basename "$f" .node)
-            mv "$f" "native/prebuilt/${base}-${ARCH_SUFFIX}.node"
-          done
-        shell: bash
-
-      - name: Archive build output
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output-${{ matrix.os }}-20.x
-          path: |
-            native/prebuilt/
+      # - name: Archive build output
+      #   if: success()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: build-output-${{ matrix.os }}-20.x
+      #     path: |
+      #       native/prebuilt/
 
       # Perform UI tests
       - name: Install VSCode from zip (x64 or ARM64)
