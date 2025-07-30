@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-11-arm]
+        os: [windows-11-arm, windows-2025]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,19 +24,19 @@ jobs:
         with:
           node-version: 20.x
 
-      - name: Install node-gyp
-        run: |
-          npm install -g node-gyp
+      # - name: Install node-gyp
+      #   run: |
+      #     npm install -g node-gyp
 
-      - name: Rename binding.gyp.dist to binding.gyp
-        run: mv binding.gyp.dist binding.gyp
-        shell: bash
+      # - name: Rename binding.gyp.dist to binding.gyp
+      #   run: mv binding.gyp.dist binding.gyp
+      #   shell: bash
 
-      - name: Clear prebuilt directory
-        shell: bash
-        run: |
-          rm -rf native/prebuilt
-          mkdir -p native/prebuilt
+      # - name: Clear prebuilt directory
+      #   shell: bash
+      #   run: |
+      #     rm -rf native/prebuilt
+      #     mkdir -p native/prebuilt
 
       - name: Restore node_modules cache
         uses: actions/cache@v4
@@ -80,7 +80,6 @@ jobs:
 
       # Perform UI tests
       - name: Install VSCode from zip (x64 or ARM64)
-        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: |
           $arch = "${{ matrix.os }}"
@@ -100,16 +99,13 @@ jobs:
           echo "$vscodeDir" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Package extension
-        if: matrix.os == 'windows-2025'
         run: npx @vscode/vsce package
         
       - name: Run VSCode UI tests
-        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: .github/scripts/ui-test.ps1
 
       - name: Take screenshot of VSCode
-        if: matrix.os == 'windows-2025'
         shell: pwsh
         run: |
           $screenshotPath = "screenshot-${{ matrix.os }}.png"
@@ -123,7 +119,6 @@ jobs:
           Write-Host "Screenshot saved to: $screenshotPath"
 
       - name: Upload screenshot as artifact
-        if: matrix.os == 'windows-2025'
         uses: actions/upload-artifact@v4
         with:
           name: vscode-screenshot-${{ matrix.os }}-20.x
