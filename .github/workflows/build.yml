@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2025, windows-11-arm]
+        os: [windows-2025] #todo add windows-11-arm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -132,6 +132,7 @@ jobs:
 
           # Open color bars
           Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PWD\.github\scripts\color-bars.ps1`""
+          Start-Sleep -Seconds 5
 
           # Launch VSCode
           Start-Process $vscodePath -ArgumentList "extension/index.js"
