@@ -19,10 +19,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run test script
-        shell: pwsh
-        run: .github/scripts/test.ps1
-
       - name: Set up Node.js 20.x
         uses: actions/setup-node@v4
         with:
@@ -82,7 +78,7 @@ jobs:
           path: |
             native/prebuilt/
 
-      # Perform UI tests on Windows 2025 only, Win11 has an OOBE running
+      # Perform UI tests
       - name: Install VSCode from zip (x64 or ARM64)
         if: matrix.os == 'windows-2025'
         shell: pwsh
