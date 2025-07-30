@@ -19,6 +19,9 @@ on:
         description: "Mark this version as a pre-release"
         type: boolean
         default: false
+      build_run_id:
+        description: 'Workflow run ID of the build job'
+        required: true
 
 jobs:
   publish:
@@ -40,6 +43,35 @@ jobs:
       - name: Bump version and create git tag
         if: ${{ github.event.inputs.version != 'none' }}
         run: npm version ${{ github.event.inputs.version }}
+
+      # Clear prebuilt directory
+      - name: Clear prebuilt directory
+        shell: bash
+        run: |
+          rm -rf native/prebuilt || true
+          mkdir -p native/prebuilt
+
+      - name: Download build artifacts from build workflow
+        uses: actions/download-artifact@v4
+        with:
+          pattern: build-output-*
+          path: combined-prebuilt
+          run-id: ${{ github.event.inputs.build_run_id }}
+          github-token: ${{ secrets.GH_TOKEN }}
+
+      - name: List downloaded files
+        run: ls -R combined-prebuilt
+
+      - name: Combine all .node files into native/prebuilt
+        run: |
+          mkdir -p native/prebuilt
+          find combined-prebuilt -name '*.node' -exec mv {} native/prebuilt/ \;
+          echo "native/prebuilt/ now contains:"
+          ls -l native/prebuilt
+
+      - name: Remove temp combined-prebuilt directory
+        run: rm -rf combined-prebuilt || true
+
       - name: Package extension
         run: npx @vscode/vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact

@@ -1,13 +1,15 @@
-name: Build Native Modules
+name: Build Vibrancy Continued
 
 on:
   push:
     branches:
       - main
+      - development
       - gh-actions-testing
-#   pull_request:
-#     branches:
-#       - main
+  pull_request:
+    branches:
+      - main
+      - development
 
 jobs:
   build:
@@ -35,7 +37,7 @@ jobs:
       - name: Clear prebuilt directory
         shell: bash
         run: |
-          rm -rf native/prebuilt
+          rm -rf native/prebuilt || true
           mkdir -p native/prebuilt
 
       - name: Install dependencies
@@ -81,7 +83,7 @@ jobs:
       - name: Clear prebuilt directory
         shell: bash
         run: |
-          rm -rf native/prebuilt
+          rm -rf native/prebuilt || true
           mkdir -p native/prebuilt
 
       - name: Download all build-output artifacts
@@ -101,6 +103,9 @@ jobs:
       - name: Remove temp combined-prebuilt directory
         run: rm -rf combined-prebuilt
 
+      - name: Set version to current commit SHA 
+        run: npm version ${{ github.sha }}
+
       - name: Package extension
         run: npx @vscode/vsce package
 
@@ -109,4 +114,5 @@ jobs:
         with:
           name: vscode-vibrancy-continued-${{ github.sha }}
           path: "*.vsix"
-
+      - name: Output workflow run ID
+        run: echo "::notice::Done, your build workflow run ID is ${{ github.run_id }}"
