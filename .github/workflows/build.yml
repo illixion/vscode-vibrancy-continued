@@ -103,40 +103,10 @@ jobs:
         if: matrix.os == 'windows-2025'
         run: npx @vscode/vsce package
         
-      - name: Install VSIX on VSCode
+      - name: Run VSCode UI tests
         if: matrix.os == 'windows-2025'
         shell: pwsh
-        run: |
-          $vsix = Get-ChildItem *.vsix | Select-Object -First 1
-          $vscodePath = "$env:USERPROFILE\vscode-portable\Code.exe"
-          $vscodeCliPath = "$env:USERPROFILE\vscode-portable\bin\code"
-
-          Start-Process $vscodeCliPath -ArgumentList "--install-extension $($vsix.FullName) --force"
-          Start-Sleep -Seconds 3
-
-          $env:VIBRANCY_AUTO_INSTALL = "true"
-
-          Start-Process $vscodePath
-          Start-Sleep -Seconds 10
-
-          $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
-          if ($null -ne $proc) {
-            Write-Host "Killing VSCode process: $($proc.Id)"
-            $proc | Stop-Process -Force
-          }
-
-          $env:VIBRANCY_AUTO_INSTALL = $null
-
-          # Adjust system settings
-          Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name EnableTransparency -Value 1
-
-          # Open color bars
-          Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PWD\.github\scripts\color-bars.ps1`""
-          Start-Sleep -Seconds 5
-
-          # Launch VSCode
-          Start-Process $vscodePath -ArgumentList "extension/index.js"
-          Start-Sleep -Seconds 10
+        run: .github/scripts/ui-test.ps1
 
       - name: Take screenshot of VSCode
         if: matrix.os == 'windows-2025'
