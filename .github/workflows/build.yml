@@ -127,6 +127,13 @@ jobs:
 
           $env:VIBRANCY_AUTO_INSTALL = $null
 
+          # Adjust system settings
+          Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name EnableTransparency -Value 1
+
+          # Open color bars
+          Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PWD\.github\scripts\color-bars.ps1`""
+
+          # Launch VSCode
           Start-Process $vscodePath -ArgumentList "extension/index.js"
           Start-Sleep -Seconds 10
 
