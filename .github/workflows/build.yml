@@ -109,43 +109,26 @@ jobs:
         run: |
           $vsix = Get-ChildItem *.vsix | Select-Object -First 1
           $vscodePath = "$env:USERPROFILE\vscode-portable\Code.exe"
+          $vscodeCliPath = "$env:USERPROFILE\vscode-portable\bin\code"
 
-          # 1. Start VSCode
-          Start-Process $vscodePath
-          # 2. Wait 5s
-          Start-Sleep -Seconds 5
+          Start-Process $vscodeCliPath -ArgumentList "--install-extension $($vsix.FullName) --force"
+          Start-Sleep -Seconds 3
 
-          # 3. Install VSIX
-          Start-Process $vscodePath -ArgumentList "--install-extension $($vsix.FullName) --force"
-          # 4. Wait 5s
-          Start-Sleep -Seconds 5
-
-          # 5. Kill VSCode
-          $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
-          if ($null -ne $proc) {
-            Write-Host "Killing VSCode process: $($proc.Id)"
-            $proc | Stop-Process -Force
-          }
-
-          # 6. Set env variable
           [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", "true", "Machine")
 
-          # 7. Start VSCode
           Start-Process $vscodePath
-          # 8. Wait 10s
           Start-Sleep -Seconds 10
 
-          # 9. Kill VSCode
           $proc = Get-Process | Where-Object { $_.Path -eq $vscodePath -or $_.ProcessName -like "Code*" }
           if ($null -ne $proc) {
             Write-Host "Killing VSCode process: $($proc.Id)"
             $proc | Stop-Process -Force
           }
 
-          # 10. Start VSCode
+          [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", $null, "Machine")
+
           Start-Process $vscodePath
-          # 11. Wait 5s
-          Start-Sleep -Seconds 5
+          Start-Sleep -Seconds 10
 
       - name: Take screenshot of VSCode
         if: matrix.os == 'windows-2025'
