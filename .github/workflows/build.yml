@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-11-arm, windows-2025]
+        os: [windows-2025]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

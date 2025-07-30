@@ -91,5 +91,5 @@ $SPIF_SENDWININICHANGE = 0x02
 
 
 # Launch VSCode
-Start-Process $vscodePath -ArgumentList "extension/index.js"
+Start-Process $vscodePath -ArgumentList "--disable-gpu extension/index.js"
 Start-Sleep -Seconds 10
