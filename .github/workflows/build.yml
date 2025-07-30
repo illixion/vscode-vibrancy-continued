@@ -113,7 +113,7 @@ jobs:
           [System.Environment]::SetEnvironmentVariable("VIBRANCY_AUTO_INSTALL", $null, "Machine")
 
           # Wait and restart
-          Start-Sleep -Seconds 2
+          Start-Sleep -Seconds 10
           Start-Process $vscodePath -ArgumentList "extension/index.js"
 
       - name: Take screenshot of VSCode
@@ -133,7 +133,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vscode-screenshot-${{ matrix.os }}-20.x
-          path: screenshot.png
+          path: |
+            screenshot-${{ matrix.os }}.png
 
   merge-and-package-vsix:
     runs-on: ubuntu-latest
