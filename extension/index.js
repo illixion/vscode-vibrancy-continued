@@ -53,6 +53,8 @@ const themeFixPaths = {
   'Cursor': {
     'Default Dark': '../themes/fixes/Cursor Dark.css',
     'Default Light': '../themes/fixes/Cursor Light.css',
+    'Paradise Smoked Glass': '../themes/fixes/Paradise Cursor.css',
+    'Paradise Frosted Glass': '../themes/fixes/Paradise Cursor.css',
   }
 }
 
@@ -154,7 +156,7 @@ async function checkElectronDeprecatedType() {
       "light",
       "medium-light"
     ];
-  
+
     if (deprecatedTypes.includes(currentType)) {
       vscode.window.showWarningMessage(
         localize('messages.electronDeprecatedType').replace('%1', currentType),
@@ -237,11 +239,11 @@ function activate(context) {
   if (!fs.existsSync(ElectronJSFile)) {
     ElectronJSFile = JSFile;
   }
-  
+
   var runtimeVersion = 'v6';
   var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
   var runtimeSrcDir = "../runtime-pre-esm"
-  
+
   // VSC 1.94 used ESM, 1.95 dropped it
   const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
   const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
@@ -344,9 +346,9 @@ function activate(context) {
     const themeStylePath = path.join(__dirname, themeStylePaths[currentTheme]);
     const themeCSS = await fs.readFile(themeStylePath, 'utf-8');
     const JS = await fs.readFile(JSFile, 'utf-8');
-  
+
     const imports = await generateImports(config);
-  
+
     const injectData = {
       os: osType,
       config: config,
@@ -354,13 +356,13 @@ function activate(context) {
       themeCSS: themeCSS,
       imports: imports,
     };
-    
+
     const base = __filename;
     const newJS = generateNewJS(JS, base, injectData);
-    
+
     await fs.writeFile(JSFile, newJS, 'utf-8');
   }
-  
+
   async function generateImports(config) {
     const imports = {
       css: "",
@@ -377,7 +379,7 @@ function activate(context) {
     ) {
       let targetPatchTheme = themeFixPaths[vscode.env.appName][currentColorTheme];
       const themePatchPath = path.join(__dirname, targetPatchTheme);
-      
+
       try {
         const themePatchContent = await fs.readFile(themePatchPath, 'utf-8');
         imports.css += `<style>${themePatchContent}</style>`;
@@ -385,13 +387,13 @@ function activate(context) {
         vscode.window.showWarningMessage(localize('messages.importError').replace('%1', targetPatchTheme));
       }
     }
-    
+
     for (let i = 0; i < config.imports.length; i++) {
       if (config.imports[i] === "/path/to/file") continue;
-  
+
       try {
         const importContent = await fs.readFile(config.imports[i], 'utf-8');
-  
+
         if (config.imports[i].endsWith('.css')) {
           imports.css += `<style>${importContent}</style>`;
         } else {
@@ -404,7 +406,7 @@ function activate(context) {
 
     return imports;
   }
-  
+
   function generateNewJS(JS, base, injectData) {
     let runtimePath;
     if (useEsmRuntime) {
@@ -418,10 +420,10 @@ function activate(context) {
       + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
       + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${pathToFileURL(runtimePath)}"); } catch (err) {console.error(err)}\n`
       + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
-  
+
     return newJS;
   }
-  
+
   // BrowserWindow option modification
   async function modifyElectronJSFile(ElectronJSFile) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
@@ -448,7 +450,7 @@ function activate(context) {
       }
       return;
     }
-  
+
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
     if (!ElectronJS.includes('visualEffectState')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
@@ -458,23 +460,23 @@ function activate(context) {
     if (useFrame && !ElectronJS.includes('frame:false,')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
-  
+
     await fs.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
-  
+
   async function installHTML() {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
 
     const metaTagRegex = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([\s\S]+?)">/;
     const trustedTypesRegex = /(trusted-types)(\r\n|\r|\n)/;
-  
+
     const metaTagMatch = HTML.match(metaTagRegex);
-  
+
     if (metaTagMatch) {
       const currentContent = metaTagMatch[0];
 
       const newContent = currentContent.replace(trustedTypesRegex, "$1 VscodeVibrancy\n");
-  
+
       newHTML = HTML.replace(metaTagRegex, newContent);
     }
 
@@ -558,7 +560,7 @@ function activate(context) {
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[vibrancyTheme]);
     const themeConfig = require(themeConfigPath);
     const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
-  
+
     // Get the current settings
     const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
     const gpuAccelerationConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
@@ -569,7 +571,7 @@ function activate(context) {
 
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
-  
+
     // Get current values
     const currentColorCustomizations = terminalColorConfig?.globalValue || {};
     const currentBackground = currentColorCustomizations?.["terminal.background"];
@@ -578,7 +580,7 @@ function activate(context) {
     const currentSystemColorTheme = systemColorTheme?.globalValue;
     const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
     const currentControlsStyle = controlsStyleConfig?.globalValue;
-  
+
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
       previousCustomizations = {
@@ -591,19 +593,19 @@ function activate(context) {
         controlsStyle: currentControlsStyle,
       };
     }
-  
+
     try {
       // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there
       if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles?.includes("workbench.colorCustomizations")) {
         const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
         await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
-  
+
         // Notify user of the change
         vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
       }
       // Ensure this fix is only applied once
       previousCustomizations.removedFromApplyToAllProfiles = true;
-  
+
       // Update settings if necessary
       let newColorCustomization = {};
       if (currentBackground !== "#00000000") {
@@ -612,10 +614,10 @@ function activate(context) {
           "terminal.background": "#00000000"
         };
       }
-  
+
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
-  
+
       // Handle auto theme settings
       if (enableAutoTheme) {
         try {
@@ -643,7 +645,7 @@ function activate(context) {
     } catch (error) {
       console.error("Error updating settings:", error);
     }
-  
+
     // Save user customizations
     await context.globalState.update('customizations', previousCustomizations);
 
@@ -870,7 +872,7 @@ function activate(context) {
       context.globalState.update('lastVersion', currentVersion);
       }
   });
-  
+
   checkDarkLightMode(vscode.window.activeColorTheme)
   vscode.window.onDidChangeActiveColorTheme((theme) => {
     checkDarkLightMode(theme)
