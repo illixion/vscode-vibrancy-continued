@@ -1,5 +1,9 @@
 .composer-bar,
-.composer-bar .conversations {
+.composer-bar .conversations,
+.messages.text-search-provider-messages,
+.composer-sticky-human-message.first::before,
+.monaco-workbench .part.panel .pane-body.integrated-terminal .terminal-outer-container
+.terminal.xterm .xterm-scrollable-element {
     background-color: transparent !important;
 }
 
