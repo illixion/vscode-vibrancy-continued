@@ -3,7 +3,8 @@
 .messages.text-search-provider-messages,
 .composer-sticky-human-message.first::before,
 .monaco-workbench .part.panel .pane-body.integrated-terminal .terminal-outer-container
-.terminal.xterm .xterm-scrollable-element {
+.terminal.xterm .xterm-scrollable-element,
+.composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div {
     background-color: transparent !important;
 }
 
