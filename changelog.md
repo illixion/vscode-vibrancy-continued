@@ -1,3 +1,8 @@
+# 1.1.60
+
+* Themes:
+  * Add Paradise theme Cursor support
+
 # 1.1.59
 
 * Core:
