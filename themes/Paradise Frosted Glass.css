@@ -12,6 +12,11 @@
     0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
     0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
     1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
+  --semi-opaque: rgba(255, 255, 255, 0.7);
+  --semi-opaque-dark: rgba(5, 5, 5, 0.8);
+  --semi-opaque-light: rgba(255, 255, 255, 0.5);
+  --primary-bg: #e8e3e3;
+  --secondary-bg: #e8e3e3;
 }
 
 /* Transparent Background */
@@ -50,11 +55,11 @@ body {
 }
 
 .monaco-workbench.fullscreen {
-    background-color: #e8e3e3 !important;
+    background-color: var(--primary-bg) !important;
 }
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
-	background-color: #e8e3e3 !important;
+	background-color: var(--primary-bg) !important;
 }
 
 /* .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar li:not(.checked)>.action-label.codicon,
@@ -68,12 +73,12 @@ body {
 
 .monaco-workbench .panel.bottom .content,
 .monaco-workbench .panel.bottom .monaco-list-row {
-  color: rgb(232, 227, 227) !important;
+  color: var(--primary-bg) !important;
 }
 
 .monaco-workbench .panel.bottom .monaco-list-row.focused,
 .monaco-workbench .panel.bottom .monaco-list-row.selected {
-  color: rgb(232, 227, 227) !important;
+  color: var(--primary-bg) !important;
 }
 
 .monaco-workbench .panel.bottom .monaco-list-row:hover {
@@ -81,11 +86,11 @@ body {
 }
 
 .monaco-workbench .monaco-inputbox {
-  border: rgba(255, 255, 255, 0.5) solid 1px !important;
+  border: var(--semi-opaque-light) solid 1px !important;
 }
 
 .monaco-workbench .part.panel.bottom > .content {
-    background-color: rgba(0,0,0, 0.8) !important;
+    background-color: var(--semi-opaque-dark) !important;
 }
 
 #status\.host {
