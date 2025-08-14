@@ -13,7 +13,7 @@
   "configuration.preventFlash.description": "別の方法で画面サイズ変更時のフラッシュを防止します。更新間隔が不要になりますが、互換性が低下する場合もあります。",
   "configuration.forceFramelessWindow.description": "VSCodeウィンドウが常に`frame: false`を使用するように設定することで、Windows/macOSでのビジュアルレンダリングの問題を解決できることがある。",
   "configuration.disableFramelessWindow.description": "これは、VSCode 1.86以降のWindowsにおけるGPU関連のレンダリングバグを修正する緩和策です。影響を受けるGPUでこの緩和策を無効にすると、グラフィックスが歪んだりぼやけたりすることがあります。ショートカットなどで--disable-gpu-compositing引数を指定してVSCodeを実行すると、この緩和策を安全に無効にすることができます。",
-  "configuration.disableThemeFixes.description": "カーソルのような非VSCodeエディタ用のデフォルト・ダークおよびデフォルト・ライトテーマの修正を無効にした。",
+  "configuration.disableThemeFixes.description": "カーソルのような非標準のVSCodeエディタの修正を無効にする。",
   "extension.installVibrancy.title": "Vibrancy を有効化",
   "extension.uninstallVibrancy.title": "Vibrancy を無効化",
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",
