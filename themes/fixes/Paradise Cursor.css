@@ -4,7 +4,8 @@
 .composer-sticky-human-message::before,
 .monaco-workbench .part.panel .pane-body.integrated-terminal .terminal-outer-container
 .terminal.xterm .xterm-scrollable-element,
-.composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div {
+.composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div,
+.terminal-outer-container {
     background-color: transparent !important;
 }
 
