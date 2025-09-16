@@ -5,16 +5,18 @@
 .monaco-workbench .part.panel .pane-body.integrated-terminal .terminal-outer-container
 .terminal.xterm .xterm-scrollable-element,
 .composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div,
-.terminal-outer-container {
+.terminal-outer-container,
+.composer-bar .composer-human-message-container,
+.composer-bar .lines-content .monaco-editor-background {
     background-color: transparent !important;
 }
 
-.bg-composer-modal-input {
-    background-color: var(--semi-opaque) !important;
-}
-
-.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div,
-.composer-bar > div > .full-input-box {
+.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div
+.bg-composer-modal-input,
+.composer-bar .full-input-box,
+.composer-bar .composer-human-message,
+.composer-bar .composer-tool-call-container,
+.composer-bar .composer-code-block-content {
     background-color: var(--semi-opaque) !important;
 }
 
