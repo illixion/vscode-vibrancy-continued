@@ -7,7 +7,7 @@
 .composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div,
 .terminal-outer-container,
 .composer-bar .composer-human-message-container,
-.composer-bar .lines-content .monaco-editor-background {
+.composer-bar .composer-code-block-content .lines-content.monaco-editor-background {
     background-color: transparent !important;
 }
 
@@ -16,8 +16,13 @@
 .composer-bar .full-input-box,
 .composer-bar .composer-human-message,
 .composer-bar .composer-tool-call-container,
-.composer-bar .composer-code-block-content {
+.composer-bar .composer-code-block-content,
+.composer-bar .composer-code-block-header {
     background-color: var(--semi-opaque) !important;
+}
+
+.composer-bar .composer-code-block-header {
+    border-bottom: 1px solid var(--cursor-stroke-secondary) !important;
 }
 
 .monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div {
