@@ -1,3 +1,8 @@
+# 1.1.61
+
+* Themes:
+  * Fix opaque terminal background in Paradise Cursor theme
+
 # 1.1.60
 
 * Themes:
