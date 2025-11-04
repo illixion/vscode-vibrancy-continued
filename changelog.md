@@ -1,3 +1,10 @@
+# 1.1.62
+
+* Core:
+  * Fix blurry graphics in Cursor by enabling frameless windows by default (resolves [#219](https://github.com/illixion/vscode-vibrancy-continued/issues/219))
+* Themes:
+  * Add minimap in GitHub Dark theme (resolves [#218](https://github.com/illixion/vscode-vibrancy-continued/issues/218))
+
 # 1.1.61
 
 * Themes:
