@@ -431,14 +431,21 @@ function activate(context) {
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
     let useFrame = false;
 
-    if (
-      config.forceFramelessWindow ||
-      (
-        !config.disableFramelessWindow
-        && process.platform === 'win32'
-        && electronMajorVersion >= 27
-      )
-    ) {
+    // On Cursor, always use frame
+    if (vscode.env.appName === 'Cursor') {
+      useFrame = true;
+    }
+
+    // On Windows with Electron >=27, always use frame (issue 122)
+    if (process.platform === 'win32' && electronMajorVersion >= 27) {
+      useFrame = true;
+    }
+
+    if (config.disableFramelessWindow) {
+      useFrame = false;
+    }
+
+    if (config.forceFramelessWindow) {
       useFrame = true;
     }
 
@@ -452,11 +459,10 @@ function activate(context) {
     }
 
     // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
-    if (!ElectronJS.includes('visualEffectState')) {
+    if (!ElectronJS.includes('visualEffectState') && osType === 'macos') {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
     }
 
-    // enable frameless window on Windows w/ Electron 27 (bug #122)
     if (useFrame && !ElectronJS.includes('frame:false,')) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
