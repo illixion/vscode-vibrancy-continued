@@ -129,11 +129,6 @@ body {
   background-color: var(--base-background) !important;
 }
 
-.minimap,
-.editor-scrollable > .decorationsOverviewRuler {
-  opacity: 0 !important;
-}
-
 #workbench\.parts\.editor
   > div.content.empty
   > div
