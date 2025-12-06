@@ -17,7 +17,7 @@
   --semi-opaque-light: rgba(255, 255, 255, 0.5);
   --semi-opaque-light-secondary: rgba(255, 255, 255, 0.8);
   --semi-opaque: var(--semi-opaque-dark);
-  --semi-opaque-text: var(--semi-opaque-light)
+  --semi-opaque-text: var(--semi-opaque-light);
   --semi-opaque-text-secondary: var(--semi-opaque-light-secondary);
   --primary-bg: #1e1e1e;
   --secondary-bg: #111111;
