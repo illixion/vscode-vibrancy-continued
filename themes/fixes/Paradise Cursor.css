@@ -31,6 +31,14 @@
     border: none !important;
 }
 
+.monaco-workbench .pane-composite-part>.title>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item:not(.checked) .action-label {
+    color: var(--semi-opaque-text) !important;
+}
+
+.monaco-workbench .pane-composite-part>.title>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item:not(.checked) .action-label:hover {
+    color: var(--semi-opaque-text-secondary) !important;
+}
+
 .composer-bar .composer-code-block-header {
     border-bottom: 1px solid var(--cursor-stroke-secondary) !important;
 }
