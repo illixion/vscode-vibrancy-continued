@@ -32,10 +32,12 @@
 }
 
 .monaco-workbench .part.panel.bottom .title .monaco-action-bar .action-item:not(.checked) .action-label,
+.monaco-workbench .part.auxiliarybar.basepanel .title .monaco-action-bar .action-item:not(.checked) .action-label {
     color: var(--semi-opaque-text) !important;
 }
 
 .monaco-workbench .part.panel.bottom .title .monaco-action-bar .action-item:not(.checked) .action-label:hover,
+.monaco-workbench .part.auxiliarybar.basepanel .title .monaco-action-bar .action-item:not(.checked) .action-label:hover {
     color: var(--semi-opaque-text-secondary) !important;
 }
 
