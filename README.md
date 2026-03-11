@@ -63,6 +63,8 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Cursor (use [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) to remove [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt))
 
+✔ Antigravity
+
 # Getting Started
 
 1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancytheme)
