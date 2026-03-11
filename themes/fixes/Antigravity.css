@@ -1,0 +1,11 @@
+div[class*="from-ide-task-section-background"] {
+    display: none !important;
+}
+
+div[widgetid="antigravity.markerHoverInlayHint"] > div.background.bordered {
+    display: none !important;
+}
+
+.antigravity-inlay-hint-widget > .background.bordered {
+    background-color: transparent !important;
+}
