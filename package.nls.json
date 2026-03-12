@@ -3,6 +3,7 @@
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows 10 only) Fluent design blur",
+  "configuration.type.transparent.description": "Make the background transparent, without blur",
   "configuration.type.macos-only.description": "(macOS only)",
   "configuration.type.macos-only-legacy.description": "DEPRECATED in VS 1.86 (macOS only)",
   "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",

@@ -8,7 +8,7 @@ const transparencyMethods = require('./methods/index.cjs');
  * @type {{
  *  os: string,
  *  config: {
- *    type:  "auto" | "acrylic" | "under-window" | "fullscreen-ui" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "content" | "header" | "hud" | "sheet" | "tooltip" | "under-page" | "window" | "appearance-based" | "dark" | "ultra-dark" | "light" | "medium-light",
+ *    type:  "auto" | "acrylic" | "transparent" | "under-window" | "fullscreen-ui" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "content" | "header" | "hud" | "sheet" | "tooltip" | "under-page" | "window" | "appearance-based" | "dark" | "ultra-dark" | "light" | "medium-light",
  *    opacity: number,
  *    theme: "Default Dark" | "Dark (Only Subbar)" | "Default Light" | "Light (Only Subbar)" | "Tokyo Night Storm" | "Tokyo Night Storm (Outer)" | "Noir et blanc" | "Dark (Exclude Tab Line)" | "Solarized Dark+",
  *    imports: string[],
@@ -50,6 +50,8 @@ const macosType = [
 
 const windowsType = ['acrylic'];
 
+const universalType = ['transparent'];
+
 /**
  * @param {string} hex
  * @returns {{ r: any; g: any; b: any; } | null}
@@ -72,12 +74,16 @@ electron.app.on('browser-window-created', (_, window) => {
 
   var type = app.config.type;
   if (type !== 'auto') {
-    if (app.os === 'win10' && !windowsType.includes(type)) type = 'auto';
-    if (app.os === 'macos' && !macosType.includes(type)) type = 'auto';
+    if (!universalType.includes(type)) {
+      if (app.os === 'win10' && !windowsType.includes(type)) type = 'auto';
+      if (app.os === 'macos' && !macosType.includes(type)) type = 'auto';
+    }
   }
   if (type === 'auto') {
     type = app.theme.type[app.os];
   }
+
+  const isUniversalType = universalType.includes(type);
 
   let opacity = app.config.opacity;
   // if opacity < 0, use the theme default opacity
@@ -88,10 +94,13 @@ electron.app.on('browser-window-created', (_, window) => {
   const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
+    // values map to AccentState enum in vibrancy.cc
+    // TODO: fallback to ACCENT_ENABLE_BLURBEHIND (3) on pre-RS4 systems that don't support acrylic
+    const effect = type === 'transparent' ? 2 : 4;
     const bindings = require('./vibrancy.cjs');
     bindings.setVibrancy(
       window.getNativeWindowHandle().readInt32LE(0),
-      1,
+      effect,
       backgroundRGB.r,
       backgroundRGB.g,
       backgroundRGB.b,
@@ -139,7 +148,7 @@ electron.app.on('browser-window-created', (_, window) => {
 
     effects.install();
 
-    if (app.os === 'macos') {
+    if (app.os === 'macos' && !isUniversalType) {
       window.setVibrancy(type);
 
       // hack

@@ -64,6 +64,7 @@
           "enum": [
             "auto",
             "acrylic",
+            "transparent",
             "under-window",
             "fullscreen-ui",
             "titlebar",
@@ -87,6 +88,7 @@
           "enumDescriptions": [
             "%configuration.type.auto.description%",
             "%configuration.type.acrylic.description%",
+            "%configuration.type.transparent.description%",
             "%configuration.type.macos-only.description%",
             "%configuration.type.macos-only.description%",
             "%configuration.type.macos-only.description%",

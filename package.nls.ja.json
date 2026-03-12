@@ -3,6 +3,7 @@
   "configuration.type.description": "すりガラス効果の適用方法を制御します。",
   "configuration.type.auto.description": "自動",
   "configuration.type.acrylic.description": "(Windows 10 のみ) Fluent Design のブラー効果を使用します",
+  "configuration.type.transparent.description": "ぼかし効果を適用せずに、背景を透明にします",
   "configuration.type.macos-only.description": "(macOS のみ)",
   "configuration.type.macos-only-legacy.description": "VSCode 1.86 で廃止。(macOS のみ)",
   "configuration.opacity.description": "すりガラス効果の透明度を制御します。",
