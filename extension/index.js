@@ -441,6 +441,12 @@ function activate(context) {
       useFrame = true;
     }
 
+    // Linux doesn't have a universal native API for transparent frames, 
+    // so we need to handle transparency and window frames manually.
+    if (process.platform === 'linux') {
+      useFrame = true;
+    }
+
     if (config.disableFramelessWindow) {
       useFrame = false;
     }

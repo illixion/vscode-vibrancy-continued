@@ -7,5 +7,8 @@ if (/^win/.test(process.platform)) {
 if (process.platform === 'darwin') {
 	os = 'macos';
 }
+if (process.platform === 'linux') {
+	os = 'linux';
+}
 
 module.exports = os;
