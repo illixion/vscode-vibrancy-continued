@@ -63,6 +63,8 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ VSCodium
 
+✔ Code - OSS
+
 ✔ Cursor (use [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) to remove [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt))
 
 # Getting Started

@@ -58,7 +58,13 @@ const themeFixPaths = {
   }
 }
 
-const knownEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor'];
+const knownEditors = [
+  'Visual Studio Code',
+  'Visual Studio Code - Insiders',
+  'VSCodium',
+  'Cursor',
+  'Code - OSS'
+];
 
 var defaultTheme = 'Default Dark';
 
