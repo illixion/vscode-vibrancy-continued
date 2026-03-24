@@ -170,7 +170,7 @@ electron.app.on('browser-window-created', (_, window) => {
 
 function injectHTML(window) {
   window.webContents.executeJavaScript(`(function(){
-    const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancy", { createHTML (v) { return v; }});
+    const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancyContinued", { createHTML (v) { return v; }});
 
     document.getElementById("vscode-vibrancy-style")?.remove();
     const styleElement = document.createElement("div");

@@ -524,25 +524,34 @@ function activate(context) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
 
     const metaTagRegex = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([\s\S]+?)">/;
-    const trustedTypesRegex = /(trusted-types)(\r\n|\r|\n)/;
-
     const metaTagMatch = HTML.match(metaTagRegex);
 
-    if (metaTagMatch) {
-      const currentContent = metaTagMatch[0];
-
-      const newContent = currentContent.replace(trustedTypesRegex, "$1 VscodeVibrancy\n");
-
-      newHTML = HTML.replace(metaTagRegex, newContent);
+    if (!metaTagMatch) {
+      // No CSP meta tag — no trusted-types enforcement, nothing to patch
+      return;
     }
 
-    try {
-      if (HTML !== newHTML) {
-        await writer.writeFile(HTMLFile, newHTML, 'utf-8');
-      }
-    } catch (ReferenceError) {
-      throw localize('messages.htmlError');
+    const cspContent = metaTagMatch[1];
+
+    if (cspContent.includes('VscodeVibrancyContinued')) {
+      // Already patched — still write to overwrite any staged uninstall in Update flow
+      await writer.writeFile(HTMLFile, HTML, 'utf-8');
+      return;
     }
+
+    let newCspContent;
+    if (cspContent.includes('trusted-types')) {
+      // Add VscodeVibrancyContinued to existing trusted-types directive
+      newCspContent = cspContent.replace('trusted-types', 'trusted-types VscodeVibrancyContinued');
+    } else {
+      // No trusted-types directive — add one before the closing quote
+      newCspContent = cspContent.replace(/;?\s*$/, '; trusted-types VscodeVibrancyContinued');
+    }
+
+    const newMetaTag = metaTagMatch[0].replace(cspContent, newCspContent);
+    const newHTML = HTML.replace(metaTagMatch[0], newMetaTag);
+
+    await writer.writeFile(HTMLFile, newHTML, 'utf-8');
   }
 
   async function uninstallJS(writer) {
@@ -565,9 +574,8 @@ function activate(context) {
 
   async function uninstallHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
-    const needClean = /trusted-types VscodeVibrancy/.test(HTML);
-    if (needClean) {
-      const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
+    if (HTML.includes('VscodeVibrancyContinued')) {
+      const newHTML = HTML.replace(/ VscodeVibrancyContinued/g, '');
       await writer.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
@@ -920,8 +928,10 @@ function activate(context) {
   }
 
   async function Uninstall(promptRestart = true, sharedWriter) {
-    // undo settings changes
-    await restorePreviousSettings();
+    // Defer settings restore when part of Update flow — Update handles it after flush
+    if (!sharedWriter) {
+      await restorePreviousSettings();
+    }
 
     // Use shared writer if provided (e.g. from Update), otherwise create our own
     let writer = sharedWriter;
@@ -943,13 +953,11 @@ function activate(context) {
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {
         await writer.flush();
-      }
+        await setLocalConfig(false);
 
-      await setLocalConfig(false);
-
-      // Only show restart prompt if we're not part of a larger Update flow
-      if (!sharedWriter && promptRestart) {
-        disabledRestart();
+        if (promptRestart) {
+          disabledRestart();
+        }
       }
     } catch (error) {
       if (!sharedWriter) writer.cleanup();
@@ -975,6 +983,7 @@ function activate(context) {
     try {
       await Uninstall(false, writer);
       await Install(writer);
+      // Flush all file changes at once, then apply settings only on success
       await writer.flush();
       enabledRestart();
     } catch (error) {

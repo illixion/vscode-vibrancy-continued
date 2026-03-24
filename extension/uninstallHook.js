@@ -143,9 +143,8 @@ function restorePreviousSettings(previousCustomizations) {
 
     async function uninstallHTML(htmlFilePath, writer) {
         const HTML = await fs.readFile(htmlFilePath, 'utf-8');
-        const needClean = /trusted-types VscodeVibrancy/.test(HTML);
-        if (needClean) {
-            const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
+        if (HTML.includes('VscodeVibrancyContinued')) {
+            const newHTML = HTML.replace(/ VscodeVibrancyContinued/g, '');
             await writer.writeFile(htmlFilePath, newHTML, 'utf-8');
         }
     }
