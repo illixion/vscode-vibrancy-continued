@@ -57,7 +57,7 @@ function restorePreviousSettings(previousCustomizations) {
 
     // Restore saved customizations
     if (previousCustomizations?.saved) {
-        if (previousCustomizations.terminalBackground !== null) {
+        if (previousCustomizations.terminalBackground != null) {
             if (
                 previousCustomizations.terminalBackground === '#00000000'
             ) {
@@ -73,12 +73,10 @@ function restorePreviousSettings(previousCustomizations) {
             }
         }
 
-        if (previousCustomizations.systemColorTheme !== null) {
+        if (previousCustomizations.systemColorTheme != null) {
             settingsContent = settingsContent.replace(
                 /"window\.systemColorTheme"\s*:\s*".*?",?\s*/g,
-                previousCustomizations.systemColorTheme === null
-                    ? ''
-                    : `"window.systemColorTheme": "${previousCustomizations.systemColorTheme}",`
+                `"window.systemColorTheme": "${previousCustomizations.systemColorTheme}",`
             );
         } else {
             settingsContent = settingsContent.replace(
@@ -87,12 +85,10 @@ function restorePreviousSettings(previousCustomizations) {
             );
         }
 
-        if (previousCustomizations.autoDetectColorScheme !== null) {
+        if (previousCustomizations.autoDetectColorScheme != null) {
             settingsContent = settingsContent.replace(
                 /"window\.autoDetectColorScheme"\s*:\s*(true|false),?\s*/g,
-                previousCustomizations.autoDetectColorScheme === null
-                    ? ''
-                    : `"window.autoDetectColorScheme": ${previousCustomizations.autoDetectColorScheme},`
+                `"window.autoDetectColorScheme": ${previousCustomizations.autoDetectColorScheme},`
             );
         } else {
             settingsContent = settingsContent.replace(
@@ -101,12 +97,10 @@ function restorePreviousSettings(previousCustomizations) {
             );
         }
 
-        if (previousCustomizations.gpuAcceleration !== null) {
+        if (previousCustomizations.gpuAcceleration != null) {
             settingsContent = settingsContent.replace(
                 /"terminal\.integrated\.gpuAcceleration"\s*:\s*".*?",?\s*/g,
-                previousCustomizations.gpuAcceleration === null
-                    ? ''
-                    : `"terminal.integrated.gpuAcceleration": "${previousCustomizations.gpuAcceleration}",`
+                `"terminal.integrated.gpuAcceleration": "${previousCustomizations.gpuAcceleration}",`
             );
         } else {
             settingsContent = settingsContent.replace(
@@ -137,18 +131,28 @@ function restorePreviousSettings(previousCustomizations) {
     }
 
     async function uninstallJS(jsFilePath, electronJsFilePath, writer) {
-        const JS = await fs.readFile(jsFilePath, 'utf-8');
+        let JS = await fs.readFile(jsFilePath, 'utf-8');
         const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
         if (needClean) {
-            const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
-            await writer.writeFile(jsFilePath, newJS, 'utf-8');
+            JS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
         }
 
-        const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
-        const newElectronJS = ElectronJS
-            .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-            .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-        await writer.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
+        if (electronJsFilePath === jsFilePath) {
+            // Since VSCode 1.95, both files are the same — apply all cleanups to one buffer
+            JS = JS
+                .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+                .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+            await writer.writeFile(jsFilePath, JS, 'utf-8');
+        } else {
+            if (needClean) {
+                await writer.writeFile(jsFilePath, JS, 'utf-8');
+            }
+            const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
+            const newElectronJS = ElectronJS
+                .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+                .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+            await writer.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
+        }
     }
 
     async function uninstallHTML(htmlFilePath, writer) {
@@ -185,7 +189,7 @@ function restorePreviousSettings(previousCustomizations) {
         const needsElevation = checkNeedsElevation(appDir);
 
         // Snap installs are unsupported and should be skipped
-        if (!needsElevation === 'snap') {
+        if (needsElevation !== 'snap') {
             const writer = new StagedFileWriter(needsElevation === true);
             await writer.init();
 
