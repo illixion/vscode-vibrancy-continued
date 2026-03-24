@@ -6,6 +6,17 @@ var { pathToFileURL } = require('url')
 var os = require('os');
 var { spawn } = require('child_process');
 
+function getConfigDir(name) {
+  const homedir = os.homedir();
+  if (process.platform === 'darwin') {
+    return path.join(homedir, 'Library', 'Preferences', name);
+  }
+  if (process.platform === 'win32') {
+    return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
+  }
+  return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
+}
+
 /**
  * @type {(info: string) => string}
  */
@@ -131,17 +142,33 @@ async function promptRestart(setControlsStyle) {
   // detach it from VSCode's process tree, so it survives the parent exiting.
   // Use the CLI command (e.g. 'code') instead of the raw Electron binary,
   // since the CLI wrapper sets up the required environment.
-  const cliCommand = editorCliCommands[vscode.env.appName] || 'code';
+  const cliName = editorCliCommands[vscode.env.appName] || 'code';
   const pid = process.pid;
 
   if (process.platform === 'win32') {
-    const script = `@echo off\r\n:wait\r\ntasklist /fi "PID eq ${pid}" 2>nul | find /i "${pid}" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto wait\r\n)\r\nstart "" "${cliCommand}"\r\ndel "%~f0"\r\n`;
-    const scriptPath = path.join(os.tmpdir(), 'vibrancy-restart.bat');
-    require('fs').writeFileSync(scriptPath, script);
-    spawn('cmd', ['/c', 'start', '/min', '', scriptPath], {
+    // Resolve the full path to the CLI .cmd wrapper next to the install dir
+    // e.g. C:\Users\X\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd
+    const cliFullPath = path.join(path.dirname(process.execPath), 'bin', `${cliName}.cmd`);
+    const cliCommand = require('fs').existsSync(cliFullPath) ? cliFullPath : cliName;
+    // Pure VBScript: poll for process exit via WMI, relaunch hidden, self-delete.
+    // No batch file needed — avoids all visible cmd.exe windows.
+    const vbsScript = [
+      `Set WshShell = CreateObject("WScript.Shell")`,
+      `Set WMI = GetObject("winmgmts:\\\\.\\root\\cimv2")`,
+      `Do`,
+      `  WScript.Sleep 1000`,
+      `  Set procs = WMI.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE ProcessId = ${pid}")`,
+      `  If procs.Count = 0 Then Exit Do`,
+      `Loop`,
+      `WScript.Sleep 1000`,
+      `WshShell.Run """${cliCommand}""", 0, False`,
+      `CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName`,
+    ].join('\r\n');
+    const vbsPath = path.join(os.tmpdir(), 'vibrancy-restart.vbs');
+    require('fs').writeFileSync(vbsPath, vbsScript);
+    spawn('wscript', [vbsPath], {
       detached: true,
       stdio: 'ignore',
-      shell: true,
     }).unref();
   } else {
     const script = `#!/bin/sh\nwhile kill -0 ${pid} 2>/dev/null; do sleep 1; done\nsleep 1\n${cliCommand} &\nrm -f "$0"\n`;
@@ -769,13 +796,12 @@ function activate(context) {
   }
 
   async function getLocalConfigPath() {
-    const envPaths = (await import('env-paths')).default;
-    const paths = envPaths('vscode-vibrancy-continued');
-    const configFilePath = path.join(paths.config, 'config.json');
+    const configDir = getConfigDir('vscode-vibrancy-continued');
+    const configFilePath = path.join(configDir, 'config.json');
 
     // Ensure the directory exists recursively
-    await fs.mkdir(paths.config, { recursive: true }).catch(() =>
-      console.warn(`Failed to create directory: ${paths.config}`)
+    await fs.mkdir(configDir, { recursive: true }).catch(() =>
+      console.warn(`Failed to create directory: ${configDir}`)
     );
 
     return configFilePath;

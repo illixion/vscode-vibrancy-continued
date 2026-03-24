@@ -5,6 +5,17 @@ const path = require('path');
 const os = require('os');
 const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
 
+function getConfigDir(name) {
+    const homedir = os.homedir();
+    if (process.platform === 'darwin') {
+        return path.join(homedir, 'Library', 'Preferences', name);
+    }
+    if (process.platform === 'win32') {
+        return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
+    }
+    return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
+}
+
 function getVSCodeSettingsPath() {
     const platform = os.platform();
     const home = os.homedir();
@@ -115,9 +126,8 @@ function restorePreviousSettings(previousCustomizations) {
 }
 
 (async () => {
-    const envPaths = (await import('env-paths')).default;
-    const paths = envPaths('vscode-vibrancy-continued');
-    const configFilePath = path.join(paths.config, 'config.json');
+    const configDir = getConfigDir('vscode-vibrancy-continued');
+    const configFilePath = path.join(configDir, 'config.json');
 
     function loadConfig() {
         if (fsSync.existsSync(configFilePath)) {
