@@ -55,11 +55,11 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Windows 10/11 (x64 & ARM64)
 
-✔ Linux (No native library needed)
+✔ Linux (transparency only, blur requires a compositor such as KWin, Hyprland, or Picom)
 
 # Supported code editors
 
-✔ Visual Studio Code
+✔ Visual Studio Code (v1.86 and newer)
 
 ✔ VSCodium
 
