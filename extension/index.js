@@ -93,6 +93,11 @@ const editorCliCommands = {
 
 var defaultTheme = 'Default Dark';
 
+// Pending .node file copies deferred until after VSCode exits (Windows only).
+// Windows hard-locks loaded .node modules, so the restart script copies them
+// in the gap between exit and relaunch.
+var pendingNodeCopies = [];
+
 function getCurrentTheme(config) {
   return config.theme in themeStylePaths ? config.theme : defaultTheme;
 }
@@ -149,8 +154,36 @@ async function promptRestart(setControlsStyle) {
     // e.g. C:\Users\X\AppData\Local\Programs\Microsoft VS Code\bin\code.cmd
     const cliFullPath = path.join(path.dirname(process.execPath), 'bin', `${cliName}.cmd`);
     const cliCommand = require('fs').existsSync(cliFullPath) ? cliFullPath : cliName;
-    // Pure VBScript: poll for process exit via WMI, relaunch hidden, self-delete.
-    // No batch file needed — avoids all visible cmd.exe windows.
+
+    // Build .node copy commands for the restart script.
+    // .node files are locked while VSCode runs, so we copy them after exit.
+    const nodeCopyLines = [];
+    if (pendingNodeCopies.length > 0) {
+      const needsElevation = checkNeedsElevation(path.dirname(pendingNodeCopies[0].dest));
+      if (needsElevation) {
+        // Write a PowerShell script to copy the .node files, run it elevated.
+        // VSCode is relaunched AFTER this completes, as a normal (non-admin) process.
+        const psCommands = pendingNodeCopies.map(({ src, dest }) =>
+          `Copy-Item -Path '${src.replace(/'/g, "''")}' -Destination '${dest.replace(/'/g, "''")}' -Force`
+        );
+        psCommands.push(`Remove-Item -Path '${os.tmpdir().replace(/'/g, "''")}\\vibrancy-node-copy.ps1' -Force -ErrorAction SilentlyContinue`);
+        const psScript = psCommands.join('\n');
+        const psPath = path.join(os.tmpdir(), 'vibrancy-node-copy.ps1');
+        require('fs').writeFileSync(psPath, psScript, 'utf-8');
+        nodeCopyLines.push(
+          `WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ""Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File """"${psPath.replace(/"/g, '""')}""""' -Verb RunAs -WindowStyle Hidden -Wait""", 0, True`,
+        );
+      } else {
+        // No elevation needed — copy directly via FSO
+        nodeCopyLines.push(`Set fso = CreateObject("Scripting.FileSystemObject")`);
+        for (const { src, dest } of pendingNodeCopies) {
+          nodeCopyLines.push(`fso.CopyFile "${src.replace(/"/g, '""')}", "${dest.replace(/"/g, '""')}", True`);
+        }
+      }
+    }
+
+    // Pure VBScript: poll for process exit via WMI, copy .node files,
+    // relaunch hidden, self-delete.
     const vbsScript = [
       `Set WshShell = CreateObject("WScript.Shell")`,
       `Set WMI = GetObject("winmgmts:\\\\.\\root\\cimv2")`,
@@ -160,6 +193,7 @@ async function promptRestart(setControlsStyle) {
       `  If procs.Count = 0 Then Exit Do`,
       `Loop`,
       `WScript.Sleep 1000`,
+      ...nodeCopyLines,
       `WshShell.Run """${cliCommand}""", 0, False`,
       `CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName`,
     ].join('\r\n');
@@ -363,15 +397,24 @@ function activate(context) {
     await writer.mkdir(runtimeDir);
     await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
 
-    // Copy native modules for Windows (.node files)
+    // .node files are locked by the running VSCode process — skip them here
+    // and defer to the restart script which copies them after VSCode exits.
+    pendingNodeCopies = [];
     const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
     if (fs.existsSync(nativePrebuiltDir)) {
       const files = fs.readdirSync(nativePrebuiltDir);
       for (const file of files) {
-        await writer.copyFile(
-          path.join(nativePrebuiltDir, file),
-          path.join(runtimeDir, file)
-        );
+        if (file.endsWith('.node')) {
+          pendingNodeCopies.push({
+            src: path.join(nativePrebuiltDir, file),
+            dest: path.join(runtimeDir, file),
+          });
+        } else {
+          await writer.copyFile(
+            path.join(nativePrebuiltDir, file),
+            path.join(runtimeDir, file)
+          );
+        }
       }
     }
   }

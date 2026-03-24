@@ -1,4 +1,4 @@
-const { spawn, exec } = require('child_process');
+const { execSync } = require('child_process');
 const fs = require('fs').promises; // Use fs.promises for Promise-based APIs
 const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
@@ -163,20 +163,19 @@ function restorePreviousSettings(previousCustomizations) {
         }
     }
 
-    function showNotification(message) {
-        const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
-
+    function showNotificationSync(message, title = 'Vibrancy Continued') {
         if (process.platform === 'win32') {
-            const js = `javascript:var sh=new ActiveXObject('WScript.Shell'); sh.Popup('${escapedMessage}', 0, 'Alert', 64); close()`;
-            const child = spawn('mshta', [js], {
-                detached: true,
-                stdio: 'ignore'
-            });
-            child.unref();
+            const vbs = `MsgBox "${message.replace(/"/g, '""')}", 64, "${title.replace(/"/g, '""')}"`;
+            const vbsPath = path.join(os.tmpdir(), `vibrancy-notify-${Date.now()}.vbs`);
+            fsSync.writeFileSync(vbsPath, vbs);
+            execSync(`wscript "${vbsPath}"`, { stdio: 'ignore' });
+            try { fsSync.unlinkSync(vbsPath); } catch {}
         } else if (process.platform === 'darwin') {
-            exec(`osascript -e 'display alert "Notification" message "${escapedMessage}" as critical'`);
+            const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            execSync(`osascript -e 'display alert "${title}" message "${escapedMessage}" as critical'`);
         } else {
-            exec(`zenity --info --title="Notification" --text="${escapedMessage}"`);
+            const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            execSync(`zenity --info --title="${title}" --text="${escapedMessage}"`);
         }
     }
 
@@ -190,6 +189,13 @@ function restorePreviousSettings(previousCustomizations) {
 
         // Snap installs are unsupported and should be skipped
         if (needsElevation !== 'snap') {
+            if (needsElevation) {
+                showNotificationSync(
+                    "Vibrancy Continued was uninstalled and needs to revert changes to VSCode's internal files. " +
+                    "You will be prompted for administrator privileges.",
+                );
+            }
+
             const writer = new StagedFileWriter(needsElevation === true);
             await writer.init();
 
@@ -198,12 +204,12 @@ function restorePreviousSettings(previousCustomizations) {
                 await uninstallHTML(workbenchHtmlPath, writer);
                 await writer.flush();
                 restorePreviousSettings(previousCustomizations);
-                showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
+                showNotificationSync("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
             } catch (err) {
                 writer.cleanup();
                 console.error('Failed to revert VSCode files:', err);
                 restorePreviousSettings(previousCustomizations);
-                showNotification("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
+                showNotificationSync("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
             }
         }
     }
