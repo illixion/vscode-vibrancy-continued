@@ -1,5 +1,5 @@
 name: Publish Extension
-on: 
+on:
   workflow_dispatch:
     inputs:
       version:
@@ -19,26 +19,77 @@ on:
         description: "Mark this version as a pre-release"
         type: boolean
         default: false
+      package_only:
+        description: "Only build and package (skip publish and version bump)"
+        type: boolean
+        default: false
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  build-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-2025
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install node-gyp and node-addon-api
+        run: |
+          npm install -g node-gyp
+          npm install node-addon-api
+      - name: Rename binding.gyp.dist to binding.gyp
+        run: mv binding.gyp.dist binding.gyp
+        shell: bash
+      - name: Build native modules
+        run: npm run build-win10
+      - name: Copy build output to native/prebuilt
+        run: |
+          mkdir -p native/prebuilt
+          cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ matrix.arch }}.node
+          cp build/Release/displayconfig.node native/prebuilt/displayconfig-${{ matrix.arch }}.node
+        shell: bash
+      - name: Upload native modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.arch }}
+          path: native/prebuilt/
+
+  publish:
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Download native modules (x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: native-x64
+          path: native/prebuilt/
+      - name: Download native modules (arm64)
+        uses: actions/download-artifact@v4
+        with:
+          name: native-arm64
+          path: native/prebuilt/
       - name: Install dependencies
         run: npm install --omit=dev
       - name: Configure git and clean repo
-        if: ${{ github.event.inputs.version != 'none' }}
+        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
         run: |
           git reset --hard HEAD
           git config --global user.name "GitHubActions"
           git config --global user.email "ghactions@illixion.com"
       - name: Bump version and create git tag
-        if: ${{ github.event.inputs.version != 'none' }}
+        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
         run: npm version ${{ github.event.inputs.version }}
       - name: Package extension
         run: npx @vscode/vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
@@ -48,22 +99,22 @@ jobs:
           name: vscode-vibrancy-continued-${{ github.event.inputs.version }}
           path: "*.vsix"
       - name: Publish extension to VSCE
-        if: ${{ github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both' }}
+        if: ${{ github.event.inputs.package_only != 'true' && (github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both') }}
         run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Publish extension to Open VSX
-        if: ${{ github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both' }}
+        if: ${{ github.event.inputs.package_only != 'true' && (github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both') }}
         env:
           OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
         run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
       - name: Configure SSH key
-        if: ${{ github.event.inputs.version != 'none' }}
+        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
       - name: Push changes
-        if: ${{ github.event.inputs.version != 'none' }}
+        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
         run: |
           # Extract the branch name from the GITHUB_REF
           BRANCH_NAME=${GITHUB_REF#refs/heads/}

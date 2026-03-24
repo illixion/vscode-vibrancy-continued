@@ -61,9 +61,17 @@ void setVibrancy(const Napi::CallbackInfo &info) {
                     hModule, "SetWindowCompositionAttribute");
             if (SetWindowCompositionAttribute) {
                 int gradientColor = (alphaValue<<24) + (blueValue<<16) + (greenValue<<8) + (redValue);
-                AccentState blurType = (effect >= ACCENT_ENABLE_GRADIENT && effect <= ACCENT_ENABLE_HOSTBACKDROP)
-                    ? static_cast<AccentState>(effect)
-                    : ACCENT_ENABLE_BLURBEHIND;
+                AccentState blurType;
+                switch (effect) {
+                    case ACCENT_ENABLE_TRANSPARENTGRADIENT:
+                    case ACCENT_ENABLE_BLURBEHIND:
+                    case ACCENT_ENABLE_ACRYLICBLURBEHIND:
+                        blurType = static_cast<AccentState>(effect);
+                        break;
+                    default:
+                        blurType = ACCENT_ENABLE_BLURBEHIND;
+                        break;
+                }
                 AccentPolicy policy = {blurType, 2, gradientColor, 0};
                 WindowCompositionAttributeData data = {WCA_ACCENT_POLICY, &policy, sizeof(AccentPolicy)};
                 SetWindowCompositionAttribute(hWnd, &data);

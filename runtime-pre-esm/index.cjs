@@ -52,6 +52,10 @@ const windowsType = ['acrylic'];
 
 const universalType = ['transparent'];
 
+// Windows AccentState values (must match enum in native/vibrancy.cc)
+const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
+const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
+
 /**
  * @param {string} hex
  * @returns {{ r: any; g: any; b: any; } | null}
@@ -94,9 +98,8 @@ electron.app.on('browser-window-created', (_, window) => {
   const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
-    // values map to AccentState enum in vibrancy.cc
     // TODO: fallback to ACCENT_ENABLE_BLURBEHIND (3) on pre-RS4 systems that don't support acrylic
-    const effect = type === 'transparent' ? 2 : 4;
+    const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
     const bindings = require('./vibrancy.cjs');
     bindings.setVibrancy(
       window.getNativeWindowHandle().readInt32LE(0),
