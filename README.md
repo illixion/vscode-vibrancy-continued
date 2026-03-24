@@ -55,11 +55,15 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Windows 10/11 (x64 & ARM64)
 
+✔ Linux (No native library needed)
+
 # Supported code editors
 
 ✔ Visual Studio Code
 
 ✔ VSCodium
+
+✔ Code - OSS
 
 ✔ Cursor (use [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) to remove [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt))
 
@@ -88,6 +92,7 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 Native method of Vibrancy Effect. You can see this page for screenshots of all available options: [Vibrancy Types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md)
 
 * auto : Automatically switch with system version.
+* transparent: Make VSCode transparent only, without blur. (Linux default)
 * acrylic : (Windows 10 only) Fluent Design blur.
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
@@ -107,6 +112,7 @@ EXAMPLES:
 
 - Windows: `C:/Users/MyUserName/Documents/custom.css`
 - macOS: `/Users/MyUserName/Documents/custom.css`
+- Linux: `/home/MyUserName/Documents/custom.css`
 
 *value: array[]*
 
@@ -233,6 +239,10 @@ Ensure that you don't have transparency effects disabled globally through your O
 This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
 
 If nothing else worked, try reinstalling VSCode, you won't lose any settings and this will ensure that your VSCode installation is consistent.
+
+### Linux: Why is the background transparent but not blurred?
+
+Currently, we do not support native blur effects on Linux. While transparency can work on its own, blur usually depends on additional support from the system compositor. To achieve a blur effect, use transparent mode together with a compositor such as KWin, Hyprland, or Picom.
 
 # Contributing
 

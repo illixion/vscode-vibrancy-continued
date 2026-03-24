@@ -1,12 +1,14 @@
 {
   "type": {
     "win10": "acrylic",
-    "macos": "under-window"
+    "macos": "under-window",
+    "linux": "transparent"
   },
   "background": "0e1116",
   "opacity": {
     "win10": 0.8,
-    "macos": 0.5
+    "macos": 0.5,
+    "linux": 0.8
   },
   "colorTheme": "GitHub Dark Default",
   "systemColorTheme": "dark"

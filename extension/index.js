@@ -59,7 +59,14 @@ const themeFixPaths = {
   },
 }
 
-const knownEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor', 'Antigravity'];
+const knownEditors = [
+  'Visual Studio Code',
+  'Visual Studio Code - Insiders',
+  'VSCodium',
+  'Cursor',
+  'Code - OSS',
+  'Antigravity'
+];
 
 var defaultTheme = 'Default Dark';
 
@@ -439,6 +446,12 @@ function activate(context) {
 
     // On Windows with Electron >=27, always use frame (issue 122)
     if (process.platform === 'win32' && electronMajorVersion >= 27) {
+      useFrame = true;
+    }
+
+    // Linux doesn't have a universal native API for transparent frames, 
+    // so we need to handle transparency and window frames manually.
+    if (process.platform === 'linux') {
       useFrame = true;
     }
 

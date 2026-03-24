@@ -49,7 +49,7 @@ void setVibrancy(const Napi::CallbackInfo &info) {
             return;
         }
         HWND hWnd = (HWND) info[0].As<Napi::Number>().Int64Value();
-        int isRS4OrGreater = info[1].As<Napi::Number>().Int32Value();
+        int effect = info[1].As<Napi::Number>().Int32Value();
 
         int redValue = info[2].As<Napi::Number>().Int32Value();
         int greenValue = info[3].As<Napi::Number>().Int32Value();
@@ -61,7 +61,9 @@ void setVibrancy(const Napi::CallbackInfo &info) {
                     hModule, "SetWindowCompositionAttribute");
             if (SetWindowCompositionAttribute) {
                 int gradientColor = (alphaValue<<24) + (blueValue<<16) + (greenValue<<8) + (redValue);
-                AccentState blurType = isRS4OrGreater == 1 ? ACCENT_ENABLE_ACRYLICBLURBEHIND : ACCENT_ENABLE_BLURBEHIND;
+                AccentState blurType = (effect >= ACCENT_ENABLE_GRADIENT && effect <= ACCENT_ENABLE_HOSTBACKDROP)
+                    ? static_cast<AccentState>(effect)
+                    : ACCENT_ENABLE_BLURBEHIND;
                 AccentPolicy policy = {blurType, 2, gradientColor, 0};
                 WindowCompositionAttributeData data = {WCA_ACCENT_POLICY, &policy, sizeof(AccentPolicy)};
                 SetWindowCompositionAttribute(hWnd, &data);

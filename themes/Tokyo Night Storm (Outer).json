@@ -1,12 +1,14 @@
 {
   "type": {
     "win10": "acrylic",
-    "macos": "fullscreen-ui"
+    "macos": "fullscreen-ui",
+    "linux": "transparent"
   },
   "background": "1a1b26",
   "opacity": {
     "win10": 0.8,
-    "macos": 0.5
+    "macos": 0.5,
+    "linux": 0.8
   },
   "colorTheme": "Tokyo Night Storm",
   "systemColorTheme": "dark"

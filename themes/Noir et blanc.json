@@ -1,12 +1,14 @@
 {
   "type": {
     "win10": "acrylic",
-    "macos": "under-window"
+    "macos": "under-window",
+    "linux": "transparent"
   },
   "background": "ffffff",
   "opacity": {
     "win10": 0.8,
-    "macos": 0.4
+    "macos": 0.4,
+    "linux": 0.8
   },
   "colorTheme": "Noir Essence Light",
   "systemColorTheme": "light"
