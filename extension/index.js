@@ -110,11 +110,17 @@ function checkDarkLightMode(theme) {
   }
 }
 
-async function promptRestart(enabled = true) {
-  // On Windows, set window.controlsStyle to custom on enable
-  const controlsStyleExists = vscode.workspace.getConfiguration().inspect("window.controlsStyle")?.defaultValue !== undefined;
-  if (osType === 'win10' && controlsStyleExists && enabled) {
-    await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
+async function promptRestart(setControlsStyle) {
+  // Set/remove window.controlsStyle right before quit — deferred to here so it
+  // doesn't trigger VSCode's built-in restart prompt during install/uninstall,
+  // which would cause an in-process reload and break polkit elevation.
+  if (osType === 'win10' || process.platform === 'linux') {
+    try {
+      const value = setControlsStyle ? "custom" : undefined;
+      await vscode.workspace.getConfiguration().update("window.controlsStyle", value, vscode.ConfigurationTarget.Global);
+    } catch (error) {
+      console.warn("window.controlsStyle is not supported in this version of VSCode.");
+    }
   }
 
   // Perform a full quit + relaunch to avoid the no_new_privs issue that
@@ -542,7 +548,8 @@ function activate(context) {
     let newCspContent;
     if (cspContent.includes('trusted-types')) {
       // Add VscodeVibrancyContinued to existing trusted-types directive
-      newCspContent = cspContent.replace('trusted-types', 'trusted-types VscodeVibrancyContinued');
+      // Use lookbehind/lookahead to skip "require-trusted-types-for"
+      newCspContent = cspContent.replace(/(?<!-)trusted-types(?!-)/, 'trusted-types VscodeVibrancyContinued');
     } else {
       // No trusted-types directive — add one before the closing quote
       newCspContent = cspContent.replace(/;?\s*$/, '; trusted-types VscodeVibrancyContinued');
@@ -631,8 +638,6 @@ function activate(context) {
     const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
     const systemColorTheme = vscode.workspace.getConfiguration().inspect("window.systemColorTheme");
     const autoDetectColorScheme = vscode.workspace.getConfiguration().inspect("window.autoDetectColorScheme");
-    const controlsStyleConfig = vscode.workspace.getConfiguration().inspect("window.controlsStyle");
-
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
 
@@ -643,7 +648,6 @@ function activate(context) {
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
     const currentSystemColorTheme = systemColorTheme?.globalValue;
     const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
-    const currentControlsStyle = controlsStyleConfig?.globalValue;
 
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
@@ -654,7 +658,6 @@ function activate(context) {
         removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
         systemColorTheme: currentSystemColorTheme,
         autoDetectColorScheme: currentAutoDetectColorScheme,
-        controlsStyle: currentControlsStyle,
       };
     }
 
@@ -751,11 +754,6 @@ function activate(context) {
           await vscode.workspace.getConfiguration().update("window.autoDetectColorScheme", previousCustomizations.autoDetectColorScheme, vscode.ConfigurationTarget.Global);
         } catch (error) {
           console.warn("window.autoDetectColorScheme is not supported in this version of VSCode.");
-        }
-        try {
-          await vscode.workspace.getConfiguration().update("window.controlsStyle", previousCustomizations.controlsStyle, vscode.ConfigurationTarget.Global);
-        } catch (error) {
-          console.warn("window.controlsStyle is not supported in this version of VSCode.");
         }
         await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", previousCustomizations.gpuAcceleration, vscode.ConfigurationTarget.Global);
 
@@ -861,6 +859,16 @@ function activate(context) {
     }
   }
 
+  async function applyPostInstallSettings() {
+    await checkColorTheme();
+    await checkElectronDeprecatedType();
+    await setLocalConfig(true, {
+      workbenchHtmlPath: HTMLFile,
+      jsPath: JSFile,
+      electronJsPath: ElectronJSFile,
+    }, await changeVSCodeSettings());
+  }
+
   async function Install(sharedWriter) {
 
     if (osType === 'unknown') {
@@ -899,19 +907,8 @@ function activate(context) {
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {
         await writer.flush();
-      }
-
-      // These write to user config dir, not VSCode install — no elevation needed
-      await checkColorTheme();
-      await checkElectronDeprecatedType();
-      await setLocalConfig(true, {
-        workbenchHtmlPath: HTMLFile,
-        jsPath: JSFile,
-        electronJsPath: ElectronJSFile,
-      }, await changeVSCodeSettings());
-
-      // Only show restart prompt if we're not part of a larger Update flow
-      if (!sharedWriter) {
+        // Apply VSCode settings and local config after flush succeeds
+        await applyPostInstallSettings();
         enabledRestart();
       }
     } catch (error) {
@@ -985,6 +982,7 @@ function activate(context) {
       await Install(writer);
       // Flush all file changes at once, then apply settings only on success
       await writer.flush();
+      await applyPostInstallSettings();
       enabledRestart();
     } catch (error) {
       writer.cleanup();
@@ -995,6 +993,7 @@ function activate(context) {
           await Uninstall(false, elevatedWriter);
           await Install(elevatedWriter);
           await elevatedWriter.flush();
+          await applyPostInstallSettings();
           enabledRestart();
         } catch (retryError) {
           elevatedWriter.cleanup();
