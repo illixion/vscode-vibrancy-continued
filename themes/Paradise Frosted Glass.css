@@ -12,9 +12,13 @@
     0.3px -0.6px 0.8px hsl(var(--shadow-color) / 0.41),
     0.5px -1.1px 1.4px -1.2px hsl(var(--shadow-color) / 0.41),
     1.4px -2.9px 3.6px -2.5px hsl(var(--shadow-color) / 0.41);
-  --semi-opaque: rgba(255, 255, 255, 0.7);
-  --semi-opaque-dark: rgba(5, 5, 5, 0.8);
+  --semi-opaque-dark: rgba(5, 5, 5, 0.6);
+  --semi-opaque-dark-secondary: rgba(5, 5, 5, 0.9);
   --semi-opaque-light: rgba(255, 255, 255, 0.5);
+  --semi-opaque-light-secondary: rgba(255, 255, 255, 0.7);
+  --semi-opaque: var(--semi-opaque-light-secondary);
+  --semi-opaque-text: var(--semi-opaque-dark);
+  --semi-opaque-text-secondary: var(--semi-opaque-dark-secondary);
   --primary-bg: #e8e3e3;
   --secondary-bg: #e8e3e3;
 }
