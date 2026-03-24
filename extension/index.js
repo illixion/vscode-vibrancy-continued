@@ -55,8 +55,8 @@ const themeFixPaths = {
     'Default Light': '../themes/fixes/Cursor Light.css',
     'Paradise Smoked Glass': '../themes/fixes/Paradise Cursor.css',
     'Paradise Frosted Glass': '../themes/fixes/Paradise Cursor.css',
+    'Antigravity': '../themes/fixes/Antigravity.css'
   },
-  'Antigravity': '../themes/fixes/Antigravity.css'
 }
 
 const knownEditors = ['Visual Studio Code', 'Visual Studio Code - Insiders', 'VSCodium', 'Cursor', 'Antigravity'];
@@ -375,21 +375,17 @@ function activate(context) {
     const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
     if (
       !disableThemeFixes &&
-      vscode.env.appName in themeFixPaths
+      vscode.env.appName in themeFixPaths &&
+      themeFixPaths[vscode.env.appName][currentColorTheme]
     ) {
-      let targetPatchTheme = typeof themeFixPaths[vscode.env.appName] === 'string'
-        ? themeFixPaths[vscode.env.appName]
-        : themeFixPaths[vscode.env.appName][currentColorTheme];
+      let targetPatchTheme = themeFixPaths[vscode.env.appName][currentColorTheme];
+      const themePatchPath = path.join(__dirname, targetPatchTheme);
 
-      if (targetPatchTheme) {
-        const themePatchPath = path.join(__dirname, targetPatchTheme);
-
-        try {
-          const themePatchContent = await fs.readFile(themePatchPath, 'utf-8');
-          imports.css += `<style>${themePatchContent}</style>`;
-        } catch (err) {
-          vscode.window.showWarningMessage(localize('messages.importError').replace('%1', targetPatchTheme));
-        }
+      try {
+        const themePatchContent = await fs.readFile(themePatchPath, 'utf-8');
+        imports.css += `<style>${themePatchContent}</style>`;
+      } catch (err) {
+        vscode.window.showWarningMessage(localize('messages.importError').replace('%1', targetPatchTheme));
       }
     }
 
