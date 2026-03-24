@@ -38,5 +38,13 @@
   "messages.importError": "エラーオープニングファイル: \"%1\"",
   "messages.htmlError": "workbench.htmlファイルが想定しているものと異なっている。workbench.htmlファイルを変更する他の拡張機能がないことを確認してください。",
   "messages.electronDeprecatedType": "\"%1\"タイプはこのバージョンのVSCodeでは非推奨です。サポートされているタイプを使用するように設定を更新してください。",
-  "messages.applyToAllProfiles": "Workbench.settings.applyToAllProfiles` 設定が更新され、`terminal.background` が削除されました。これはVSCodeプロファイルをより良くサポートするための1回限りの変更です。"
+  "messages.applyToAllProfiles": "Workbench.settings.applyToAllProfiles` 設定が更新され、`terminal.background` が削除されました。これはVSCodeプロファイルをより良くサポートするための1回限りの変更です。",
+  "messages.elevationRequired": "VSCodeのインストールファイルを変更するには管理者権限が必要です。昇格したアクセスを許可しますか？",
+  "messages.elevationYes": "はい、アクセスを許可",
+  "messages.elevationNo": "キャンセル",
+  "messages.retryElevated": "管理者権限で再試行",
+  "messages.elevationFailed": "管理者権限の取得に失敗しました。手動の手順については既知のエラーを参照してください: ",
+  "messages.pkexecMissing": "polkit (pkexec) がインストールされていません。インストールするか、次のコマンドでファイルの所有権を変更してください: sudo chown -R $(whoami) ",
+  "messages.snapImmutable": "Snap経由でインストールされたVSCodeは不変のファイルシステムを使用しているため、管理者権限でも変更できません。.deb、.rpm、またはFlatpak経由でVSCodeをインストールしてください。",
+  "messages.noNewPrivs": "VSCodeがプロセス内で再読み込みされたため、管理者権限を取得できません。VSCodeを完全に閉じてから再度開いて、もう一度お試しください。"
 }

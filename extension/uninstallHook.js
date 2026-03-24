@@ -3,6 +3,7 @@ const fs = require('fs').promises; // Use fs.promises for Promise-based APIs
 const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
 const os = require('os');
+const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
 
 function getVSCodeSettingsPath() {
     const platform = os.platform();
@@ -125,27 +126,27 @@ function restorePreviousSettings(previousCustomizations) {
         return null;
     }
 
-    async function uninstallJS(jsFilePath, electronJsFilePath) {
+    async function uninstallJS(jsFilePath, electronJsFilePath, writer) {
         const JS = await fs.readFile(jsFilePath, 'utf-8');
         const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
         if (needClean) {
             const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
-            await fs.writeFile(jsFilePath, newJS, 'utf-8');
+            await writer.writeFile(jsFilePath, newJS, 'utf-8');
         }
 
         const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
         const newElectronJS = ElectronJS
             .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
             .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-        await fs.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
+        await writer.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
     }
 
-    async function uninstallHTML(htmlFilePath) {
+    async function uninstallHTML(htmlFilePath, writer) {
         const HTML = await fs.readFile(htmlFilePath, 'utf-8');
         const needClean = /trusted-types VscodeVibrancy/.test(HTML);
         if (needClean) {
             const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
-            await fs.writeFile(htmlFilePath, newHTML, 'utf-8');
+            await writer.writeFile(htmlFilePath, newHTML, 'utf-8');
         }
     }
 
@@ -170,10 +171,27 @@ function restorePreviousSettings(previousCustomizations) {
     if (config) {
         const { workbenchHtmlPath, jsPath, electronJsPath, previousCustomizations } = config;
 
-        await uninstallJS(jsPath, electronJsPath);
-        await uninstallHTML(workbenchHtmlPath);
-        restorePreviousSettings(previousCustomizations);
+        // Determine elevation needs from the JS file path (part of VSCode install dir)
+        const appDir = path.dirname(jsPath);
+        const needsElevation = checkNeedsElevation(appDir);
 
-        showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
+        // Snap installs are unsupported and should be skipped
+        if (!needsElevation === 'snap') {
+            const writer = new StagedFileWriter(needsElevation === true);
+            await writer.init();
+
+            try {
+                await uninstallJS(jsPath, electronJsPath, writer);
+                await uninstallHTML(workbenchHtmlPath, writer);
+                await writer.flush();
+                restorePreviousSettings(previousCustomizations);
+                showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
+            } catch (err) {
+                writer.cleanup();
+                console.error('Failed to revert VSCode files:', err);
+                restorePreviousSettings(previousCustomizations);
+                showNotification("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
+            }
+        }
     }
 })();

@@ -38,5 +38,13 @@
   "messages.importError": "Couldn't open custom import file: \"%1\"",
   "messages.htmlError": "The workbench.html file is different from what is expected. Please ensure that you don't have other extensions that modify the workbench.html file.",
   "messages.electronDeprecatedType": "The \"%1\" type is deprecated in this version of VSCode. Please update your configuration to use a supported type.",
-  "messages.applyToAllProfiles": "Your `workbench.settings.applyToAllProfiles` setting has been updated to remove `terminal.background`. This is a one-time change to better support VSCode profiles."
+  "messages.applyToAllProfiles": "Your `workbench.settings.applyToAllProfiles` setting has been updated to remove `terminal.background`. This is a one-time change to better support VSCode profiles.",
+  "messages.elevationRequired": "VSCode installation files require administrator privileges to modify. Grant elevated access?",
+  "messages.elevationYes": "Yes, grant access",
+  "messages.elevationNo": "Cancel",
+  "messages.retryElevated": "Retry with admin privileges",
+  "messages.elevationFailed": "Failed to acquire elevated privileges. See Known Errors for manual instructions: ",
+  "messages.pkexecMissing": "polkit (pkexec) is not installed. Install it or manually change file ownership with: sudo chown -R $(whoami) ",
+  "messages.snapImmutable": "VSCode installed via Snap has an immutable filesystem that cannot be modified even with elevated privileges. Please install VSCode via .deb, .rpm, or Flatpak instead.",
+  "messages.noNewPrivs": "Elevated privileges are unavailable because VSCode was reloaded in-process. Please close VSCode completely and reopen it, then try again."
 }

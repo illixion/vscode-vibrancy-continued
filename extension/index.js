@@ -4,6 +4,7 @@ var fsExtra = require('fs-extra');
 var path = require('path');
 var { pathToFileURL } = require('url')
 var os = require('os');
+var { spawn } = require('child_process');
 
 /**
  * @type {(info: string) => string}
@@ -14,6 +15,8 @@ const localize = require('./i18n');
  * @type {'unknown' | 'win10' | 'macos'}
  */
 const osType = require('./platform');
+
+const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
 
 var themeStylePaths = {
   'Default Dark': '../themes/Default Dark.css',
@@ -68,6 +71,16 @@ const knownEditors = [
   'Antigravity'
 ];
 
+// Map editor app names to their CLI commands for relaunch
+const editorCliCommands = {
+  'Visual Studio Code': 'code',
+  'Visual Studio Code - Insiders': 'code-insiders',
+  'VSCodium': 'codium',
+  'Cursor': 'cursor',
+  'Code - OSS': 'code-oss',
+  'Antigravity': 'antigravity',
+};
+
 var defaultTheme = 'Default Dark';
 
 function getCurrentTheme(config) {
@@ -98,28 +111,46 @@ function checkDarkLightMode(theme) {
 }
 
 async function promptRestart(enabled = true) {
-  // On Windows, set window.controlsStyle to custom on enable, triggers a restart
+  // On Windows, set window.controlsStyle to custom on enable
   const controlsStyleExists = vscode.workspace.getConfiguration().inspect("window.controlsStyle")?.defaultValue !== undefined;
   if (osType === 'win10' && controlsStyleExists && enabled) {
     await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
   }
 
-  // Store the current value of "window.titleBarStyle"
-  const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+  // Perform a full quit + relaunch to avoid the no_new_privs issue that
+  // occurs with in-process reloads (which prevents sudo/pkexec from working
+  // on subsequent elevation attempts).
+  //
+  // We write a self-contained script to /tmp and use nohup + setsid to fully
+  // detach it from VSCode's process tree, so it survives the parent exiting.
+  // Use the CLI command (e.g. 'code') instead of the raw Electron binary,
+  // since the CLI wrapper sets up the required environment.
+  const cliCommand = editorCliCommands[vscode.env.appName] || 'code';
+  const pid = process.pid;
 
-  // Toggle the value of "window.titleBarStyle" to prompt for a restart
-  await vscode.workspace.getConfiguration().update(
-    "window.titleBarStyle",
-    titleBarStyle === "native" ? "custom" : "native",
-    vscode.ConfigurationTarget.Global
-  );
+  if (process.platform === 'win32') {
+    const script = `@echo off\r\n:wait\r\ntasklist /fi "PID eq ${pid}" 2>nul | find /i "${pid}" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto wait\r\n)\r\nstart "" "${cliCommand}"\r\ndel "%~f0"\r\n`;
+    const scriptPath = path.join(os.tmpdir(), 'vibrancy-restart.bat');
+    require('fs').writeFileSync(scriptPath, script);
+    spawn('cmd', ['/c', 'start', '/min', '', scriptPath], {
+      detached: true,
+      stdio: 'ignore',
+      shell: true,
+    }).unref();
+  } else {
+    const script = `#!/bin/sh\nwhile kill -0 ${pid} 2>/dev/null; do sleep 1; done\nsleep 1\n${cliCommand} &\nrm -f "$0"\n`;
+    const scriptPath = path.join(os.tmpdir(), `vibrancy-restart-${pid}.sh`);
+    require('fs').writeFileSync(scriptPath, script, { mode: 0o755 });
+    // Use nohup + setsid to fully detach from VSCode's process tree
+    spawn('setsid', ['nohup', scriptPath], {
+      detached: true,
+      stdio: ['ignore', 'ignore', 'ignore'],
+      env: { ...process.env, HOME: process.env.HOME },
+    }).unref();
+  }
 
-  // Reset the value of "window.titleBarStyle" to its original value
-  await vscode.workspace.getConfiguration().update(
-    "window.titleBarStyle",
-    titleBarStyle,
-    vscode.ConfigurationTarget.Global
-  );
+  // Quit VSCode — the detached script will relaunch after exit completes
+  vscode.commands.executeCommand('workbench.action.quit');
 }
 
 async function checkColorTheme() {
@@ -268,40 +299,45 @@ function activate(context) {
     runtimeSrcDir = "../runtime"
   }
 
-  async function installRuntime() {
+  async function installRuntime(writer) {
     // if runtimeDir exists, recurse through it and delete all files
     if (fs.existsSync(runtimeDir)) {
-      fs.rmSync(runtimeDir, { recursive: true, force: true });
+      await writer.rmdir(runtimeDir);
     }
 
-    await fs.mkdir(runtimeDir);
-    await fsExtra.copy(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
+    await writer.mkdir(runtimeDir);
+    await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
   }
 
-  async function installRuntimeWin() {
+  async function installRuntimeWin(writer) {
     // if runtimeDir exists, recurse through it and delete all files
     if (fs.existsSync(runtimeDir)) {
-      fs.readdirSync(runtimeDir).forEach((file) => {
-        const curPath = path.join(runtimeDir, file);
+      if (writer.requiresElevation) {
+        await writer.rmdir(runtimeDir);
+        await writer.mkdir(runtimeDir);
+      } else {
+        fs.readdirSync(runtimeDir).forEach((file) => {
+          const curPath = path.join(runtimeDir, file);
 
-        try {
-          // if file is a directory, recurse through it and delete all files
-          if (fs.lstatSync(curPath).isDirectory()) {
-            fs.rmSync(curPath, { recursive: true, force: true });
-          } else {
-            fs.unlinkSync(curPath);
+          try {
+            // if file is a directory, recurse through it and delete all files
+            if (fs.lstatSync(curPath).isDirectory()) {
+              fs.rmSync(curPath, { recursive: true, force: true });
+            } else {
+              fs.unlinkSync(curPath);
+            }
+          } catch (err) {
+            if (err.code === 'EBUSY' || err.code === 'EPERM') {
+              // Skip locked files
+              console.warn(`Skipping locked file: ${curPath}`);
+            } else {
+              throw err;
+            }
           }
-        } catch (err) {
-          if (err.code === 'EBUSY' || err.code === 'EPERM') {
-            // Skip locked files
-            console.warn(`Skipping locked file: ${curPath}`);
-          } else {
-            throw err;
-          }
-        }
-      });
+        });
+      }
     } else {
-      await fs.mkdir(runtimeDir).catch(() => { });
+      await writer.mkdir(runtimeDir);
     }
 
     // Copy all files from runtimeSrcDir to runtimeDir, skipping locked files
@@ -313,11 +349,11 @@ function activate(context) {
         if (fs.lstatSync(srcPath).isDirectory()) {
           fsExtra.copySync(srcPath, destPath);
         } else {
-          fs.copyFileSync(srcPath, destPath);
+          writer.copyFile(srcPath, destPath);
         }
       } catch (err) {
-        if (err.code === 'EBUSY' || err.code === 'EPERM') {
-          // Skip locked files
+        if (err.code === 'EBUSY') {
+          // Skip locked files (Windows file locking)
           console.warn(`Skipping locked file: ${srcPath}`);
         } else {
           throw err;
@@ -333,10 +369,10 @@ function activate(context) {
         const destPath = path.join(runtimeDir, file);
 
         try {
-          fs.copyFileSync(srcPath, destPath);
+          writer.copyFile(srcPath, destPath);
         } catch (err) {
-          if (err.code === 'EBUSY' || err.code === 'EPERM') {
-            // Skip locked files
+          if (err.code === 'EBUSY') {
+            // Skip locked files (Windows file locking)
             console.warn(`Skipping locked file: ${srcPath}`);
           } else {
             throw err;
@@ -346,7 +382,7 @@ function activate(context) {
     }
   }
 
-  async function installJS() {
+  async function installJS(writer) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
@@ -368,7 +404,7 @@ function activate(context) {
     const base = __filename;
     const newJS = generateNewJS(JS, base, injectData);
 
-    await fs.writeFile(JSFile, newJS, 'utf-8');
+    await writer.writeFile(JSFile, newJS, 'utf-8');
   }
 
   async function generateImports(config) {
@@ -433,7 +469,7 @@ function activate(context) {
   }
 
   // BrowserWindow option modification
-  async function modifyElectronJSFile(ElectronJSFile) {
+  async function modifyElectronJSFile(ElectronJSFile, writer) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
@@ -481,10 +517,10 @@ function activate(context) {
       ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
     }
 
-    await fs.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
+    await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
 
-  async function installHTML() {
+  async function installHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
 
     const metaTagRegex = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([\s\S]+?)">/;
@@ -502,20 +538,20 @@ function activate(context) {
 
     try {
       if (HTML !== newHTML) {
-        await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+        await writer.writeFile(HTMLFile, newHTML, 'utf-8');
       }
     } catch (ReferenceError) {
       throw localize('messages.htmlError');
     }
   }
 
-  async function uninstallJS() {
+  async function uninstallJS(writer) {
     const JS = await fs.readFile(JSFile, 'utf-8');
     const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
     if (needClean) {
       const newJS = JS
         .replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-      await fs.writeFile(JSFile, newJS, 'utf-8');
+      await writer.writeFile(JSFile, newJS, 'utf-8');
     }
     // remove visualEffectState option
     if (knownEditors.includes(vscode.env.appName)) {
@@ -523,16 +559,16 @@ function activate(context) {
       const newElectronJS = ElectronJS
         .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
         .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-      await fs.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+      await writer.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
     }
   }
 
-  async function uninstallHTML() {
+  async function uninstallHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
     const needClean = /trusted-types VscodeVibrancy/.test(HTML);
     if (needClean) {
       const newHTML = HTML.replace(/trusted-types VscodeVibrancy(\r\n|\r|\n)/, "trusted-types$1");
-      await fs.writeFile(HTMLFile, newHTML, 'utf-8');
+      await writer.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
 
@@ -626,14 +662,12 @@ function activate(context) {
       // Ensure this fix is only applied once
       previousCustomizations.removedFromApplyToAllProfiles = true;
 
-      // Update settings if necessary
-      let newColorCustomization = {};
-      if (currentBackground !== "#00000000") {
-        newColorCustomization = {
-          ...currentColorCustomizations,
-          "terminal.background": "#00000000"
-        };
-      }
+      // Always set terminal.background to transparent (avoid stale config reads
+      // when restorePreviousSettings ran in the same flow, e.g. during Update)
+      const newColorCustomization = {
+        ...currentColorCustomizations,
+        "terminal.background": "#00000000"
+      };
 
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
@@ -767,7 +801,59 @@ function activate(context) {
 
   // ####  main commands ######################################################
 
-  async function Install() {
+  /**
+   * Check if elevation is needed and prompt the user for permission.
+   * Returns the resolved elevation state (true/false), or null if the user
+   * cancelled or the operation should be aborted (e.g. Snap).
+   */
+  async function resolveElevation(forceElevation) {
+    let needsElevation = forceElevation || checkNeedsElevation(appDir);
+
+    if (needsElevation === 'snap') {
+      vscode.window.showErrorMessage(localize('messages.snapImmutable'));
+      return null;
+    }
+
+    if (needsElevation) {
+      // Check if elevation is even possible before prompting the user
+      if (process.platform === 'linux' && hasNoNewPrivs()) {
+        vscode.window.showErrorMessage(localize('messages.noNewPrivs'));
+        return null;
+      }
+
+      const choice = await vscode.window.showWarningMessage(
+        localize('messages.elevationRequired'),
+        { title: localize('messages.elevationYes') },
+        { title: localize('messages.elevationNo') }
+      );
+      if (!choice || choice.title === localize('messages.elevationNo')) {
+        return null;
+      }
+    }
+
+    return needsElevation;
+  }
+
+  function handleElevationError(error, retryFn) {
+    if (error && error.message === 'no_new_privs') {
+      vscode.window.showErrorMessage(localize('messages.noNewPrivs'));
+    } else if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
+      vscode.window.showErrorMessage(
+        localize('messages.admin') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)",
+        { title: localize('messages.retryElevated') }
+      ).then(retryChoice => {
+        if (retryChoice) retryFn();
+      });
+    } else if (error && error.message && error.message.includes('pkexec_missing')) {
+      vscode.window.showErrorMessage(localize('messages.pkexecMissing') + appDir);
+    } else if (error && error.message && error.message.includes('Elevation failed')) {
+      vscode.window.showErrorMessage(localize('messages.elevationFailed') + error.message + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
+    } else {
+      vscode.window.showErrorMessage(localize('messages.smthingwrong') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
+    }
+  }
+
+  async function Install(sharedWriter) {
 
     if (osType === 'unknown') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
@@ -780,18 +866,34 @@ function activate(context) {
       throw new Error('unsupported');
     }
 
+    // Use shared writer if provided (e.g. from Update), otherwise create our own
+    let writer = sharedWriter;
+    if (!writer) {
+      const needsElevation = await resolveElevation(false);
+      if (needsElevation === null) return;
+      writer = new StagedFileWriter(needsElevation);
+      await writer.init();
+    }
+
     try {
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
 
       if (osType === 'win10') {
-        await installRuntimeWin();
+        await installRuntimeWin(writer);
       } else {
-        await installRuntime();
+        await installRuntime(writer);
       }
-      await modifyElectronJSFile(ElectronJSFile);
-      await installJS();
-      await installHTML();
+      await modifyElectronJSFile(ElectronJSFile, writer);
+      await installJS(writer);
+      await installHTML(writer);
+
+      // Flush if we own the writer (not shared). Shared writer is flushed by caller.
+      if (!sharedWriter) {
+        await writer.flush();
+      }
+
+      // These write to user config dir, not VSCode install — no elevation needed
       await checkColorTheme();
       await checkElectronDeprecatedType();
       await setLocalConfig(true, {
@@ -799,46 +901,98 @@ function activate(context) {
         jsPath: JSFile,
         electronJsPath: ElectronJSFile,
       }, await changeVSCodeSettings());
-      enabledRestart();
+
+      // Only show restart prompt if we're not part of a larger Update flow
+      if (!sharedWriter) {
+        enabledRestart();
+      }
     } catch (error) {
-      if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
-        vscode.window.showInformationMessage(localize('messages.admin') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
-      }
-      else {
-        vscode.window.showErrorMessage(localize('messages.smthingwrong') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
-      }
+      if (!sharedWriter) writer.cleanup();
+      // Re-throw when using shared writer so the caller (Update) can handle it
+      if (sharedWriter) throw error;
+      handleElevationError(error, async () => {
+        const elevatedWriter = new StagedFileWriter(true);
+        await elevatedWriter.init();
+        await Install(elevatedWriter);
+        await elevatedWriter.flush();
+      });
     }
   }
 
-  async function Uninstall(promptRestart = true) {
+  async function Uninstall(promptRestart = true, sharedWriter) {
     // undo settings changes
     await restorePreviousSettings();
+
+    // Use shared writer if provided (e.g. from Update), otherwise create our own
+    let writer = sharedWriter;
+    if (!writer) {
+      const needsElevation = await resolveElevation(false);
+      if (needsElevation === null) return;
+      writer = new StagedFileWriter(needsElevation);
+      await writer.init();
+    }
 
     try {
       // uninstall old version
       await fs.stat(HTMLFile);
-      await uninstallHTML();
-      await setLocalConfig(false);
+      await uninstallHTML(writer);
 
       await fs.stat(JSFile);
+      await uninstallJS(writer);
 
-      await uninstallJS();
-      if (promptRestart) {
+      // Flush if we own the writer (not shared). Shared writer is flushed by caller.
+      if (!sharedWriter) {
+        await writer.flush();
+      }
+
+      await setLocalConfig(false);
+
+      // Only show restart prompt if we're not part of a larger Update flow
+      if (!sharedWriter && promptRestart) {
         disabledRestart();
       }
     } catch (error) {
-      if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
-        vscode.window.showInformationMessage(localize('messages.admin') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
-      }
-      else {
-        vscode.window.showErrorMessage(localize('messages.smthingwrong') + error + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
-      }
+      if (!sharedWriter) writer.cleanup();
+      // Re-throw when using shared writer so the caller (Update) can handle it
+      if (sharedWriter) throw error;
+      handleElevationError(error, async () => {
+        const elevatedWriter = new StagedFileWriter(true);
+        await elevatedWriter.init();
+        await Uninstall(promptRestart, elevatedWriter);
+        await elevatedWriter.flush();
+      });
     }
   }
 
   async function Update() {
-    await Uninstall(false);
-    await Install();
+    const needsElevation = await resolveElevation(false);
+    if (needsElevation === null) return;
+
+    // Single writer for both uninstall + install — one elevation prompt
+    const writer = new StagedFileWriter(needsElevation);
+    await writer.init();
+
+    try {
+      await Uninstall(false, writer);
+      await Install(writer);
+      await writer.flush();
+      enabledRestart();
+    } catch (error) {
+      writer.cleanup();
+      handleElevationError(error, async () => {
+        const elevatedWriter = new StagedFileWriter(true);
+        await elevatedWriter.init();
+        try {
+          await Uninstall(false, elevatedWriter);
+          await Install(elevatedWriter);
+          await elevatedWriter.flush();
+          enabledRestart();
+        } catch (retryError) {
+          elevatedWriter.cleanup();
+          handleElevationError(retryError, () => {});
+        }
+      });
+    }
   }
 
   var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', async () => {

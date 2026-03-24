@@ -38,5 +38,13 @@
   "messages.importError": "错误打开文件: \"%1\"",
   "messages.htmlError": "workbench.html文件与预期的不同。请确保你没有其他的扩展程序来修改workbench.html文件。",
   "messages.electronDeprecatedType": "在此版本的 VSCode 中，\"%1\" 类型已被弃用。请更新配置，使用受支持的类型。",
-  "messages.applyToAllProfiles": "您的 `workbench.settings.applyToAllProfiles` 设置已更新以移除 `terminal.background`。这是为了更好地支持 VSCode 配置文件而进行的一次性更改。"
+  "messages.applyToAllProfiles": "您的 `workbench.settings.applyToAllProfiles` 设置已更新以移除 `terminal.background`。这是为了更好地支持 VSCode 配置文件而进行的一次性更改。",
+  "messages.elevationRequired": "修改 VSCode 安装文件需要管理员权限。是否授予提升的访问权限？",
+  "messages.elevationYes": "是，授予访问权限",
+  "messages.elevationNo": "取消",
+  "messages.retryElevated": "以管理员权限重试",
+  "messages.elevationFailed": "获取管理员权限失败。有关手动操作说明，请参阅已知错误: ",
+  "messages.pkexecMissing": "polkit (pkexec) 未安装。请安装它或使用以下命令手动更改文件所有权: sudo chown -R $(whoami) ",
+  "messages.snapImmutable": "通过 Snap 安装的 VSCode 使用不可变的文件系统，即使使用管理员权限也无法修改。请通过 .deb、.rpm 或 Flatpak 安装 VSCode。",
+  "messages.noNewPrivs": "由于 VSCode 进行了进程内重新加载，无法获取管理员权限。请完全关闭 VSCode 后重新打开，然后重试。"
 }
