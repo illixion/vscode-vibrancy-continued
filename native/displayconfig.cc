@@ -68,7 +68,7 @@ DWORD RunDisplayChangeContextLoop(LPVOID lpParam);
 
 class Win32DisplayChangeContext {
    public:
-    Win32DisplayChangeContext(Napi::Env env, Napi::Function &callback) : running(), dwThreadId(0) {
+    Win32DisplayChangeContext(Napi::Env env, Napi::Function callback) : running(), dwThreadId(0) {
         this->running.store(TRUE);
         this->hThread = NULL;
         this->tsfn = Napi::ThreadSafeFunction::New(
@@ -784,7 +784,7 @@ Napi::Object ConvertConfigResults(Napi::Env env, const std::shared_ptr<struct Wi
 
 class Win32QueryDisplayConfigWorker : public Napi::AsyncWorker {
    public:
-    Win32QueryDisplayConfigWorker(Napi::Function &callback) : Napi::AsyncWorker(callback), configResults() {}
+    Win32QueryDisplayConfigWorker(Napi::Function callback) : Napi::AsyncWorker(callback), configResults() {}
 
     void Execute() {
         this->configResults = DoQueryDisplayConfig();
@@ -821,7 +821,7 @@ Napi::Value Win32QueryDisplayConfig(const Napi::CallbackInfo &info) {
 
 class Win32ToggleEnabledWorker : public Napi::AsyncWorker {
    public:
-    Win32ToggleEnabledWorker(Napi::Function &callback, std::shared_ptr<struct Win32DeviceConfigToggleEnabled> args)
+    Win32ToggleEnabledWorker(Napi::Function callback, std::shared_ptr<struct Win32DeviceConfigToggleEnabled> args)
         : Napi::AsyncWorker(callback), args(args) {}
 
     void Execute() {
@@ -910,7 +910,7 @@ Napi::Value Win32ToggleEnabledDisplays(const Napi::CallbackInfo &info) {
 
 class Win32RestoreDisplayConfigWorker : public Napi::AsyncWorker {
    public:
-    Win32RestoreDisplayConfigWorker(Napi::Function &callback, std::shared_ptr<std::vector<struct Win32RestoreDisplayConfigDevice>> configs, BOOL persistent)
+    Win32RestoreDisplayConfigWorker(Napi::Function callback, std::shared_ptr<std::vector<struct Win32RestoreDisplayConfigDevice>> configs, BOOL persistent)
         : Napi::AsyncWorker(callback), configs(configs), persistent(persistent) {}
 
     void Execute() {
