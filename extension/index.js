@@ -169,11 +169,26 @@ async function promptRestart(setControlsStyle) {
       detached: true,
       stdio: 'ignore',
     }).unref();
+  } else if (process.platform === 'darwin') {
+    // macOS: use VSCode's built-in restart prompt by toggling titleBarStyle
+    const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
+    await vscode.workspace.getConfiguration().update(
+      "window.titleBarStyle",
+      titleBarStyle === "native" ? "custom" : "native",
+      vscode.ConfigurationTarget.Global
+    );
+    await vscode.workspace.getConfiguration().update(
+      "window.titleBarStyle",
+      titleBarStyle,
+      vscode.ConfigurationTarget.Global
+    );
+    return;
   } else {
-    const script = `#!/bin/sh\nwhile kill -0 ${pid} 2>/dev/null; do sleep 1; done\nsleep 1\n${cliCommand} &\nrm -f "$0"\n`;
+    // Linux: use setsid + nohup to fully detach from VSCode's process tree
+    const binName = path.basename(process.execPath);
+    const script = `#!/bin/sh\nwhile pgrep -x '${binName.replace(/'/g, "'\\''")}' >/dev/null 2>&1; do sleep 1; done\nsleep 1\n${cliName} &\nrm -f "$0"\n`;
     const scriptPath = path.join(os.tmpdir(), `vibrancy-restart-${pid}.sh`);
     require('fs').writeFileSync(scriptPath, script, { mode: 0o755 });
-    // Use nohup + setsid to fully detach from VSCode's process tree
     spawn('setsid', ['nohup', scriptPath], {
       detached: true,
       stdio: ['ignore', 'ignore', 'ignore'],
