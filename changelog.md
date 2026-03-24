@@ -1,3 +1,18 @@
+# 1.1.63
+
+* Core:
+  * Add Linux support (transparency only, blur requires a compositor such as KWin, Hyprland, or Picom) (resolves [#27](https://github.com/illixion/vscode-vibrancy-continued/issues/27))
+  * Add support for Code - OSS and Antimatter (resolves [#228](https://github.com/illixion/vscode-vibrancy-continued/issues/228))
+  * Add sudo/elevation support for all platforms to account for system installs or permission issues (resolves [#15](https://github.com/illixion/vscode-vibrancy-continued/issues/15))
+  * Fix CSP header modifications blocking installation with third-party extensions that overwrite the default workbench.html (e.g. Apc, Customize UI) (resolves [#117](https://github.com/illixion/vscode-vibrancy-continued/issues/117))
+  * Ensure compatibility with VSCode 1.86
+  * Improve Electron JS file path handling on Windows
+  * Ensure `undefined` is never written to settings.json during uninstall hook settings restoration
+* Themes:
+  * Improve Paradise for Cursor theme with fixes for tab colors, bottom panel, and agents view
+* Contributors:
+  * Thanks to [@DreamOneX](https://github.com/DreamOneX) for Linux support and Antigravity support
+
 # 1.1.62
 
 * Core:
