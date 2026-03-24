@@ -1,6 +1,5 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
-var fsExtra = require('fs-extra');
 var path = require('path');
 var { pathToFileURL } = require('url')
 var os = require('os');
@@ -343,75 +342,22 @@ function activate(context) {
   }
 
   async function installRuntimeWin(writer) {
-    // if runtimeDir exists, recurse through it and delete all files
     if (fs.existsSync(runtimeDir)) {
-      if (writer.requiresElevation) {
-        await writer.rmdir(runtimeDir);
-        await writer.mkdir(runtimeDir);
-      } else {
-        fs.readdirSync(runtimeDir).forEach((file) => {
-          const curPath = path.join(runtimeDir, file);
-
-          try {
-            // if file is a directory, recurse through it and delete all files
-            if (fs.lstatSync(curPath).isDirectory()) {
-              fs.rmSync(curPath, { recursive: true, force: true });
-            } else {
-              fs.unlinkSync(curPath);
-            }
-          } catch (err) {
-            if (err.code === 'EBUSY' || err.code === 'EPERM') {
-              // Skip locked files
-              console.warn(`Skipping locked file: ${curPath}`);
-            } else {
-              throw err;
-            }
-          }
-        });
-      }
-    } else {
-      await writer.mkdir(runtimeDir);
+      await writer.rmdir(runtimeDir);
     }
+    await writer.mkdir(runtimeDir);
+    await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
 
-    // Copy all files from runtimeSrcDir to runtimeDir, skipping locked files
-    fs.readdirSync(path.resolve(__dirname, runtimeSrcDir)).forEach((file) => {
-      const srcPath = path.join(path.resolve(__dirname, runtimeSrcDir), file);
-      const destPath = path.join(runtimeDir, file);
-
-      try {
-        if (fs.lstatSync(srcPath).isDirectory()) {
-          fsExtra.copySync(srcPath, destPath);
-        } else {
-          writer.copyFile(srcPath, destPath);
-        }
-      } catch (err) {
-        if (err.code === 'EBUSY') {
-          // Skip locked files (Windows file locking)
-          console.warn(`Skipping locked file: ${srcPath}`);
-        } else {
-          throw err;
-        }
-      }
-    });
-
-    // Copy native modules for Windows
+    // Copy native modules for Windows (.node files)
     const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
     if (fs.existsSync(nativePrebuiltDir)) {
-      fs.readdirSync(nativePrebuiltDir).forEach((file) => {
-        const srcPath = path.join(nativePrebuiltDir, file);
-        const destPath = path.join(runtimeDir, file);
-
-        try {
-          writer.copyFile(srcPath, destPath);
-        } catch (err) {
-          if (err.code === 'EBUSY') {
-            // Skip locked files (Windows file locking)
-            console.warn(`Skipping locked file: ${srcPath}`);
-          } else {
-            throw err;
-          }
-        }
-      });
+      const files = fs.readdirSync(nativePrebuiltDir);
+      for (const file of files) {
+        await writer.copyFile(
+          path.join(nativePrebuiltDir, file),
+          path.join(runtimeDir, file)
+        );
+      }
     }
   }
 
@@ -589,20 +535,33 @@ function activate(context) {
   }
 
   async function uninstallJS(writer) {
-    const JS = await fs.readFile(JSFile, 'utf-8');
+    let JS = await fs.readFile(JSFile, 'utf-8');
     const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
     if (needClean) {
-      const newJS = JS
-        .replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-      await writer.writeFile(JSFile, newJS, 'utf-8');
+      JS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
     }
-    // remove visualEffectState option
+
     if (knownEditors.includes(vscode.env.appName)) {
-      const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-      const newElectronJS = ElectronJS
-        .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-        .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-      await writer.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+      if (ElectronJSFile === JSFile) {
+        // VSCode 1.95+: both files are the same main.js — apply all cleanups
+        // to a single in-memory copy to avoid the second write overwriting the first
+        // (which happens in the elevated path where all reads come from disk)
+        JS = JS
+          .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+          .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+        await writer.writeFile(JSFile, JS, 'utf-8');
+      } else {
+        if (needClean) {
+          await writer.writeFile(JSFile, JS, 'utf-8');
+        }
+        const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+        const newElectronJS = ElectronJS
+          .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+          .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+        await writer.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+      }
+    } else if (needClean) {
+      await writer.writeFile(JSFile, JS, 'utf-8');
     }
   }
 
@@ -944,8 +903,15 @@ function activate(context) {
       handleElevationError(error, async () => {
         const elevatedWriter = new StagedFileWriter(true);
         await elevatedWriter.init();
-        await Install(elevatedWriter);
-        await elevatedWriter.flush();
+        try {
+          await Install(elevatedWriter);
+          await elevatedWriter.flush();
+          await applyPostInstallSettings();
+          enabledRestart();
+        } catch (retryError) {
+          elevatedWriter.cleanup();
+          handleElevationError(retryError, () => {});
+        }
       });
     }
   }
@@ -989,8 +955,17 @@ function activate(context) {
       handleElevationError(error, async () => {
         const elevatedWriter = new StagedFileWriter(true);
         await elevatedWriter.init();
-        await Uninstall(promptRestart, elevatedWriter);
-        await elevatedWriter.flush();
+        try {
+          await Uninstall(promptRestart, elevatedWriter);
+          await elevatedWriter.flush();
+          await setLocalConfig(false);
+          if (promptRestart) {
+            disabledRestart();
+          }
+        } catch (retryError) {
+          elevatedWriter.cleanup();
+          handleElevationError(retryError, () => {});
+        }
       });
     }
   }
@@ -1029,14 +1004,26 @@ function activate(context) {
     }
   }
 
-  var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', async () => {
-    await Install();
+  var operationInProgress = false;
+
+  async function runExclusive(fn) {
+    if (operationInProgress) return;
+    operationInProgress = true;
+    try {
+      await fn();
+    } finally {
+      operationInProgress = false;
+    }
+  }
+
+  var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', () => {
+    runExclusive(() => Install());
   });
-  var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', async () => {
-    await Uninstall()
+  var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', () => {
+    runExclusive(() => Uninstall());
   });
-  var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', async () => {
-    await Update();
+  var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', () => {
+    runExclusive(() => Update());
   });
 
   context.subscriptions.push(installVibrancy);
@@ -1058,7 +1045,7 @@ function activate(context) {
     vscode.window.showInformationMessage(localize(updateMsg), { title: localize('messages.installIde') })
       .then(async (msg) => {
         if (msg) {
-          await Update();
+          await runExclusive(() => Update());
         }
       });
     // Update the global state with the current version
@@ -1068,13 +1055,14 @@ function activate(context) {
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
   vscode.workspace.onDidChangeConfiguration(() => {
+    if (operationInProgress) return;
     newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
     if (!deepEqual(lastConfig, newConfig)) {
       lastConfig = newConfig;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
       .then(async (msg) => {
           if (msg) {
-            await Update();
+            await runExclusive(() => Update());
           }
         });
       context.globalState.update('lastVersion', currentVersion);

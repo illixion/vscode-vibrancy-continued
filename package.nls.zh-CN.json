@@ -46,5 +46,6 @@
   "messages.elevationFailed": "获取管理员权限失败。有关手动操作说明，请参阅已知错误: ",
   "messages.pkexecMissing": "polkit (pkexec) 未安装。请安装它或使用以下命令手动更改文件所有权: sudo chown -R $(whoami) ",
   "messages.snapImmutable": "通过 Snap 安装的 VSCode 使用不可变的文件系统，即使使用管理员权限也无法修改。请通过 .deb、.rpm 或 Flatpak 安装 VSCode。",
-  "messages.noNewPrivs": "由于 VSCode 进行了进程内重新加载，无法获取管理员权限。请完全关闭 VSCode 后重新打开，然后重试。"
+  "messages.noNewPrivs": "由于 VSCode 进行了进程内重新加载，无法获取管理员权限。请完全关闭 VSCode 后重新打开，然后重试。",
+  "messages.windowsSudoMissing": "此系统级 VSCode 安装需要管理员权限。请启用 Windows sudo（设置→系统→开发人员选项→启用 sudo）或以管理员身份运行 VSCode。"
 }

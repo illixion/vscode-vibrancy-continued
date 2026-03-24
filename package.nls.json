@@ -46,5 +46,6 @@
   "messages.elevationFailed": "Failed to acquire elevated privileges. See Known Errors for manual instructions: ",
   "messages.pkexecMissing": "polkit (pkexec) is not installed. Install it or manually change file ownership with: sudo chown -R $(whoami) ",
   "messages.snapImmutable": "VSCode installed via Snap has an immutable filesystem that cannot be modified even with elevated privileges. Please install VSCode via .deb, .rpm, or Flatpak instead.",
-  "messages.noNewPrivs": "Elevated privileges are unavailable because VSCode was reloaded in-process. Please close VSCode completely and reopen it, then try again."
+  "messages.noNewPrivs": "Elevated privileges are unavailable because VSCode was reloaded in-process. Please close VSCode completely and reopen it, then try again.",
+  "messages.windowsSudoMissing": "This system-level VSCode installation requires administrator privileges. Please enable Windows sudo (Settings → System → For Developers → Enable sudo) or run VSCode as administrator."
 }

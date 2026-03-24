@@ -3,7 +3,7 @@ const fsPromises = require('fs').promises;
 const fsExtra = require('fs-extra');
 const path = require('path');
 const os = require('os');
-const { execFile, execSync } = require('child_process');
+const { exec, execFile, execSync } = require('child_process');
 
 /**
  * Check if the VSCode installation directory requires elevated privileges to write to.
@@ -19,7 +19,11 @@ function checkNeedsElevation(appDir) {
   }
 
   try {
-    fs.accessSync(appDir, fs.constants.W_OK);
+    // On Windows, fs.accessSync(dir, W_OK) is unreliable — NTFS ACLs may allow
+    // directory access but deny file writes. Test with an actual file write.
+    const testFile = path.join(appDir, '.vibrancy-write-test');
+    fs.writeFileSync(testFile, '');
+    fs.unlinkSync(testFile);
     return false;
   } catch (err) {
     if (err.code === 'EACCES' || err.code === 'EPERM') {
@@ -38,22 +42,11 @@ function shellEscape(str) {
 }
 
 /**
- * Escape a string for use inside a double-quoted PowerShell argument.
+ * Escape a string for use inside a PowerShell single-quoted string.
+ * In PowerShell, single quotes are escaped by doubling them.
  */
 function psEscape(str) {
-  return str.replace(/`/g, '``').replace(/"/g, '`"').replace(/\$/g, '`$');
-}
-
-/**
- * Check if Windows 11 built-in sudo is available.
- */
-function hasWindowsSudo() {
-  try {
-    execSync('where sudo', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
+  return str.replace(/'/g, "''");
 }
 
 /**
@@ -111,29 +104,82 @@ function buildShellScript(operations) {
 }
 
 /**
- * Build a Windows cmd script from an array of file operations.
+ * Build a PowerShell script from an array of file operations.
+ * Uses PowerShell cmdlets which handle paths with spaces natively.
  */
-function buildWindowsScript(operations) {
+function buildPowerShellScript(operations) {
   const commands = [];
 
   for (const op of operations) {
     switch (op.type) {
       case 'mkdir':
-        commands.push(`mkdir "${op.path}"`);
+        commands.push(`New-Item -Path '${psEscape(op.path)}' -ItemType Directory -Force | Out-Null`);
         break;
       case 'rmdir':
-        commands.push(`rmdir /s /q "${op.path}"`);
+        // SilentlyContinue: don't fail if dir doesn't exist or has locked files
+        commands.push(`Remove-Item -Path '${psEscape(op.path)}' -Recurse -Force -ErrorAction SilentlyContinue`);
         break;
       case 'copy':
-        commands.push(`copy /y "${op.src}" "${op.dest}"`);
+        commands.push(`Copy-Item -Path '${psEscape(op.src)}' -Destination '${psEscape(op.dest)}' -Force`);
         break;
       case 'copyDir':
-        commands.push(`xcopy "${op.src}" "${op.dest}" /e /i /y /q`);
+        // Copy directory contents recursively, creating destination if needed
+        commands.push(`Copy-Item -Path '${psEscape(op.src)}\\*' -Destination '${psEscape(op.dest)}' -Recurse -Force`);
         break;
     }
   }
 
-  return commands.join(' && ');
+  return commands.join('\n');
+}
+
+/**
+ * Execute file operations with elevated privileges on Windows.
+ * Uses PowerShell Start-Process -Verb RunAs to trigger UAC, with the payload
+ * encoded as Base64 to avoid all quoting/escaping issues.
+ */
+function elevatedCopyWindows(operations) {
+  return new Promise((resolve, reject) => {
+    const statusFile = path.join(os.tmpdir(), `vibrancy-elev-${Date.now()}.txt`);
+    const psScript = buildPowerShellScript(operations);
+
+    // Wrap in try/catch so we can report errors via the status file
+    const payload = [
+      '$ErrorActionPreference = "Continue"',
+      psScript,
+      `'OK' | Set-Content -Path '${psEscape(statusFile)}' -Encoding UTF8`,
+    ].join('\n');
+
+    // Encode as Base64 (UTF-16LE required by PowerShell's -EncodedCommand)
+    const encodedPayload = Buffer.from(payload, 'utf16le').toString('base64');
+
+    // Build the elevation command:
+    // Outer powershell calls Start-Process -Verb RunAs on an inner powershell
+    // that runs the encoded payload. -Wait ensures the outer PS waits for completion.
+    const innerArgs = `-NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPayload}`;
+    const elevateCmd = [
+      'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+      `"Start-Process powershell.exe -ArgumentList '${innerArgs}' -Verb RunAs -WindowStyle Hidden -Wait"`,
+    ].join(' ');
+
+    exec(elevateCmd, { encoding: 'utf-8' }, (error) => {
+      try {
+        const status = fs.readFileSync(statusFile, 'utf-8').trim();
+        fs.unlinkSync(statusFile);
+        if (status === 'OK') {
+          resolve();
+        } else {
+          reject(new Error(`Elevation failed: ${status}`));
+        }
+      } catch (readErr) {
+        // Status file wasn't created — user likely denied UAC or process crashed
+        if (error) {
+          reject(new Error('Elevation failed: user denied elevation or process was cancelled'));
+        } else {
+          reject(new Error('Elevation failed: elevated process did not complete'));
+        }
+      }
+    });
+  });
 }
 
 /**
@@ -191,28 +237,8 @@ function elevatedCopy(operations) {
         }
       });
     } else if (platform === 'win32') {
-      // Windows: try sudo --inline first (Win11 24H2+), fall back to PowerShell UAC
-      const winScript = buildWindowsScript(operations);
-
-      if (hasWindowsSudo()) {
-        execFile('sudo', ['--inline', 'cmd', '/c', winScript], (error, _stdout, stderr) => {
-          if (error) {
-            reject(new Error(`Elevation failed: ${stderr || error.message}`));
-          } else {
-            resolve();
-          }
-        });
-      } else {
-        // PowerShell Start-Process -Verb RunAs fallback
-        const psCommand = `Start-Process -FilePath cmd -ArgumentList '/c ${psEscape(winScript)}' -Verb RunAs -Wait`;
-        execFile('powershell', ['-Command', psCommand], (error, _stdout, stderr) => {
-          if (error) {
-            reject(new Error(`Elevation failed: ${stderr || error.message}`));
-          } else {
-            resolve();
-          }
-        });
-      }
+      // Windows: use PowerShell Start-Process -Verb RunAs to trigger UAC
+      elevatedCopyWindows(operations).then(resolve, reject);
     } else {
       reject(new Error('Unsupported platform for elevation'));
     }
@@ -328,6 +354,5 @@ module.exports = {
   elevatedCopy,
   hasPkexec,
   hasNoNewPrivs,
-  hasWindowsSudo,
   StagedFileWriter,
 };

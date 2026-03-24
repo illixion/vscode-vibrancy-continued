@@ -223,7 +223,6 @@
     "vscode:uninstall": "node ./extension/uninstallHook.js"
   },
   "dependencies": {
-    "env-paths": "^3.0.0",
     "fs-extra": "^10.1.0",
     "mz": "^2.7.0"
   },

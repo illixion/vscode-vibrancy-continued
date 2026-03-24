@@ -46,5 +46,6 @@
   "messages.elevationFailed": "管理者権限の取得に失敗しました。手動の手順については既知のエラーを参照してください: ",
   "messages.pkexecMissing": "polkit (pkexec) がインストールされていません。インストールするか、次のコマンドでファイルの所有権を変更してください: sudo chown -R $(whoami) ",
   "messages.snapImmutable": "Snap経由でインストールされたVSCodeは不変のファイルシステムを使用しているため、管理者権限でも変更できません。.deb、.rpm、またはFlatpak経由でVSCodeをインストールしてください。",
-  "messages.noNewPrivs": "VSCodeがプロセス内で再読み込みされたため、管理者権限を取得できません。VSCodeを完全に閉じてから再度開いて、もう一度お試しください。"
+  "messages.noNewPrivs": "VSCodeがプロセス内で再読み込みされたため、管理者権限を取得できません。VSCodeを完全に閉じてから再度開いて、もう一度お試しください。",
+  "messages.windowsSudoMissing": "このシステムレベルのVSCodeインストールには管理者権限が必要です。Windows sudoを有効にするか（設定→システム→開発者向け→sudoを有効にする）、VSCodeを管理者として実行してください。"
 }
