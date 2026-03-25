@@ -1,3 +1,8 @@
+# 1.1.64
+
+* Themes
+  * Fix Antigravity theme fixes not loading correctly
+
 # 1.1.63
 
 * Core:

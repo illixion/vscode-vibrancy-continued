@@ -65,23 +65,21 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Code - OSS
 
-✔ Cursor (use [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) to remove [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt))
+✔ Cursor
 
 ✔ Antigravity
 
+Some editors may present a [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt) warning about the installation being corrupted, use this extension to fix it: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
+
 # Getting Started
 
-1. Make sure the VSCode theme you've selected is 'Dark+' or one of the [supported themes](#vscode_vibrancytheme)
+1. Install the extension from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
-![step-1](./images/step-1.png)
+2 Press F1 and activate command "Reload Vibrancy."
 
-2. Install the extension from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
+![step-2](./images/step-2.png)
 
-3. Press F1 and activate command "Reload Vibrancy."
-
-![step-3](./images/step-3.png)
-
-4. Restart VSCode when prompted.
+3. Restart VSCode when prompted.
 
 Each time VS Code is updated, please re-enable Vibrancy using the same steps. If you're experiencing issues, please check the [FAQs](#faqs).
 
