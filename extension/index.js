@@ -250,8 +250,17 @@ async function checkColorTheme() {
   const targetTheme = themeConfig.colorTheme;
   const currentColorTheme = vscode.workspace.getConfiguration().get("workbench.colorTheme");
 
+  // VSCode 1.113 has renamed some built-in themes (e.g. "Default Dark+" -> "Dark+").
+  // Normalize both sides so renamed themes don't trigger a false mismatch.
+  const themeAliases = {
+    'Default Dark+': 'Dark+',
+    'Default Light+': 'Light+',
+  };
+  const normalizeThemeName = (name) => themeAliases[name] || name;
+  const themesMatch = normalizeThemeName(targetTheme) === normalizeThemeName(currentColorTheme);
+
   // Show a message to the user if the current color theme doesn't match the target theme
-  if (targetTheme !== currentColorTheme) {
+  if (!themesMatch) {
     const message = localize('messages.recommendedColorTheme')
       .replace('%1', currentColorTheme)
       .replace('%2', targetTheme);
