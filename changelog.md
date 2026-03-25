@@ -1,3 +1,9 @@
+# 1.1.65
+
+* Core:
+  * Add `backgroundOverride` setting to override the theme's background color for the vibrancy effect
+  * Fix current theme check to work with new names of default dark and light VSCode themes
+
 # 1.1.64
 
 * Themes
