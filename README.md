@@ -75,7 +75,7 @@ Some editors may present a [persistent warning](#️-your-vscode-installation-ap
 
 1. Install the extension from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued).
 
-2 Press F1 and activate command "Reload Vibrancy."
+2. Press F1 and activate command "Reload Vibrancy."
 
 ![step-2](./images/step-2.png)
 
