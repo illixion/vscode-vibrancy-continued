@@ -95,7 +95,9 @@ electron.app.on('browser-window-created', (_, window) => {
     opacity = app.theme.opacity[app.os];
   }
 
-  const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
+  const backgroundRGB = (app.config.backgroundOverride && hexToRgb(app.config.backgroundOverride))
+    || hexToRgb(app.theme.background)
+    || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
     // TODO: fallback to ACCENT_ENABLE_BLURBEHIND (3) on pre-RS4 systems that don't support acrylic
@@ -209,7 +211,9 @@ function styleHTML() {
     opacity = app.theme.opacity[app.os];
   }
 
-  const backgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
+  const backgroundRGB = (app.config.backgroundOverride && hexToRgb(app.config.backgroundOverride))
+    || hexToRgb(app.theme.background)
+    || { r: 0, g: 0, b: 0 };
 
   const HTML = [
     `

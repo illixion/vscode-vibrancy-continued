@@ -100,6 +100,12 @@ Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 
 
 *value: -1.0 ~ 1.0*
 
+#### Background Override (`vscode_vibrancy.backgroundOverride`)
+
+Override the theme's background color for the vibrancy opacity effect. Uses VSCode's built-in color picker. Leave empty to use the theme default.
+
+*color string (e.g. #000000), default is empty*
+
 #### Custom imports (`vscode_vibrancy.imports`)
 
 Import any custom CSS/JS files into the VSCode editor, as file paths. The files will be imported in the order they are listed. On Windows, forward slashes must be used.

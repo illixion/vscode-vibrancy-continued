@@ -7,6 +7,7 @@
   "configuration.type.macos-only.description": "(仅限 macOS)",
   "configuration.type.macos-only-legacy.description": "已在 VSCode 1.86 中删除 (仅限 macOS)",
   "configuration.opacity.description": "毛玻璃效果的透明度。",
+  "configuration.backgroundOverride.description": "覆盖毛玻璃透明度效果的主题背景色。留空则使用主题默认值。",
   "configuration.theme.description": "毛玻璃效果的主题样式。",
   "configuration.enableAutoTheme.description": "根据操作系统模式启用自动暗/亮模式切换。要求同时启用 \"window.autoDetectColorScheme（自动检测颜色模式）\"。",
   "configuration.imports.description": "自定义 CSS 或 JS 文件的路径。",

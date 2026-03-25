@@ -7,6 +7,7 @@
   "configuration.type.macos-only.description": "(macOS のみ)",
   "configuration.type.macos-only-legacy.description": "VSCode 1.86 で廃止。(macOS のみ)",
   "configuration.opacity.description": "すりガラス効果の透明度を制御します。",
+  "configuration.backgroundOverride.description": "すりガラスの透明度効果のテーマ背景色を上書きします。空欄にするとテーマのデフォルトを使用します。",
   "configuration.theme.description": "Vibrancy のテーマを制御します。",
   "configuration.enableAutoTheme.description": "OSモードによる自動ダーク/ライトモード切替を有効にする。window.autoDetectColorSchemeも有効にする必要がある。",
   "configuration.imports.description": "インポートする CSS/JS ファイルのパスを指定します。",

@@ -7,6 +7,7 @@
   "configuration.type.macos-only.description": "(macOS only)",
   "configuration.type.macos-only-legacy.description": "DEPRECATED in VS 1.86 (macOS only)",
   "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",
+  "configuration.backgroundOverride.description": "Override the theme's background color for the vibrancy opacity effect. Leave empty to use the theme default.",
   "configuration.theme.description": "Select Vibrancy theme.",
   "configuration.enableAutoTheme.description": "Enable automatic dark/light mode switching based on OS mode. Requires \"window.autoDetectColorScheme\" to also be enabled.",
   "configuration.imports.description": "Import CSS/JS files, as file paths.",

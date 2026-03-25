@@ -20,6 +20,9 @@
     "configuration.opacity.description": {
       "type": "string"
     },
+    "configuration.backgroundOverride.description": {
+      "type": "string"
+    },
     "configuration.theme.description": {
       "type": "string"
     },
@@ -118,6 +121,7 @@
     "configuration.type.macos-only.description",
     "configuration.type.macos-only-legacy.description",
     "configuration.opacity.description",
+    "configuration.backgroundOverride.description",
     "configuration.theme.description",
     "configuration.imports.description",
     "configuration.refreshInterval.description",
