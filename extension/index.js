@@ -68,8 +68,11 @@ const themeFixPaths = {
     'Default Light': '../themes/fixes/Cursor Light.css',
     'Paradise Smoked Glass': '../themes/fixes/Paradise Cursor.css',
     'Paradise Frosted Glass': '../themes/fixes/Paradise Cursor.css',
-    'Antigravity': '../themes/fixes/Antigravity.css'
   },
+  'Antigravity': {
+    'Default Dark': '../themes/fixes/Antigravity.css',
+    'Default Light': '../themes/fixes/Antigravity.css',
+  }
 }
 
 const knownEditors = [
