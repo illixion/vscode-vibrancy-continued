@@ -238,9 +238,45 @@ function styleHTML() {
     opacity = app.theme.opacity[app.os];
   }
 
-  const backgroundRGB = (app.config.backgroundOverride && hexToRgb(app.config.backgroundOverride))
-    || hexToRgb(app.theme.background)
-    || { r: 0, g: 0, b: 0 };
+  const themeBackgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
+  const overrideRGB = app.config.backgroundOverride ? hexToRgb(app.config.backgroundOverride) : null;
+  const backgroundRGB = overrideRGB || themeBackgroundRGB;
+
+  // When background override is set, recolor the theme CSS so element backgrounds
+  // (sidebar, tabs, lists, etc.) use the override color instead of the theme's gray.
+  let themeCSS = app.themeCSS;
+  if (overrideRGB) {
+    const recolorCSS = (css, fromRGB, toRGB) => {
+      // Replace rgba(R, G, B, A) and rgb(R, G, B) where RGB is close to the theme background
+      css = css.replace(
+        /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g,
+        (match, rs, gs, bs) => {
+          const r = parseInt(rs), g = parseInt(gs), b = parseInt(bs);
+          const dist = Math.abs(r - fromRGB.r) + Math.abs(g - fromRGB.g) + Math.abs(b - fromRGB.b);
+          if (dist < 60) {
+            const prefix = match.startsWith('rgba') ? 'rgba(' : 'rgb(';
+            return `${prefix}${toRGB.r}, ${toRGB.g}, ${toRGB.b}`;
+          }
+          return match;
+        }
+      );
+      // Replace #RRGGBB hex colors close to the theme background
+      css = css.replace(
+        /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})\b/g,
+        (match, rh, gh, bh) => {
+          const r = parseInt(rh, 16), g = parseInt(gh, 16), b = parseInt(bh, 16);
+          const dist = Math.abs(r - fromRGB.r) + Math.abs(g - fromRGB.g) + Math.abs(b - fromRGB.b);
+          if (dist < 60) {
+            const hex = (n) => n.toString(16).padStart(2, '0');
+            return `#${hex(toRGB.r)}${hex(toRGB.g)}${hex(toRGB.b)}`;
+          }
+          return match;
+        }
+      );
+      return css;
+    };
+    themeCSS = recolorCSS(themeCSS, themeBackgroundRGB, overrideRGB);
+  }
 
   const HTML = [
     `
@@ -248,7 +284,7 @@ function styleHTML() {
       html {
         background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
       }
-      ${app.themeCSS}
+      ${themeCSS}
     </style>
     `,
     app.imports.css,

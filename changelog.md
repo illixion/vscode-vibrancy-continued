@@ -1,3 +1,8 @@
+# 1.1.66
+
+* Core:
+  * Background override now recolors all theme element backgrounds (sidebar, tabs, lists, etc.), not just the base HTML background
+
 # 1.1.65
 
 * Core:
