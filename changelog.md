@@ -2,6 +2,8 @@
 
 * Core:
   * Background override now recolors all theme element backgrounds (sidebar, tabs, lists, etc.), not just the base HTML background
+  * Set transparent `workbench.colorCustomizations` backgrounds so extension webviews (e.g. Claude Code) inherit vibrancy
+  * Fix bug affecting restoration of settings in IDEs that are not VSCode when uninstalling
 
 # 1.1.65
 

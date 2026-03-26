@@ -94,7 +94,30 @@ const editorCliCommands = {
   'Antigravity': 'antigravity',
 };
 
+// Map editor app names to their config directory names (for settings.json path)
+const editorConfigDirNames = {
+  'Visual Studio Code': 'Code',
+  'Visual Studio Code - Insiders': 'Code - Insiders',
+  'VSCodium': 'VSCodium',
+  'Cursor': 'Cursor',
+  'Code - OSS': 'Code - OSS',
+  'Antigravity': 'Antigravity',
+};
+
 var defaultTheme = 'Default Dark';
+
+// Compute the platform-specific settings.json path for a given editor
+function getEditorSettingsPath(appName) {
+  const dirName = editorConfigDirNames[appName] || 'Code';
+  const home = os.homedir();
+  if (process.platform === 'win32') {
+    return path.join(process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), dirName, 'User', 'settings.json');
+  } else if (process.platform === 'darwin') {
+    return path.join(home, 'Library', 'Application Support', dirName, 'User', 'settings.json');
+  } else {
+    return path.join(process.env.XDG_CONFIG_HOME || path.join(home, '.config'), dirName, 'User', 'settings.json');
+  }
+}
 
 // Pending .node file copies deferred until after VSCode exits (Windows only).
 // Windows hard-locks loaded .node modules, so the restart script copies them
@@ -590,9 +613,11 @@ function activate(context) {
 
     let newCspContent;
     if (cspContent.includes('trusted-types')) {
+      // Remove legacy marker (original vscode-vibrancy) if present
+      let cleanedCsp = cspContent.replace(/ VscodeVibrancy(?!Continued)/g, '');
       // Add VscodeVibrancyContinued to existing trusted-types directive
       // Use lookbehind/lookahead to skip "require-trusted-types-for"
-      newCspContent = cspContent.replace(/(?<!-)trusted-types(?!-)/, 'trusted-types VscodeVibrancyContinued');
+      newCspContent = cleanedCsp.replace(/(?<!-)trusted-types(?!-)/, 'trusted-types VscodeVibrancyContinued');
     } else {
       // No trusted-types directive — add one before the closing quote
       newCspContent = cspContent.replace(/;?\s*$/, '; trusted-types VscodeVibrancyContinued');
@@ -637,8 +662,11 @@ function activate(context) {
 
   async function uninstallHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
-    if (HTML.includes('VscodeVibrancyContinued')) {
-      const newHTML = HTML.replace(/ VscodeVibrancyContinued/g, '');
+    // Remove both current and legacy (original vscode-vibrancy) markers
+    if (HTML.includes('VscodeVibrancy')) {
+      const newHTML = HTML
+        .replace(/ VscodeVibrancyContinued/g, '')
+        .replace(/ VscodeVibrancy/g, '');
       await writer.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
@@ -680,13 +708,74 @@ function activate(context) {
     return true;
   }
 
+  // Compute #RRGGBBAA hex from a theme background hex and opacity float
+  function computeTransparentHex(themeBackground, opacity) {
+    const alpha = Math.round(opacity * 255).toString(16).padStart(2, '0');
+    return `#${themeBackground}${alpha}`;
+  }
+
+  // colorCustomizations keys to set transparent (elements our theme CSS already makes transparent)
+  const TRANSPARENT_BG_KEYS = [
+    "editorPane.background",
+    "editorGroupHeader.tabsBackground",
+    "editorGroupHeader.noTabsBackground",
+    "breadcrumb.background",
+    "editorGutter.background",
+    "panel.background",
+    "panelStickyScroll.background",
+    "tab.activeBackground",
+    "tab.unfocusedActiveBackground",
+  ];
+
+  // colorCustomizations keys to set semi-transparent (sidebar, widgets — need slight contrast)
+  const SEMITRANSPARENT_BG_KEYS = [
+    "sideBar.background",
+    "sideBarTitle.background",
+    "sideBarStickyScroll.background",
+    "activityBar.background",
+    "editorWidget.background",
+    "editorHoverWidget.background",
+    "editorSuggestWidget.background",
+    "editorStickyScroll.background",
+    "editorStickyScrollGutter.background",
+    "tab.inactiveBackground",
+    "tab.unfocusedInactiveBackground",
+    "inlineChat.background",
+  ];
+  
+  // colorCustomizations keys that need a mostly-opaque background (0.9) to remain readable
+  const OPAQUE_BG_KEYS = [
+    "editor.background",
+    "notifications.background",
+    "notificationCenterHeader.background",
+    "menu.background",
+    "quickInput.background",
+  ];
+
+  const ALL_VIBRANCY_BG_KEYS = [...TRANSPARENT_BG_KEYS, ...SEMITRANSPARENT_BG_KEYS, ...OPAQUE_BG_KEYS];
+
   // Fix UI rendering by modifying VSCode settings
   async function changeVSCodeSettings() {
     // Get theme settings
-    const vibrancyTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+    const vibrancyConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    const vibrancyTheme = getCurrentTheme(vibrancyConfig);
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[vibrancyTheme]);
     const themeConfig = require(themeConfigPath);
     const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
+
+    // Resolve opacity for the current platform
+    let opacity = vibrancyConfig.get("opacity");
+    if (opacity < 0) {
+      opacity = themeConfig.opacity?.[osType] ?? 0.5;
+    }
+
+    // Compute transparent background hex values
+    const themeBackground = vibrancyConfig.get("backgroundOverride")
+      ? vibrancyConfig.get("backgroundOverride").replace('#', '')
+      : themeConfig.background;
+    const transparentHex = `#${themeBackground}00`;
+    const semiTransparentHex = computeTransparentHex(themeBackground, opacity);
+    const opaqueHex = computeTransparentHex(themeBackground, 0.9);
 
     // Get the current settings
     const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
@@ -707,9 +796,16 @@ function activate(context) {
 
     // Store original values if not already saved
     if (!previousCustomizations.saved) {
+      // Backup original values for all vibrancy background keys
+      const vibrancyBackgrounds = {};
+      for (const key of ALL_VIBRANCY_BG_KEYS) {
+        vibrancyBackgrounds[key] = currentColorCustomizations[key] ?? null;
+      }
+
       previousCustomizations = {
         saved: true,
         terminalBackground: currentBackground,
+        vibrancyBackgrounds: vibrancyBackgrounds,
         gpuAcceleration: currentGpuAcceleration,
         removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
         systemColorTheme: currentSystemColorTheme,
@@ -729,12 +825,22 @@ function activate(context) {
       // Ensure this fix is only applied once
       previousCustomizations.removedFromApplyToAllProfiles = true;
 
-      // Always set terminal.background to transparent (avoid stale config reads
-      // when restorePreviousSettings ran in the same flow, e.g. during Update)
+      // Build the full set of color customizations
       const newColorCustomization = {
         ...currentColorCustomizations,
         "terminal.background": "#00000000"
       };
+
+      // Set transparent backgrounds for vibrancy effect in extension webviews
+      for (const key of TRANSPARENT_BG_KEYS) {
+        newColorCustomization[key] = transparentHex;
+      }
+      for (const key of SEMITRANSPARENT_BG_KEYS) {
+        newColorCustomization[key] = semiTransparentHex;
+      }
+      for (const key of OPAQUE_BG_KEYS) {
+        newColorCustomization[key] = opaqueHex;
+      }
 
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
@@ -778,29 +884,46 @@ function activate(context) {
     const previousCustomizations = context.globalState.get('customizations');
 
     try {
-      // Delete terminal.background from workbench.colorCustomizations if it's #00000000
+      // Read colorCustomizations once, apply all removals and restorations, write once
       const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
-      const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-      if (currentColorCustomizations["terminal.background"] === "#00000000") {
-        delete currentColorCustomizations["terminal.background"];
-        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", currentColorCustomizations, vscode.ConfigurationTarget.Global);
+      const restoredColorCustomizations = { ...(terminalColorConfig?.globalValue || {}) };
+
+      // Remove terminal.background if it's our value
+      if (restoredColorCustomizations["terminal.background"] === "#00000000") {
+        delete restoredColorCustomizations["terminal.background"];
+      }
+
+      // Remove all vibrancy background keys
+      for (const key of ALL_VIBRANCY_BG_KEYS) {
+        delete restoredColorCustomizations[key];
       }
 
       if (previousCustomizations?.saved) {
-        // Restore only the specific keys we modified
-        const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
-        const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-
+        // Restore terminal.background to its original value
         if (previousCustomizations.terminalBackground !== undefined) {
-          const restoredColorCustomizations = { ...currentColorCustomizations };
           if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
             delete restoredColorCustomizations["terminal.background"];
           } else {
             restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
           }
-          await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
         }
 
+        // Restore vibrancy background keys to their original values
+        if (previousCustomizations.vibrancyBackgrounds) {
+          for (const [key, originalValue] of Object.entries(previousCustomizations.vibrancyBackgrounds)) {
+            if (originalValue === null || originalValue === undefined) {
+              delete restoredColorCustomizations[key];
+            } else {
+              restoredColorCustomizations[key] = originalValue;
+            }
+          }
+        }
+      }
+
+      // Single write for all colorCustomizations changes
+      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+
+      if (previousCustomizations?.saved) {
         try {
           await vscode.workspace.getConfiguration().update("window.systemColorTheme", previousCustomizations.systemColorTheme, vscode.ConfigurationTarget.Global);
         } catch (error) {
@@ -851,6 +974,7 @@ function activate(context) {
         workbenchHtmlPath: paths.workbenchHtmlPath,
         jsPath: paths.jsPath,
         electronJsPath: paths.electronJsPath,
+        settingsJsonPath: getEditorSettingsPath(vscode.env.appName),
         previousCustomizations,
       };
       await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');

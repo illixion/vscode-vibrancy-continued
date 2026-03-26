@@ -16,7 +16,12 @@ function getConfigDir(name) {
     return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
 }
 
-function getVSCodeSettingsPath() {
+function getVSCodeSettingsPath(configSettingsPath) {
+    // Prefer the path stored in local config (supports Insiders, Cursor, etc.)
+    if (configSettingsPath) {
+        return configSettingsPath;
+    }
+    // Fallback to standard VSCode path
     const platform = os.platform();
     const home = os.homedir();
 
@@ -25,7 +30,6 @@ function getVSCodeSettingsPath() {
     } else if (platform === 'darwin') {
         return path.join(home, 'Library', 'Application Support', 'Code', 'User', 'settings.json');
     } else {
-        // Assume Linux
         return path.join(home, '.config', 'Code', 'User', 'settings.json');
     }
 }
@@ -33,8 +37,8 @@ function getVSCodeSettingsPath() {
 // Function to restore previous settings
 // Because VSCode uses JSONC, we need to be careful with comments
 // and formatting. We will use regex to find and replace the specific settings.
-function restorePreviousSettings(previousCustomizations) {
-    const settingsPath = getVSCodeSettingsPath();
+function restorePreviousSettings(previousCustomizations, configSettingsPath) {
+    const settingsPath = getVSCodeSettingsPath(configSettingsPath);
 
     if (!fsSync.existsSync(settingsPath)) {
         console.error('VSCode settings.json not found!');
@@ -55,6 +59,25 @@ function restorePreviousSettings(previousCustomizations) {
         ''
     );
 
+    // Remove all vibrancy-managed background keys (they contain #RRGGBBAA values)
+    const vibrancyBgKeys = [
+        "editor.background", "editorPane.background", "editorGroupHeader.tabsBackground",
+        "editorGroupHeader.noTabsBackground", "breadcrumb.background", "editorGutter.background",
+        "panel.background", "panelStickyScroll.background", "tab.activeBackground",
+        "tab.unfocusedActiveBackground", "sideBar.background", "sideBarTitle.background",
+        "sideBarStickyScroll.background", "activityBar.background", "editorWidget.background",
+        "editorHoverWidget.background", "editorSuggestWidget.background", "tab.inactiveBackground",
+        "tab.unfocusedInactiveBackground", "notifications.background", "notificationCenterHeader.background",
+        "menu.background", "quickInput.background", "inlineChat.background",
+    ];
+    for (const key of vibrancyBgKeys) {
+        const escapedKey = key.replace(/\./g, '\\.');
+        settingsContent = settingsContent.replace(
+            new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g'),
+            ''
+        );
+    }
+
     // Restore saved customizations
     if (previousCustomizations?.saved) {
         if (previousCustomizations.terminalBackground != null) {
@@ -70,6 +93,24 @@ function restorePreviousSettings(previousCustomizations) {
                     /"terminal\.background"\s*:\s*".*?",?\s*/g,
                     `"terminal.background": "${previousCustomizations.terminalBackground}",`
                 );
+            }
+        }
+
+        // Restore vibrancy background keys to their original values
+        if (previousCustomizations.vibrancyBackgrounds) {
+            for (const [key, originalValue] of Object.entries(previousCustomizations.vibrancyBackgrounds)) {
+                if (originalValue != null) {
+                    const escapedKey = key.replace(/\./g, '\\.');
+                    // If the key still exists (was restored above or user re-added), replace it
+                    const regex = new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g');
+                    if (regex.test(settingsContent)) {
+                        settingsContent = settingsContent.replace(regex,
+                            `"${key}": "${originalValue}",`
+                        );
+                    }
+                    // Note: if key was fully removed and had an original value, we can't easily
+                    // re-insert into JSONC without a proper parser. The VSCode API restore handles this.
+                }
             }
         }
 
@@ -157,8 +198,11 @@ function restorePreviousSettings(previousCustomizations) {
 
     async function uninstallHTML(htmlFilePath, writer) {
         const HTML = await fs.readFile(htmlFilePath, 'utf-8');
-        if (HTML.includes('VscodeVibrancyContinued')) {
-            const newHTML = HTML.replace(/ VscodeVibrancyContinued/g, '');
+        // Remove both current and legacy (original vscode-vibrancy) markers
+        if (HTML.includes('VscodeVibrancy')) {
+            const newHTML = HTML
+                .replace(/ VscodeVibrancyContinued/g, '')
+                .replace(/ VscodeVibrancy/g, '');
             await writer.writeFile(htmlFilePath, newHTML, 'utf-8');
         }
     }
@@ -181,7 +225,7 @@ function restorePreviousSettings(previousCustomizations) {
 
     const config = loadConfig();
     if (config) {
-        const { workbenchHtmlPath, jsPath, electronJsPath, previousCustomizations } = config;
+        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, previousCustomizations } = config;
 
         // Determine elevation needs from the JS file path (part of VSCode install dir)
         const appDir = path.dirname(jsPath);
@@ -203,12 +247,12 @@ function restorePreviousSettings(previousCustomizations) {
                 await uninstallJS(jsPath, electronJsPath, writer);
                 await uninstallHTML(workbenchHtmlPath, writer);
                 await writer.flush();
-                restorePreviousSettings(previousCustomizations);
+                restorePreviousSettings(previousCustomizations, settingsJsonPath);
                 showNotificationSync("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
             } catch (err) {
                 writer.cleanup();
                 console.error('Failed to revert VSCode files:', err);
-                restorePreviousSettings(previousCustomizations);
+                restorePreviousSettings(previousCustomizations, settingsJsonPath);
                 showNotificationSync("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
             }
         }
