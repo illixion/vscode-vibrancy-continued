@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const fs = require('fs').promises; // Use fs.promises for Promise-based APIs
 const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
@@ -59,16 +59,18 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         ''
     );
 
-    // Remove all vibrancy-managed background keys (they contain #RRGGBBAA values)
+    // Remove all vibrancy-managed background keys — must match ALL_VIBRANCY_BG_KEYS in index.js
     const vibrancyBgKeys = [
-        "editor.background", "editorPane.background", "editorGroupHeader.tabsBackground",
+        "editorPane.background", "editorGroupHeader.tabsBackground",
         "editorGroupHeader.noTabsBackground", "breadcrumb.background", "editorGutter.background",
         "panel.background", "panelStickyScroll.background", "tab.activeBackground",
         "tab.unfocusedActiveBackground", "sideBar.background", "sideBarTitle.background",
         "sideBarStickyScroll.background", "activityBar.background", "editorWidget.background",
-        "editorHoverWidget.background", "editorSuggestWidget.background", "tab.inactiveBackground",
-        "tab.unfocusedInactiveBackground", "notifications.background", "notificationCenterHeader.background",
-        "menu.background", "quickInput.background", "inlineChat.background",
+        "editorHoverWidget.background", "editorSuggestWidget.background", "editorStickyScroll.background",
+        "editorStickyScrollGutter.background", "tab.inactiveBackground",
+        "tab.unfocusedInactiveBackground", "inlineChat.background", "editor.background",
+        "notifications.background", "notificationCenterHeader.background",
+        "menu.background", "quickInput.background",
     ];
     for (const key of vibrancyBgKeys) {
         const escapedKey = key.replace(/\./g, '\\.');
@@ -151,6 +153,12 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         }
     }
 
+    // Always remove window.controlsStyle — set by our promptRestart, never user-owned
+    settingsContent = settingsContent.replace(
+        /"window\.controlsStyle"\s*:\s*".*?",?\s*/g,
+        ''
+    );
+
     // Write updated settings back to disk
     try {
         fsSync.writeFileSync(settingsPath, settingsContent.trim() + '\n', 'utf-8');
@@ -207,6 +215,7 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         }
     }
 
+    // Blocking notification — must complete before continuing (e.g. pre-UAC warning)
     function showNotificationSync(message, title = 'Vibrancy Continued') {
         if (process.platform === 'win32') {
             const vbs = `MsgBox "${message.replace(/"/g, '""')}", 64, "${title.replace(/"/g, '""')}"`;
@@ -220,6 +229,20 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         } else {
             const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
             execSync(`zenity --info --title="${title}" --text="${escapedMessage}"`);
+        }
+    }
+
+    // Fire-and-forget notification — survives the Node process exiting
+    function showNotification(message) {
+        if (process.platform === 'win32') {
+            const js = `javascript:var sh=new ActiveXObject('WScript.Shell'); sh.Popup('${message.replace(/'/g, "\\'")}', 0, 'Vibrancy Continued', 64); close()`;
+            spawn('mshta', [js], { detached: true, stdio: 'ignore' }).unref();
+        } else if (process.platform === 'darwin') {
+            const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            spawn('/bin/sh', ['-c', `osascript -e 'display alert "Vibrancy Continued" message "${escapedMessage}" as critical'`], { detached: true, stdio: 'ignore' }).unref();
+        } else {
+            const escapedMessage = message.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            spawn('/bin/sh', ['-c', `zenity --info --title="Vibrancy Continued" --text="${escapedMessage}"`], { detached: true, stdio: 'ignore' }).unref();
         }
     }
 
@@ -243,17 +266,23 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
             const writer = new StagedFileWriter(needsElevation === true);
             await writer.init();
 
+            let fileOpsError = null;
             try {
                 await uninstallJS(jsPath, electronJsPath, writer);
                 await uninstallHTML(workbenchHtmlPath, writer);
                 await writer.flush();
-                restorePreviousSettings(previousCustomizations, settingsJsonPath);
-                showNotificationSync("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
             } catch (err) {
                 writer.cleanup();
+                fileOpsError = err;
                 console.error('Failed to revert VSCode files:', err);
-                restorePreviousSettings(previousCustomizations, settingsJsonPath);
-                showNotificationSync("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
+            }
+
+            restorePreviousSettings(previousCustomizations, settingsJsonPath);
+
+            if (fileOpsError) {
+                showNotification("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
+            } else {
+                showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
             }
         }
     }
