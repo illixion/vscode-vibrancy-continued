@@ -498,7 +498,7 @@ function activate(context) {
 
       try {
         const themePatchContent = await fs.readFile(themePatchPath, 'utf-8');
-        imports.css += `<style>${themePatchContent}</style>`;
+        imports.css += `<style>${themePatchContent.replace(/<\/style/gi, '<\\/style')}</style>`;
       } catch (err) {
         vscode.window.showWarningMessage(localize('messages.importError').replace('%1', targetPatchTheme));
       }
@@ -511,9 +511,9 @@ function activate(context) {
         const importContent = await fs.readFile(config.imports[i], 'utf-8');
 
         if (config.imports[i].endsWith('.css')) {
-          imports.css += `<style>${importContent}</style>`;
+          imports.css += `<style>${importContent.replace(/<\/style/gi, '<\\/style')}</style>`;
         } else {
-          imports.js += `<script>${importContent}</script>`;
+          imports.js += `<script>${importContent.replace(/<\/script/gi, '<\\/script')}</script>`;
         }
       } catch (err) {
         vscode.window.showWarningMessage(localize('messages.importError').replace('%1', config.imports[i]));
