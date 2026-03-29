@@ -970,11 +970,16 @@ function activate(context) {
     }
 
     if (state) {
+      const cliName = editorCliCommands[vscode.env.appName] || 'code';
+      const cliFullPath = process.platform === 'win32'
+        ? path.join(path.dirname(process.execPath), 'bin', `${cliName}.cmd`)
+        : cliName;
       const configData = {
         workbenchHtmlPath: paths.workbenchHtmlPath,
         jsPath: paths.jsPath,
         electronJsPath: paths.electronJsPath,
         settingsJsonPath: getEditorSettingsPath(vscode.env.appName),
+        cliCommand: require('fs').existsSync(cliFullPath) ? cliFullPath : cliName,
         previousCustomizations,
       };
       await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');

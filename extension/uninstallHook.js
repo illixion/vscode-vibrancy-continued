@@ -168,7 +168,93 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
     }
 }
 
+// On Windows, VSCode caches settings.json in memory at startup and writes it back later,
+// overwriting any changes the hook makes directly. Instead, spawn a detached PowerShell
+// script that waits for the VSCode process to fully exit, then cleans up settings.json.
+function deferSettingsRestoreWindows(settingsPath, cliCommand) {
+    const exeName = path.basename(process.execPath, '.exe'); // e.g. "Code - Insiders"
+    const logPath = path.join(os.tmpdir(), 'vibrancy-cleanup.log').replace(/\\/g, '\\\\');
+
+    // All vibrancy-managed keys (nested inside workbench.colorCustomizations)
+    const colorKeys = [
+        'terminal\\.background',
+        'editorPane\\.background', 'editorGroupHeader\\.tabsBackground',
+        'editorGroupHeader\\.noTabsBackground', 'breadcrumb\\.background',
+        'editorGutter\\.background', 'panel\\.background', 'panelStickyScroll\\.background',
+        'tab\\.activeBackground', 'tab\\.unfocusedActiveBackground',
+        'sideBar\\.background', 'sideBarTitle\\.background', 'sideBarStickyScroll\\.background',
+        'activityBar\\.background', 'editorWidget\\.background', 'editorHoverWidget\\.background',
+        'editorSuggestWidget\\.background', 'editorStickyScroll\\.background',
+        'editorStickyScrollGutter\\.background', 'tab\\.inactiveBackground',
+        'tab\\.unfocusedInactiveBackground', 'inlineChat\\.background',
+        'editor\\.background', 'notifications\\.background', 'notificationCenterHeader\\.background',
+        'menu\\.background', 'quickInput\\.background',
+    ];
+
+    const colorReplaces = colorKeys.map(k =>
+        `$c = $c -replace '(?m)"${k}"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`
+    ).join('\r\n');
+
+    const cli = (cliCommand || 'code').replace(/'/g, "''");
+
+    const psScript = [
+        `$log = '${logPath}'`,
+        `function Log($msg) { Add-Content -Path $log -Value "$(Get-Date -Format o) $msg" }`,
+        `Log "Vibrancy cleanup started"`,
+        `$proc = '${exeName.replace(/'/g, "''")}'`,
+        `$settings = '${settingsPath.replace(/'/g, "''")}'`,
+        `Log "Waiting for $proc to exit..."`,
+        // Wait for all instances of the VSCode exe to exit
+        `while (Get-Process -Name $proc -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }`,
+        `Start-Sleep -Seconds 2`,
+        `Log "Process exited, cleaning settings at: $settings"`,
+        `if (Test-Path $settings) {`,
+        `  $before = (Get-Item $settings).Length`,
+        `  Log "Settings file found, size: $before bytes"`,
+        `  $c = [System.IO.File]::ReadAllText($settings)`,
+        colorReplaces,
+        // Remove top-level vibrancy settings
+        `  $c = $c -replace '(?m)"terminal\\.integrated\\.gpuAcceleration"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
+        `  $c = $c -replace '(?m)"window\\.systemColorTheme"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
+        `  $c = $c -replace '(?m)"window\\.autoDetectColorScheme"\\s*:\\s*(true|false),?[ \\t]*\\r?\\n?', ''`,
+        `  $c = $c -replace '(?m)"window\\.controlsStyle"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
+        `  $c = $c.Trim() + [System.Environment]::NewLine`,
+        `  [System.IO.File]::WriteAllText($settings, $c, [System.Text.Encoding]::UTF8)`,
+        `  $after = (Get-Item $settings).Length`,
+        `  Log "Settings cleaned, new size: $after bytes (removed $($before - $after) bytes)"`,
+        `} else {`,
+        `  Log "Settings file not found at: $settings"`,
+        `}`,
+        // Relaunch VSCode
+        `Log "Relaunching: ${cli}"`,
+        `Start-Process '${cli}'`,
+        `Log "Cleanup complete, removing script"`,
+        `Remove-Item $MyInvocation.MyCommand.Path -Force`,
+    ].join('\r\n');
+
+    const scriptPath = path.join(os.tmpdir(), `vibrancy-cleanup-${Date.now()}.ps1`);
+    fsSync.writeFileSync(scriptPath, psScript, 'utf-8');
+    spawn('powershell.exe', [
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath,
+    ], { detached: true, stdio: 'ignore' }).unref();
+}
+
+function showFatalError(message) {
+    if (process.platform === 'win32') {
+        try {
+            const vbs = `MsgBox "${String(message).replace(/"/g, '""')}", 16, "Vibrancy Continued"`;
+            const vbsPath = path.join(os.tmpdir(), `vibrancy-fatal-${Date.now()}.vbs`);
+            fsSync.writeFileSync(vbsPath, vbs);
+            execSync(`wscript "${vbsPath}"`, { stdio: 'ignore' });
+            try { fsSync.unlinkSync(vbsPath); } catch {}
+        } catch {}
+    } else {
+        try { execSync(`zenity --error --title="Vibrancy Continued" --text="${String(message).replace(/"/g, '\\"')}"`); } catch {}
+    }
+}
+
 (async () => {
+  try {
     const configDir = getConfigDir('vscode-vibrancy-continued');
     const configFilePath = path.join(configDir, 'config.json');
 
@@ -248,7 +334,7 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
 
     const config = loadConfig();
     if (config) {
-        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, previousCustomizations } = config;
+        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, cliCommand, previousCustomizations } = config;
 
         // Determine elevation needs from the JS file path (part of VSCode install dir)
         const appDir = path.dirname(jsPath);
@@ -277,13 +363,23 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
                 console.error('Failed to revert VSCode files:', err);
             }
 
-            restorePreviousSettings(previousCustomizations, settingsJsonPath);
+            if (process.platform === 'win32') {
+                // Windows: VSCode caches settings in memory at startup and overwrites our changes.
+                // Defer cleanup to a detached script that runs after VSCode fully exits.
+                deferSettingsRestoreWindows(settingsJsonPath || getVSCodeSettingsPath(), cliCommand);
+            } else {
+                restorePreviousSettings(previousCustomizations, settingsJsonPath);
+            }
 
             if (fileOpsError) {
                 showNotification("Vibrancy Continued: Failed to revert VSCode files. You may need to reinstall VSCode or manually revert changes.");
-            } else {
+            } else if (process.platform !== 'win32') {
+                // On Windows the deferred script relaunches VSCode automatically
                 showNotification("Vibrancy Continued has been removed. Please restart VSCode to apply changes.");
             }
         }
     }
+  } catch (fatalError) {
+    showFatalError(`Uninstall hook crashed: ${fatalError && fatalError.message || fatalError}`);
+  }
 })();
