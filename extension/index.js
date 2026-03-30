@@ -10,13 +10,10 @@ var {
   removeElectronOptions,
   patchCSP: _patchCSP,
   removeCSPPatch,
-  computeTransparentHex,
+  computeVibrancyColors,
   deepEqual,
   checkRuntimeUpdate,
   getConfigDir,
-  TRANSPARENT_BG_KEYS,
-  SEMITRANSPARENT_BG_KEYS,
-  OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
 } = require('./file-transforms');
 
@@ -697,13 +694,10 @@ function activate(context) {
       opacity = themeConfig.opacity?.[osType] ?? 0.5;
     }
 
-    // Compute transparent background hex values
+    // Resolve fallback background color
     const themeBackground = vibrancyConfig.get("backgroundOverride")
       ? vibrancyConfig.get("backgroundOverride").replace('#', '')
       : themeConfig.background;
-    const transparentHex = `#${themeBackground}00`;
-    const semiTransparentHex = computeTransparentHex(themeBackground, opacity);
-    const opaqueHex = computeTransparentHex(themeBackground, 0.9);
 
     // Get the current settings
     const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
@@ -753,22 +747,19 @@ function activate(context) {
       // Ensure this fix is only applied once
       previousCustomizations.removedFromApplyToAllProfiles = true;
 
+      // Compute per-key vibrancy colors, preserving user's original colors
+      const vibrancyColors = computeVibrancyColors({
+        themeBackground,
+        opacity,
+        originalColors: previousCustomizations.vibrancyBackgrounds || {},
+      });
+
       // Build the full set of color customizations
       const newColorCustomization = {
         ...currentColorCustomizations,
-        "terminal.background": "#00000000"
+        "terminal.background": "#00000000",
+        ...vibrancyColors,
       };
-
-      // Set transparent backgrounds for vibrancy effect in extension webviews
-      for (const key of TRANSPARENT_BG_KEYS) {
-        newColorCustomization[key] = transparentHex;
-      }
-      for (const key of SEMITRANSPARENT_BG_KEYS) {
-        newColorCustomization[key] = semiTransparentHex;
-      }
-      for (const key of OPAQUE_BG_KEYS) {
-        newColorCustomization[key] = opaqueHex;
-      }
 
       await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);

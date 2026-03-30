@@ -8,8 +8,13 @@ const {
   patchCSP,
   removeCSPPatch,
   computeTransparentHex,
+  extractBaseColor,
+  computeVibrancyColors,
   VIBRANCY_START,
   VIBRANCY_END,
+  TRANSPARENT_BG_KEYS,
+  SEMITRANSPARENT_BG_KEYS,
+  OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
 } = require('../../extension/file-transforms');
 
@@ -258,7 +263,7 @@ describe('computeTransparentHex', () => {
 
 describe('ALL_VIBRANCY_BG_KEYS', () => {
   it('contains expected number of keys', () => {
-    // 9 transparent + 12 semi-transparent + 5 opaque = 26
+    // 9 transparent + 10 semi-transparent + 7 opaque = 26
     expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(26);
   });
 
@@ -266,5 +271,155 @@ describe('ALL_VIBRANCY_BG_KEYS', () => {
     expect(ALL_VIBRANCY_BG_KEYS).toContain('editor.background');
     expect(ALL_VIBRANCY_BG_KEYS).toContain('sideBar.background');
     expect(ALL_VIBRANCY_BG_KEYS).toContain('editorPane.background');
+  });
+});
+
+// --- extractBaseColor ---
+
+describe('extractBaseColor', () => {
+  it('extracts 6-char hex with #', () => {
+    expect(extractBaseColor('#f6f6f6')).toBe('f6f6f6');
+  });
+
+  it('extracts 6-char hex without #', () => {
+    expect(extractBaseColor('1e1e1e')).toBe('1e1e1e');
+  });
+
+  it('strips alpha from 8-char hex', () => {
+    expect(extractBaseColor('#f6f6f6ff')).toBe('f6f6f6');
+    expect(extractBaseColor('#1e1e1e80')).toBe('1e1e1e');
+  });
+
+  it('expands 3-char shorthand hex', () => {
+    expect(extractBaseColor('#fff')).toBe('ffffff');
+    expect(extractBaseColor('abc')).toBe('aabbcc');
+  });
+
+  it('lowercases the result', () => {
+    expect(extractBaseColor('#F6F6F6')).toBe('f6f6f6');
+    expect(extractBaseColor('AABBCC')).toBe('aabbcc');
+  });
+
+  it('returns null for non-string values', () => {
+    expect(extractBaseColor(null)).toBeNull();
+    expect(extractBaseColor(undefined)).toBeNull();
+    expect(extractBaseColor(123)).toBeNull();
+  });
+
+  it('returns null for invalid hex strings', () => {
+    expect(extractBaseColor('red')).toBeNull();
+    expect(extractBaseColor('#gggggg')).toBeNull();
+    expect(extractBaseColor('#12345')).toBeNull();
+    expect(extractBaseColor('')).toBeNull();
+  });
+});
+
+// --- computeVibrancyColors ---
+
+describe('computeVibrancyColors', () => {
+  const fallback = '1e1e1e';
+  const opacity = 0.5;
+
+  it('uses fallback themeBackground when no original colors exist', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+    });
+
+    // Transparent keys get #RRGGBB00
+    for (const key of TRANSPARENT_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1e00');
+    }
+    // Semi-transparent keys get opacity applied
+    for (const key of SEMITRANSPARENT_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1e80');
+    }
+    // Opaque keys get 0.9 opacity
+    for (const key of OPAQUE_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1ee6');
+    }
+  });
+
+  it('uses user original color when available', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'sideBar.background': '#f6f6f6',
+        'editor.background': '#fdf6e3',
+      },
+    });
+
+    // sideBar.background is SEMITRANSPARENT — should use f6f6f6, not 1e1e1e
+    expect(result['sideBar.background']).toBe('#f6f6f680');
+    // editor.background is SEMITRANSPARENT — should use fdf6e3
+    expect(result['editor.background']).toBe('#fdf6e380');
+    // A key with no original should still use fallback
+    expect(result['activityBar.background']).toBe('#1e1e1e80');
+  });
+
+  it('uses user original color for transparent keys', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'editorPane.background': '#eee8d5',
+      },
+    });
+
+    expect(result['editorPane.background']).toBe('#eee8d500');
+  });
+
+  it('uses user original color for opaque keys', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'quickInput.background': '#f6f6f6',
+      },
+    });
+
+    // 0.9 * 255 = 230 -> 0xe6
+    expect(result['quickInput.background']).toBe('#f6f6f6e6');
+  });
+
+  it('strips alpha from user original before recomputing', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'sideBar.background': '#f6f6f6ff',
+      },
+    });
+
+    expect(result['sideBar.background']).toBe('#f6f6f680');
+  });
+
+  it('falls back to themeBackground for invalid original values', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'sideBar.background': 'not-a-color',
+        'editor.background': null,
+      },
+    });
+
+    expect(result['sideBar.background']).toBe('#1e1e1e80');
+    expect(result['editor.background']).toBe('#1e1e1e80');
+  });
+
+  it('returns an entry for every vibrancy key', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+    });
+
+    expect(Object.keys(result)).toHaveLength(ALL_VIBRANCY_BG_KEYS.length);
+    for (const key of ALL_VIBRANCY_BG_KEYS) {
+      expect(result[key]).toBeDefined();
+    }
   });
 });

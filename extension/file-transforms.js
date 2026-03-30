@@ -172,6 +172,53 @@ function computeTransparentHex(themeBackground, opacity) {
   return `#${themeBackground}${alpha}`;
 }
 
+/**
+ * Extract 6-char hex RGB from a user color value.
+ * Handles #RGB, #RRGGBB, #RRGGBBAA (strips alpha), and bare hex strings.
+ * Returns null if the value is not a valid hex color.
+ * @param {*} value - Color string from user settings
+ * @returns {string|null} 6-char hex without # (e.g. "f6f6f6"), or null
+ */
+function extractBaseColor(value) {
+  if (typeof value !== 'string') return null;
+  const hex = value.replace(/^#/, '');
+  if (/^[0-9a-fA-F]{6}$/.test(hex)) return hex.toLowerCase();
+  if (/^[0-9a-fA-F]{8}$/.test(hex)) return hex.slice(0, 6).toLowerCase();
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return (hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]).toLowerCase();
+  }
+  return null;
+}
+
+/**
+ * Compute per-key vibrancy color overrides, preserving the user's original
+ * color for each key (if any) instead of using a single global background.
+ *
+ * @param {Object} opts
+ * @param {string} opts.themeBackground - 6-char fallback hex (e.g. "1e1e1e")
+ * @param {number} opts.opacity - User's vibrancy opacity (0.0–1.0)
+ * @param {Object<string, string|null>} opts.originalColors - Backed-up per-key
+ *   color values from the user's settings (before vibrancy was applied).
+ *   Keys not present or null fall back to themeBackground.
+ * @returns {Object<string, string>} Map of color key → "#RRGGBBAA" value
+ */
+function computeVibrancyColors({ themeBackground, opacity, originalColors = {} }) {
+  const result = {};
+  for (const key of TRANSPARENT_BG_KEYS) {
+    const base = extractBaseColor(originalColors[key]) ?? themeBackground;
+    result[key] = `#${base}00`;
+  }
+  for (const key of SEMITRANSPARENT_BG_KEYS) {
+    const base = extractBaseColor(originalColors[key]) ?? themeBackground;
+    result[key] = computeTransparentHex(base, opacity);
+  }
+  for (const key of OPAQUE_BG_KEYS) {
+    const base = extractBaseColor(originalColors[key]) ?? themeBackground;
+    result[key] = computeTransparentHex(base, 0.9);
+  }
+  return result;
+}
+
 // --- Background Key Constants ---
 
 const TRANSPARENT_BG_KEYS = [
@@ -222,6 +269,8 @@ module.exports = {
   patchCSP,
   removeCSPPatch,
   computeTransparentHex,
+  extractBaseColor,
+  computeVibrancyColors,
   TRANSPARENT_BG_KEYS,
   SEMITRANSPARENT_BG_KEYS,
   OPAQUE_BG_KEYS,
