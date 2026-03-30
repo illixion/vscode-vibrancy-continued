@@ -278,6 +278,23 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
   });
 }
 
+/**
+ * Write a PowerShell script to a temp file and execute it.
+ * Avoids quoting issues with -Command when scripts contain here-strings or double quotes.
+ */
+function runPsScript(script) {
+  const scriptPath = path.join(os.tmpdir(), `vibrancy-screenshot-${Date.now()}.ps1`);
+  try {
+    fs.writeFileSync(scriptPath, script, 'utf-8');
+    return execSync(
+      `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"`,
+      { timeout: 15000, encoding: 'utf-8' }
+    );
+  } finally {
+    try { fs.unlinkSync(scriptPath); } catch {}
+  }
+}
+
 function captureScreenshot(outputPath) {
   const methods = [];
 
@@ -288,65 +305,64 @@ function captureScreenshot(outputPath) {
     methods.push(() => execSync(`xwd -root -silent | convert xwd:- png:"${outputPath}"`, { timeout: 10000 }));
     methods.push(() => execSync(`scrot "${outputPath}"`, { timeout: 10000 }));
   } else if (process.platform === 'win32') {
-    const escapedPath = outputPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
+    const psPath = outputPath.replace(/'/g, "''");
 
+    // Method 1: CopyFromScreen — works on interactive desktops
     methods.push(() => {
-      const psScript = `
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-$bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
-if ($bounds.Width -le 0 -or $bounds.Height -le 0) { throw "No screen: $($bounds.Width)x$($bounds.Height)" }
-Write-Host "Screen bounds: $($bounds.Width)x$($bounds.Height)"
-$bitmap = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
-$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
-$bitmap.Save('${escapedPath}', [System.Drawing.Imaging.ImageFormat]::Png)
-$graphics.Dispose()
-$bitmap.Dispose()
-      `.trim();
-      const out = execSync(`powershell -NoProfile -Command "${psScript}"`, { timeout: 15000, encoding: 'utf-8' });
+      const script = [
+        `Add-Type -AssemblyName System.Windows.Forms`,
+        `Add-Type -AssemblyName System.Drawing`,
+        `$bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen`,
+        `if ($bounds.Width -le 0 -or $bounds.Height -le 0) { throw "No screen: $($bounds.Width)x$($bounds.Height)" }`,
+        `Write-Host "Screen bounds: $($bounds.Width)x$($bounds.Height)"`,
+        `$bitmap = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)`,
+        `$graphics = [System.Drawing.Graphics]::FromImage($bitmap)`,
+        `$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)`,
+        `$bitmap.Save('${psPath}', [System.Drawing.Imaging.ImageFormat]::Png)`,
+        `$graphics.Dispose()`,
+        `$bitmap.Dispose()`,
+      ].join('\r\n');
+      const out = runPsScript(script);
       if (out.trim()) console.log(`  ${out.trim()}`);
     });
 
-    methods.push(() => {
-      const psScript = `
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-using System.Drawing;
-using System.Drawing.Imaging;
-public class ScreenCapture {
-    [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();
-    [DllImport("user32.dll")] static extern IntPtr GetWindowDC(IntPtr hWnd);
-    [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr hdc);
-    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int w, int h);
-    [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);
-    [DllImport("gdi32.dll")] static extern bool BitBlt(IntPtr hdcDst, int x1, int y1, int w, int h, IntPtr hdcSrc, int x2, int y2, int op);
-    [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr hdc);
-    [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr obj);
-    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
-    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }
-    public static void Capture(string path) {
-        IntPtr desk = GetDesktopWindow();
-        RECT r; GetWindowRect(desk, out r);
-        int w = r.R - r.L, h = r.B - r.T;
-        if (w <= 0 || h <= 0) throw new Exception("Desktop " + w + "x" + h);
-        IntPtr hdc = GetWindowDC(desk);
-        IntPtr mdc = CreateCompatibleDC(hdc);
-        IntPtr bmp = CreateCompatibleBitmap(hdc, w, h);
-        SelectObject(mdc, bmp);
-        BitBlt(mdc, 0, 0, w, h, hdc, r.L, r.T, 0x00CC0020);
-        var img = Image.FromHbitmap(bmp);
-        img.Save(path, ImageFormat.Png);
-        img.Dispose(); DeleteObject(bmp); DeleteDC(mdc); ReleaseDC(desk, hdc);
-    }
-}
-"@
-[ScreenCapture]::Capture('${escapedPath}')
-      `.trim();
-      execSync(`powershell -NoProfile -Command "${psScript}"`, { timeout: 15000, encoding: 'utf-8' });
-    });
+    // Method 2: Win32 BitBlt via temp .ps1 file (here-strings can't be passed inline)
+    methods.push(() => runPsScript([
+      `Add-Type @"`,
+      `using System;`,
+      `using System.Runtime.InteropServices;`,
+      `using System.Drawing;`,
+      `using System.Drawing.Imaging;`,
+      `public class ScreenCapture {`,
+      `    [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();`,
+      `    [DllImport("user32.dll")] static extern IntPtr GetWindowDC(IntPtr hWnd);`,
+      `    [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);`,
+      `    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr hdc);`,
+      `    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int w, int h);`,
+      `    [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);`,
+      `    [DllImport("gdi32.dll")] static extern bool BitBlt(IntPtr hdcDst, int x1, int y1, int w, int h, IntPtr hdcSrc, int x2, int y2, int op);`,
+      `    [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr hdc);`,
+      `    [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr obj);`,
+      `    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out RECT r);`,
+      `    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }`,
+      `    public static void Capture(string path) {`,
+      `        IntPtr desk = GetDesktopWindow();`,
+      `        RECT r; GetWindowRect(desk, out r);`,
+      `        int w = r.R - r.L, h = r.B - r.T;`,
+      `        if (w <= 0 || h <= 0) throw new Exception("Desktop " + w + "x" + h);`,
+      `        IntPtr hdc = GetWindowDC(desk);`,
+      `        IntPtr mdc = CreateCompatibleDC(hdc);`,
+      `        IntPtr bmp = CreateCompatibleBitmap(hdc, w, h);`,
+      `        SelectObject(mdc, bmp);`,
+      `        BitBlt(mdc, 0, 0, w, h, hdc, r.L, r.T, 0x00CC0020);`,
+      `        var img = Image.FromHbitmap(bmp);`,
+      `        img.Save(path, ImageFormat.Png);`,
+      `        img.Dispose(); DeleteObject(bmp); DeleteDC(mdc); ReleaseDC(desk, hdc);`,
+      `    }`,
+      `}`,
+      `"@`,
+      `[ScreenCapture]::Capture('${psPath}')`,
+    ].join('\r\n')));
   }
 
   for (const method of methods) {
