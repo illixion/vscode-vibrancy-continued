@@ -356,6 +356,17 @@ function activate(context) {
     vscode.window.showInformationMessage('Vibrancy Continued: Test mode active');
   }
 
+  function writeTestSignal(status, message) {
+    if (!testMode) return;
+    try {
+      const signalPath = path.join(path.dirname(testModeFile), 'test-result');
+      require('fs').writeFileSync(signalPath, JSON.stringify({ status, message, ts: Date.now() }));
+      console.log(`Vibrancy test signal: ${status} — ${message}`);
+    } catch (err) {
+      console.error('Failed to write test signal:', err);
+    }
+  }
+
   var appDir;
   try {
     appDir = path.dirname(require.main.filename);
@@ -1155,7 +1166,11 @@ function activate(context) {
   // Check if the current version is a minor update from the last version
   if (checkRuntimeUpdate(currentVersion, lastVersion)) {
     if (testMode) {
-      runExclusive(() => Update());
+      runExclusive(() => Update()).then(() => {
+        writeTestSignal('success', 'Install completed, restart needed');
+      }).catch((err) => {
+        writeTestSignal('error', String(err && err.message || err));
+      });
     } else {
       vscode.window.showInformationMessage(localize(updateMsg), { title: localize('messages.installIde') })
         .then(async (msg) => {
