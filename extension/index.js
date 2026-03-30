@@ -47,7 +47,6 @@ var themeStylePaths = {
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.css',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
-  '__Test Green': '../themes/__Test Green.css',
 }
 
 const themeConfigPaths = {
@@ -65,7 +64,6 @@ const themeConfigPaths = {
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.json',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
-  '__Test Green': '../themes/__Test Green.json',
 }
 
 const themeFixPaths = {
@@ -350,7 +348,8 @@ async function checkElectronDeprecatedType() {
 }
 
 function activate(context) {
-  const testMode = vscode.workspace.getConfiguration("vscode_vibrancy").get("testMode", false);
+  const testModeFile = path.join(getConfigDir('vscode-vibrancy-continued'), 'test-mode');
+  const testMode = require('fs').existsSync(testModeFile);
   console.log('vscode-vibrancy is active!' + (testMode ? ' (test mode)' : ''));
 
   if (testMode) {

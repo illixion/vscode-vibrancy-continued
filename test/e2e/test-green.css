@@ -1,0 +1,15 @@
+/* E2E test CSS — makes the VSCode UI visibly green to confirm vibrancy is active */
+
+.monaco-workbench,
+.monaco-workbench .part,
+.monaco-workbench .part > .content,
+.monaco-workbench .part > .title,
+body {
+  background: rgba(0, 255, 0, 0.4) !important;
+}
+
+.editor-container,
+.editor-group-container > .tabs,
+.editor-group-container > .tabs .tab {
+  background: rgba(0, 255, 0, 0.3) !important;
+}

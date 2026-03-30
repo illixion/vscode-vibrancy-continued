@@ -19,28 +19,54 @@ const fs = require('fs');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
 
+/**
+ * Get the vibrancy config directory (must match getConfigDir in file-transforms.js).
+ */
+function getConfigDir() {
+  const homedir = os.homedir();
+  const name = 'vscode-vibrancy-continued';
+  if (process.platform === 'darwin') {
+    return path.join(homedir, 'Library', 'Preferences', name);
+  }
+  if (process.platform === 'win32') {
+    return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
+  }
+  return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
+}
+
 async function main() {
   const { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } = require('@vscode/test-electron');
 
   const screenshotDir = path.join(__dirname, '..', 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
+  const greenCssPath = path.join(__dirname, 'test-green.css');
+
   console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
 
   // Step 1: Download VSCode
-  console.log('[1/5] Downloading VSCode...');
+  console.log('[1/6] Downloading VSCode...');
   const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
   const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
   console.log(`  VSCode: ${vscodeExecutablePath}`);
   console.log(`  CLI: ${cliPath}`);
 
-  // Step 2: Create a temporary user-data-dir with testMode settings
+  // Step 2: Create test-mode flag file in the extension's config directory
+  console.log('\n[2/6] Enabling test mode...');
+  const configDir = getConfigDir();
+  const testModeFile = path.join(configDir, 'test-mode');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(testModeFile, `e2e-test-${Date.now()}`);
+  console.log(`  Test mode file: ${testModeFile}`);
+
+  // Step 3: Create a temporary user-data-dir with settings
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-userdata-'));
   const userSettingsDir = path.join(userDataDir, 'User');
   fs.mkdirSync(userSettingsDir, { recursive: true });
   fs.writeFileSync(path.join(userSettingsDir, 'settings.json'), JSON.stringify({
-    "vscode_vibrancy.testMode": true,
-    "vscode_vibrancy.theme": "__Test Green",
+    // Use "Custom theme" with a green CSS import — relies on existing features only
+    "vscode_vibrancy.theme": "Custom theme (use imports)",
+    "vscode_vibrancy.imports": [greenCssPath],
     "workbench.colorTheme": "Default Dark+",
     // Disable workspace trust dialog — it blocks extension activation entirely
     "security.workspace.trust.enabled": false,
@@ -55,8 +81,8 @@ async function main() {
   }, null, 2));
   console.log(`  User data dir: ${userDataDir}`);
 
-  // Step 3: Package and install the extension
-  console.log('\n[2/5] Packaging and installing extension...');
+  // Step 4: Package and install the extension
+  console.log('\n[3/6] Packaging and installing extension...');
   const extensionDir = path.resolve(__dirname, '..', '..');
   const vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
   try {
@@ -74,16 +100,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 4: First launch — extension activates, testMode auto-installs, then exits
-  console.log('\n[3/5] First launch (extension installs vibrancy)...');
+  // Step 5: First launch — extension activates, test mode auto-installs, then exits
+  console.log('\n[4/6] First launch (extension installs vibrancy)...');
   const tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
   const firstLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
     totalTimeout: 20000,
   });
   console.log(`  Exit code: ${firstLaunchExitCode}`);
 
-  // Step 5: Second launch — let it render, capture screenshot while running, then kill
-  console.log('\n[4/5] Second launch (screenshot + crash check)...');
+  // Step 6: Second launch — let it render, capture screenshot while running, then kill
+  console.log('\n[5/6] Second launch (screenshot + crash check)...');
   const screenshotPath = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-${Date.now()}.png`);
   const secondLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
     totalTimeout: 20000,
@@ -100,7 +126,7 @@ async function main() {
   }
 
   // Results
-  console.log('\n[5/5] Results:');
+  console.log('\n[6/6] Results:');
   const success = secondLaunchExitCode === 0 || secondLaunchExitCode === null;
   if (success) {
     console.log('  PASS: VSCode launched successfully after vibrancy install');
@@ -112,6 +138,7 @@ async function main() {
   writeGitHubSummary(success, screenshotPath, secondLaunchExitCode);
 
   // Cleanup
+  try { fs.unlinkSync(testModeFile); } catch {}
   fs.rmSync(userDataDir, { recursive: true, force: true });
   fs.rmSync(tmpWorkspace, { recursive: true, force: true });
   try { fs.unlinkSync(vsixPath); } catch {}
