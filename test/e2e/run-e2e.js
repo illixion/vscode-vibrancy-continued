@@ -86,7 +86,7 @@ async function main() {
     const extensionsInstallDir = path.join(userDataDir, 'extensions');
     execSync(
       `npx @vscode/vsce package --out "${vsixPath}" --allow-star-activation`,
-      { cwd: extensionDir, stdio: 'inherit', timeout: 180000 }
+      { cwd: extensionDir, stdio: 'inherit', timeout: 300000 }
     );
     console.log(`  Packaged: ${vsixPath}`);
     // --extensions-dir is required; --user-data-dir alone does NOT control

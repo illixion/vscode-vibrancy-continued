@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: '20'
       - run: npm install
-      - run: npm install @vscode/test-electron
+      - run: npm install @vscode/test-electron @vscode/vsce
       - name: Build native modules (Windows)
         if: runner.os == 'Windows'
         run: |
