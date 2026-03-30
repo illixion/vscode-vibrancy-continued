@@ -337,7 +337,8 @@ function captureScreenshot(outputPath) {
     // Method 1: Capture just the VSCode window via PrintWindow — avoids
     // Start Menu, WSL terminal, or any other window covering it
     methods.push(() => runPsScript([
-      `Add-Type @"`,
+      `Add-Type -AssemblyName System.Drawing`,
+      `Add-Type -ReferencedAssemblies System.Drawing @"`,
       `using System;`,
       `using System.Runtime.InteropServices;`,
       `using System.Drawing;`,
