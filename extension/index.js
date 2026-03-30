@@ -1,20 +1,24 @@
 var vscode = require('vscode');
 var fs = require('mz/fs');
 var path = require('path');
-var { pathToFileURL } = require('url')
 var os = require('os');
 var { spawn } = require('child_process');
-
-function getConfigDir(name) {
-  const homedir = os.homedir();
-  if (process.platform === 'darwin') {
-    return path.join(homedir, 'Library', 'Preferences', name);
-  }
-  if (process.platform === 'win32') {
-    return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
-  }
-  return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
-}
+var {
+  generateNewJS: _generateNewJS,
+  removeJSMarkers,
+  injectElectronOptions,
+  removeElectronOptions,
+  patchCSP: _patchCSP,
+  removeCSPPatch,
+  computeTransparentHex,
+  deepEqual,
+  checkRuntimeUpdate,
+  getConfigDir,
+  TRANSPARENT_BG_KEYS,
+  SEMITRANSPARENT_BG_KEYS,
+  OPAQUE_BG_KEYS,
+  ALL_VIBRANCY_BG_KEYS,
+} = require('./file-transforms');
 
 /**
  * @type {(info: string) => string}
@@ -43,6 +47,7 @@ var themeStylePaths = {
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.css',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
+  '__Test Green': '../themes/__Test Green.css',
 }
 
 const themeConfigPaths = {
@@ -60,6 +65,7 @@ const themeConfigPaths = {
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.json',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
+  '__Test Green': '../themes/__Test Green.json',
 }
 
 const themeFixPaths = {
@@ -337,56 +343,9 @@ async function checkElectronDeprecatedType() {
   }
 }
 
-function deepEqual(obj1, obj2) {
-  if (obj1 === obj2) {
-    // Objects are the same
-    return true;
-  }
-
-  if (isPrimitive(obj1) && isPrimitive(obj2)) {
-    // Compare primitive values
-    return obj1 === obj2;
-  }
-
-  if (Object.keys(obj1).length !== Object.keys(obj2).length) {
-    // Objects have different number of properties
-    return false;
-  }
-
-  // Compare objects with the same number of properties
-  for (const key in obj1) {
-    if (!(key in obj2)) {
-      // Other object doesn't have this property
-      return false;
-    }
-
-    if (!deepEqual(obj1[key], obj2[key])) {
-      // Properties are not equal
-      return false;
-    }
-  }
-
-  // Objects are equal
-  return true;
-}
-
-//check if value is primitive
-function isPrimitive(obj) {
-  return (obj !== Object(obj));
-}
-
-// Check if runtime and asset updates are necessary based on version numbers
-function checkRuntimeUpdate(current, last) {
-  // Split the versions into major and minor numbers
-  const [currentMajor, currentMinor] = current.split('.').slice(0, 2);
-  const [lastMajor, lastMinor] = last.split('.').slice(0, 2);
-
-  // Convert the numbers to integers and compare them
-  return (parseInt(currentMajor) !== parseInt(lastMajor)) || (parseInt(currentMinor) !== parseInt(lastMinor));
-}
-
 function activate(context) {
-  console.log('vscode-vibrancy is active!');
+  const testMode = vscode.workspace.getConfiguration("vscode_vibrancy").get("testMode", false);
+  console.log('vscode-vibrancy is active!' + (testMode ? ' (test mode)' : ''));
 
   var appDir;
   try {
@@ -562,20 +521,10 @@ function activate(context) {
   }
 
   function generateNewJS(JS, base, injectData) {
-    let runtimePath;
-    if (useEsmRuntime) {
-      runtimePath = path.join(runtimeDir, "index.mjs")
-    } else {
-      runtimePath = path.join(runtimeDir, "index.cjs")
-    }
-
-    const newJS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '')
-      + '\n/* !! VSCODE-VIBRANCY-START !! */\n;(function(){\n'
-      + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
-      + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${pathToFileURL(runtimePath)}"); } catch (err) {console.error(err)}\n`
-      + '})()\n/* !! VSCODE-VIBRANCY-END !! */';
-
-    return newJS;
+    const runtimePath = useEsmRuntime
+      ? path.join(runtimeDir, "index.mjs")
+      : path.join(runtimeDir, "index.cjs");
+    return _generateNewJS(JS, base, injectData, runtimePath);
   }
 
   // BrowserWindow option modification
@@ -618,98 +567,59 @@ function activate(context) {
       return;
     }
 
-    // add visualEffectState option to enable vibrancy while VSCode is not in focus (macOS only)
-    if (!ElectronJS.includes('visualEffectState') && osType === 'macos') {
-      ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
-    }
-
-    if (useFrame && !ElectronJS.includes('frame:false,')) {
-      ElectronJS = ElectronJS.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
-    }
+    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos' });
 
     await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
 
   async function installHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
+    const { result, alreadyPatched, noMetaTag } = _patchCSP(HTML);
 
-    const metaTagRegex = /<meta\s+http-equiv="Content-Security-Policy"\s+content="([\s\S]+?)">/;
-    const metaTagMatch = HTML.match(metaTagRegex);
+    if (noMetaTag) return;
 
-    if (!metaTagMatch) {
-      // No CSP meta tag — no trusted-types enforcement, nothing to patch
-      return;
-    }
-
-    const cspContent = metaTagMatch[1];
-
-    if (cspContent.includes('VscodeVibrancyContinued')) {
-      // Already patched — still write to overwrite any staged uninstall in Update flow
+    // Always write if already patched to overwrite any staged uninstall in Update flow
+    if (alreadyPatched) {
       await writer.writeFile(HTMLFile, HTML, 'utf-8');
       return;
     }
 
-    let newCspContent;
-    if (cspContent.includes('trusted-types')) {
-      // Remove legacy marker (original vscode-vibrancy) if present
-      let cleanedCsp = cspContent.replace(/ VscodeVibrancy(?!Continued)/g, '');
-      // Add VscodeVibrancyContinued to existing trusted-types directive
-      // Use lookbehind/lookahead to skip "require-trusted-types-for"
-      newCspContent = cleanedCsp.replace(/(?<!-)trusted-types(?!-)/, 'trusted-types VscodeVibrancyContinued');
-    } else {
-      // No trusted-types directive — add one before the closing quote
-      newCspContent = cspContent.replace(/;?\s*$/, '; trusted-types VscodeVibrancyContinued');
-    }
-
-    const newMetaTag = metaTagMatch[0].replace(cspContent, newCspContent);
-    const newHTML = HTML.replace(metaTagMatch[0], newMetaTag);
-
-    await writer.writeFile(HTMLFile, newHTML, 'utf-8');
+    await writer.writeFile(HTMLFile, result, 'utf-8');
   }
 
   async function uninstallJS(writer) {
     let JS = await fs.readFile(JSFile, 'utf-8');
-    const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
-    if (needClean) {
-      JS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
-    }
+    const { result, hadMarkers } = removeJSMarkers(JS);
+    JS = result;
 
     if (knownEditors.includes(vscode.env.appName)) {
       if (ElectronJSFile === JSFile) {
         // VSCode 1.95+: both files are the same main.js — apply all cleanups
         // to a single in-memory copy to avoid the second write overwriting the first
-        // (which happens in the elevated path where all reads come from disk)
-        JS = JS
-          .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-          .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+        JS = removeElectronOptions(JS);
         await writer.writeFile(JSFile, JS, 'utf-8');
       } else {
-        if (needClean) {
+        if (hadMarkers) {
           await writer.writeFile(JSFile, JS, 'utf-8');
         }
         const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-        const newElectronJS = ElectronJS
-          .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-          .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-        await writer.writeFile(ElectronJSFile, newElectronJS, 'utf-8');
+        await writer.writeFile(ElectronJSFile, removeElectronOptions(ElectronJS), 'utf-8');
       }
-    } else if (needClean) {
+    } else if (hadMarkers) {
       await writer.writeFile(JSFile, JS, 'utf-8');
     }
   }
 
   async function uninstallHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
-    // Remove both current and legacy (original vscode-vibrancy) markers
-    if (HTML.includes('VscodeVibrancy')) {
-      const newHTML = HTML
-        .replace(/ VscodeVibrancyContinued/g, '')
-        .replace(/ VscodeVibrancy/g, '');
+    const newHTML = removeCSPPatch(HTML);
+    if (newHTML !== HTML) {
       await writer.writeFile(HTMLFile, newHTML, 'utf-8');
     }
   }
 
   function enabledRestart() {
+    if (testMode) return;
     vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
         msg && promptRestart(true);
@@ -717,6 +627,7 @@ function activate(context) {
   }
 
   function disabledRestart() {
+    if (testMode) return;
     vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
         msg && promptRestart(false);
@@ -745,52 +656,6 @@ function activate(context) {
     // If all parts are equal, return true
     return true;
   }
-
-  // Compute #RRGGBBAA hex from a theme background hex and opacity float
-  function computeTransparentHex(themeBackground, opacity) {
-    const alpha = Math.round(opacity * 255).toString(16).padStart(2, '0');
-    return `#${themeBackground}${alpha}`;
-  }
-
-  // colorCustomizations keys to set transparent (elements our theme CSS already makes transparent)
-  const TRANSPARENT_BG_KEYS = [
-    "editorPane.background",
-    "editorGroupHeader.tabsBackground",
-    "editorGroupHeader.noTabsBackground",
-    "breadcrumb.background",
-    "editorGutter.background",
-    "panel.background",
-    "panelStickyScroll.background",
-    "tab.activeBackground",
-    "tab.unfocusedActiveBackground",
-  ];
-
-  // colorCustomizations keys to set semi-transparent (sidebar, widgets — need slight contrast)
-  const SEMITRANSPARENT_BG_KEYS = [
-    "sideBar.background",
-    "sideBarTitle.background",
-    "sideBarStickyScroll.background",
-    "activityBar.background",
-    "editorWidget.background",
-    "editorHoverWidget.background",
-    "editorSuggestWidget.background",
-    "editorStickyScroll.background",
-    "editorStickyScrollGutter.background",
-    "tab.inactiveBackground",
-    "tab.unfocusedInactiveBackground",
-    "inlineChat.background",
-  ];
-  
-  // colorCustomizations keys that need a mostly-opaque background (0.9) to remain readable
-  const OPAQUE_BG_KEYS = [
-    "editor.background",
-    "notifications.background",
-    "notificationCenterHeader.background",
-    "menu.background",
-    "quickInput.background",
-  ];
-
-  const ALL_VIBRANCY_BG_KEYS = [...TRANSPARENT_BG_KEYS, ...SEMITRANSPARENT_BG_KEYS, ...OPAQUE_BG_KEYS];
 
   // Fix UI rendering by modifying VSCode settings
   async function changeVSCodeSettings() {
@@ -1035,6 +900,7 @@ function activate(context) {
    * cancelled or the operation should be aborted (e.g. Snap).
    */
   async function resolveElevation(forceElevation) {
+    if (testMode) return false;
     let needsElevation = forceElevation || checkNeedsElevation(appDir);
 
     if (needsElevation === 'snap') {
@@ -1279,12 +1145,16 @@ function activate(context) {
 
   // Check if the current version is a minor update from the last version
   if (checkRuntimeUpdate(currentVersion, lastVersion)) {
-    vscode.window.showInformationMessage(localize(updateMsg), { title: localize('messages.installIde') })
-      .then(async (msg) => {
-        if (msg) {
-          await runExclusive(() => Update());
-        }
-      });
+    if (testMode) {
+      runExclusive(() => Update());
+    } else {
+      vscode.window.showInformationMessage(localize(updateMsg), { title: localize('messages.installIde') })
+        .then(async (msg) => {
+          if (msg) {
+            await runExclusive(() => Update());
+          }
+        });
+    }
     // Update the global state with the current version
     context.globalState.update('lastVersion', currentVersion);
   }
@@ -1316,3 +1186,6 @@ exports.activate = activate;
 // this method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;
+
+// Exported for testing
+exports._test = { getCurrentTheme };

@@ -355,4 +355,9 @@ module.exports = {
   hasPkexec,
   hasNoNewPrivs,
   StagedFileWriter,
+  // Exported for testing
+  shellEscape,
+  psEscape,
+  buildShellScript,
+  buildPowerShellScript,
 };

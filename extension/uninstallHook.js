@@ -4,17 +4,7 @@ const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
 const os = require('os');
 const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
-
-function getConfigDir(name) {
-    const homedir = os.homedir();
-    if (process.platform === 'darwin') {
-        return path.join(homedir, 'Library', 'Preferences', name);
-    }
-    if (process.platform === 'win32') {
-        return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
-    }
-    return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
-}
+const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir } = require('./file-transforms');
 
 function getVSCodeSettingsPath(configSettingsPath) {
     // Prefer the path stored in local config (supports Insiders, Cursor, etc.)
@@ -267,36 +257,26 @@ function showFatalError(message) {
 
     async function uninstallJS(jsFilePath, electronJsFilePath, writer) {
         let JS = await fs.readFile(jsFilePath, 'utf-8');
-        const needClean = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//.test(JS);
-        if (needClean) {
-            JS = JS.replace(/\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSCODE-VIBRANCY-END !! \*\//, '');
-        }
+        const { result, hadMarkers } = removeJSMarkers(JS);
+        JS = result;
 
         if (electronJsFilePath === jsFilePath) {
             // Since VSCode 1.95, both files are the same — apply all cleanups to one buffer
-            JS = JS
-                .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-                .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+            JS = removeElectronOptions(JS);
             await writer.writeFile(jsFilePath, JS, 'utf-8');
         } else {
-            if (needClean) {
+            if (hadMarkers) {
                 await writer.writeFile(jsFilePath, JS, 'utf-8');
             }
             const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
-            const newElectronJS = ElectronJS
-                .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-                .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
-            await writer.writeFile(electronJsFilePath, newElectronJS, 'utf-8');
+            await writer.writeFile(electronJsFilePath, removeElectronOptions(ElectronJS), 'utf-8');
         }
     }
 
     async function uninstallHTML(htmlFilePath, writer) {
         const HTML = await fs.readFile(htmlFilePath, 'utf-8');
-        // Remove both current and legacy (original vscode-vibrancy) markers
-        if (HTML.includes('VscodeVibrancy')) {
-            const newHTML = HTML
-                .replace(/ VscodeVibrancyContinued/g, '')
-                .replace(/ VscodeVibrancy/g, '');
+        const newHTML = removeCSPPatch(HTML);
+        if (newHTML !== HTML) {
             await writer.writeFile(htmlFilePath, newHTML, 'utf-8');
         }
     }

@@ -220,19 +220,28 @@
           "description": "%configuration.disableThemeFixes.description%",
           "type": "boolean",
           "default": false
+        },
+        "vscode_vibrancy.testMode": {
+          "type": "boolean",
+          "default": false
         }
       }
     }
   },
   "scripts": {
     "build-win10": "node-gyp rebuild",
-    "vscode:uninstall": "node ./extension/uninstallHook.js"
+    "vscode:uninstall": "node ./extension/uninstallHook.js",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:e2e": "node test/e2e/run-e2e.js"
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
     "mz": "^2.7.0"
   },
   "devDependencies": {
-    "node-addon-api": "^5.0.0"
+    "node-addon-api": "^5.0.0",
+    "vitest": "^4.1.2"
   }
 }
