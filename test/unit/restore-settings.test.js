@@ -77,7 +77,7 @@ describe('restorePreviousSettings', () => {
     expect(result).toContain('"files.autoSave"');
   });
 
-  it('restores user terminal.background when key still exists (transparent value replaced)', () => {
+  it('restores user terminal.background from saved customizations', () => {
     fs.writeFileSync(settingsPath, buildVibrancySettings());
 
     restorePreviousSettings({
@@ -86,12 +86,7 @@ describe('restorePreviousSettings', () => {
     }, settingsPath);
 
     const result = fs.readFileSync(settingsPath, 'utf-8');
-    // The cleanup pass removes the transparent #00000000 terminal.background first,
-    // then the restore pass tries to replace it — but the key is already gone.
-    // This is a known limitation: the regex restore can't re-insert removed keys.
-    // The primary uninstall path via VSCode API handles this correctly.
-    expect(result).not.toContain('"terminal.background"');
-    // Other settings are still preserved
+    expect(result).toContain('"terminal.background": "#1a1b26"');
     expect(result).toContain('"editor.fontSize"');
   });
 
@@ -179,7 +174,7 @@ describe('restorePreviousSettings', () => {
     expect(result).not.toContain('"window.autoDetectColorScheme"');
   });
 
-  it('cannot re-insert vibrancy background keys after cleanup strips them (known limitation)', () => {
+  it('restores user-customized vibrancy background keys', () => {
     // User had a custom sidebar background before vibrancy was installed.
     // Vibrancy overwrote it with a transparent value.
     fs.writeFileSync(settingsPath, buildVibrancySettings());
@@ -193,12 +188,10 @@ describe('restorePreviousSettings', () => {
     }, settingsPath);
 
     const result = fs.readFileSync(settingsPath, 'utf-8');
-    // These keys were first stripped by the cleanup pass, so the regex
-    // restore can't re-insert them (the key no longer exists in the text).
-    // This is a known limitation — the primary uninstall path via VSCode
-    // API handles this correctly; the hook is a best-effort fallback.
-    expect(result).not.toContain('"sideBar.background"');
-    expect(result).not.toContain('"editor.background"');
+    expect(result).toContain('"sideBar.background": "#282c34"');
+    expect(result).toContain('"editor.background": "#1d1f21"');
+    // Keys without a saved original are still stripped
+    expect(result).not.toContain('"editorPane.background"');
     // Non-vibrancy settings survive
     expect(result).toContain('"editor.fontSize"');
     expect(result).toContain('"files.autoSave"');

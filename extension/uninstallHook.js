@@ -43,13 +43,7 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         return;
     }
 
-    // Remove transparent terminal background
-    settingsContent = settingsContent.replace(
-        /"terminal\.background"\s*:\s*"#00000000",?\s*/g,
-        ''
-    );
-
-    // Remove all vibrancy-managed background keys — must match ALL_VIBRANCY_BG_KEYS in index.js
+    // All vibrancy-managed background keys — must match ALL_VIBRANCY_BG_KEYS in index.js
     const vibrancyBgKeys = [
         "editorPane.background", "editorGroupHeader.tabsBackground",
         "editorGroupHeader.noTabsBackground", "breadcrumb.background", "editorGutter.background",
@@ -62,49 +56,38 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         "notifications.background", "notificationCenterHeader.background",
         "menu.background", "quickInput.background",
     ];
+
+    // Look up what the user's original value was (if we have saved customizations)
+    const savedBgs = previousCustomizations?.saved ? previousCustomizations.vibrancyBackgrounds : null;
+
+    // Single pass: for each vibrancy bg key, either restore the user's original value or strip it
     for (const key of vibrancyBgKeys) {
         const escapedKey = key.replace(/\./g, '\\.');
+        const regex = new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g');
+        const originalValue = savedBgs?.[key];
+        if (originalValue != null) {
+            settingsContent = settingsContent.replace(regex, `"${key}": "${originalValue}",\n            `);
+        } else {
+            settingsContent = settingsContent.replace(regex, '');
+        }
+    }
+
+    // terminal.background: restore original or strip the transparent #00000000
+    const savedTermBg = previousCustomizations?.saved ? previousCustomizations.terminalBackground : null;
+    if (savedTermBg != null && savedTermBg !== '#00000000') {
         settingsContent = settingsContent.replace(
-            new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g'),
+            /"terminal\.background"\s*:\s*".*?",?\s*/g,
+            `"terminal.background": "${savedTermBg}",\n            `
+        );
+    } else {
+        settingsContent = settingsContent.replace(
+            /"terminal\.background"\s*:\s*"#00000000",?\s*/g,
             ''
         );
     }
 
-    // Restore saved customizations
+    // Restore saved customizations for non-background settings
     if (previousCustomizations?.saved) {
-        if (previousCustomizations.terminalBackground != null) {
-            if (
-                previousCustomizations.terminalBackground === '#00000000'
-            ) {
-                settingsContent = settingsContent.replace(
-                    /"terminal\.background"\s*:\s*".*?",?\s*/g,
-                    ''
-                );
-            } else {
-                settingsContent = settingsContent.replace(
-                    /"terminal\.background"\s*:\s*".*?",?\s*/g,
-                    `"terminal.background": "${previousCustomizations.terminalBackground}",`
-                );
-            }
-        }
-
-        // Restore vibrancy background keys to their original values
-        if (previousCustomizations.vibrancyBackgrounds) {
-            for (const [key, originalValue] of Object.entries(previousCustomizations.vibrancyBackgrounds)) {
-                if (originalValue != null) {
-                    const escapedKey = key.replace(/\./g, '\\.');
-                    // If the key still exists (was restored above or user re-added), replace it
-                    const regex = new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g');
-                    if (regex.test(settingsContent)) {
-                        settingsContent = settingsContent.replace(regex,
-                            `"${key}": "${originalValue}",`
-                        );
-                    }
-                    // Note: if key was fully removed and had an original value, we can't easily
-                    // re-insert into JSONC without a proper parser. The VSCode API restore handles this.
-                }
-            }
-        }
 
         if (previousCustomizations.systemColorTheme != null) {
             settingsContent = settingsContent.replace(
