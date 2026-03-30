@@ -278,11 +278,26 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
     if (screenshotDelay && screenshotPath) {
       setTimeout(() => {
         if (!exited) {
-          // Dismiss Windows Start Menu if it's open (covers the screen)
+          // Bring VSCode to the foreground on Windows (Start Menu or other
+          // windows may be covering it)
           if (process.platform === 'win32') {
             try {
-              execSync('powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).SendKeys(\'{ESCAPE}\')"',
-                { timeout: 5000, stdio: 'ignore' });
+              runPsScript([
+                `Add-Type @"`,
+                `using System;`,
+                `using System.Runtime.InteropServices;`,
+                `public class FocusHelper {`,
+                `    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);`,
+                `    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);`,
+                `}`,
+                `"@`,
+                `$p = Get-Process -Name Code -ErrorAction SilentlyContinue | Select-Object -First 1`,
+                `if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {`,
+                `    [FocusHelper]::ShowWindow($p.MainWindowHandle, 9)  # SW_RESTORE`,
+                `    [FocusHelper]::SetForegroundWindow($p.MainWindowHandle)`,
+                `    Start-Sleep -Milliseconds 500`,
+                `}`,
+              ].join('\r\n'));
             } catch {}
           }
           console.log('  Capturing screenshot...');
