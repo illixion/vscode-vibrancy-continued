@@ -42,6 +42,13 @@ async function main() {
     "vscode_vibrancy.testMode": true,
     "vscode_vibrancy.theme": "__Test Green",
     "workbench.colorTheme": "Default Dark+",
+    // Disable workspace trust dialog — it blocks extension activation entirely
+    "security.workspace.trust.enabled": false,
+    // Suppress first-run experience and tips
+    "workbench.welcome.enabled": false,
+    "workbench.startupEditor": "none",
+    "workbench.tips.enabled": false,
+    // Disable telemetry and update checks
     "telemetry.telemetryLevel": "off",
     "update.mode": "none",
     "extensions.autoUpdate": false,
@@ -132,6 +139,9 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
       '--user-data-dir', userDataDir,
       '--disable-gpu',
       '--no-sandbox',
+      '--disable-workspace-trust',
+      '--skip-release-notes',
+      '--skip-welcome',
       workspace,
     ];
 
