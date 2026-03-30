@@ -126,35 +126,86 @@ async function main() {
                             settingsAfter.includes('colorCustomizations');
     console.log(`  Settings modified by extension: ${settingsChanged}`);
 
-    // --- Step 6: Second launch (post-restart) ---
-    console.log('\n[6/7] Second launch (post-restart, screenshot)...');
+    // --- Step 6: Second launch (post-restart, vibrancy active) ---
+    console.log('\n[6/9] Second launch (post-restart, screenshot)...');
     const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-post-restart.png`);
 
     const secondResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
-      signalFile: null, // Don't wait for signal on second launch
+      signalFile: null,
       screenshotDelay: 12000,
       screenshotPath: screenshot2,
       killTimeout: 20000,
     });
     console.log(`  Exit code: ${secondResult.exitCode}`);
 
-    // --- Step 7: Results ---
-    console.log('\n[7/7] Results:');
+    // Check green pixels in the post-restart screenshot
+    const greenPct = checkGreenPixels(screenshot2);
+    const greenOk = greenPct !== null && greenPct >= 5.0;
+    console.log(`  Green pixels: ${greenPct !== null ? greenPct.toFixed(1) + '%' : 'check failed'} (${greenOk ? 'PASS' : 'FAIL'})`);
+
+    // --- Step 7: Request uninstall ---
+    console.log('\n[7/9] Third launch (uninstall vibrancy)...');
+    // Clear previous signal and create uninstall request file
+    try { fs.unlinkSync(signalFile); } catch {}
+    const uninstallFile = path.join(configDir, 'test-uninstall');
+    fs.writeFileSync(uninstallFile, `uninstall-${Date.now()}`);
+
+    const thirdResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
+      signalFile,
+      signalTimeout: 30000,
+      killTimeout: 40000,
+    });
+    console.log(`  Exit code: ${thirdResult.exitCode}`);
+    if (thirdResult.signal) {
+      console.log(`  Signal: ${thirdResult.signal.status} — ${thirdResult.signal.message}`);
+    } else {
+      console.log('  Signal: NOT RECEIVED');
+    }
+
+    // --- Step 8: Fourth launch (post-uninstall, verify clean) ---
+    console.log('\n[8/9] Fourth launch (post-uninstall, verify clean)...');
+    const screenshot4 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-3-post-uninstall.png`);
+
+    const fourthResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
+      signalFile: null,
+      screenshotDelay: 12000,
+      screenshotPath: screenshot4,
+      killTimeout: 20000,
+    });
+    console.log(`  Exit code: ${fourthResult.exitCode}`);
+
+    // Verify green is gone after uninstall
+    const postUninstallGreen = checkGreenPixels(screenshot4);
+    const uninstallClean = postUninstallGreen === null || postUninstallGreen < 5.0;
+    console.log(`  Green pixels after uninstall: ${postUninstallGreen !== null ? postUninstallGreen.toFixed(1) + '%' : 'check failed'} (${uninstallClean ? 'PASS' : 'FAIL'})`);
+
+    // --- Step 9: Results ---
+    console.log('\n[9/9] Results:');
     const installOk = firstResult.signal && firstResult.signal.status === 'success';
     const nocrash = secondResult.exitCode === 0 || secondResult.exitCode === null;
-    const success = installOk && nocrash;
+    const uninstallOk = thirdResult.signal && thirdResult.signal.status === 'uninstalled';
+    const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
+    const success = installOk && nocrash && greenOk && uninstallOk && postUninstallNocrash && uninstallClean;
 
-    console.log(`  Extension installed: ${installOk ? 'PASS' : 'FAIL'}`);
-    console.log(`  Post-restart crash check: ${nocrash ? 'PASS' : 'FAIL'}`);
+    console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Post-install crash: ${nocrash ? 'PASS' : 'FAIL'}`);
+    console.log(`  Green visible: ${greenOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Uninstall signal: ${uninstallOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Post-uninstall crash: ${postUninstallNocrash ? 'PASS' : 'FAIL'}`);
+    console.log(`  Green removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
     console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
 
-    writeGitHubSummary(success, screenshot2, firstResult, secondResult);
+    writeGitHubSummary(success, screenshot2, {
+      installOk, nocrash, greenOk, greenPct,
+      uninstallOk, postUninstallNocrash, uninstallClean, postUninstallGreen,
+    });
 
     process.exit(success ? 0 : 1);
 
   } finally {
     try { fs.unlinkSync(testModeFile); } catch {}
     try { fs.unlinkSync(signalFile); } catch {}
+    try { fs.unlinkSync(path.join(configDir, 'test-uninstall')); } catch {}
     try { if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true }); } catch {}
     try { if (tmpWorkspace) fs.rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
     try { if (vsixPath) fs.unlinkSync(vsixPath); } catch {}
@@ -227,6 +278,13 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
     if (screenshotDelay && screenshotPath) {
       setTimeout(() => {
         if (!exited) {
+          // Dismiss Windows Start Menu if it's open (covers the screen)
+          if (process.platform === 'win32') {
+            try {
+              execSync('powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).SendKeys(\'{ESCAPE}\')"',
+                { timeout: 5000, stdio: 'ignore' });
+            } catch {}
+          }
           console.log('  Capturing screenshot...');
           captureScreenshot(screenshotPath);
         }
@@ -344,31 +402,56 @@ function captureScreenshot(outputPath) {
   console.log('  All screenshot methods exhausted');
 }
 
+// --- Green pixel check ---
+
+/**
+ * Check what percentage of the screenshot center is green.
+ * Uses a Python script for cross-platform PNG decoding without native deps.
+ * Returns percentage (0-100) or null if the check failed.
+ */
+function checkGreenPixels(screenshotPath) {
+  if (!screenshotPath || !fs.existsSync(screenshotPath)) return null;
+  const checkScript = path.join(__dirname, 'check-green.py');
+  try {
+    const result = execSync(
+      `python3 "${checkScript}" "${screenshotPath}" 10`,
+      { timeout: 30000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    return parseFloat(result.trim());
+  } catch (err) {
+    // Exit code 1 = not enough green (still returns the percentage)
+    if (err.stdout) {
+      const pct = parseFloat(err.stdout.trim());
+      if (!isNaN(pct)) return pct;
+    }
+    console.log(`  Green check error: ${(err.stderr || err.message || '').slice(0, 200)}`);
+    return null;
+  }
+}
+
 // --- GitHub summary ---
 
-function writeGitHubSummary(success, screenshotPath, firstResult, secondResult) {
+function writeGitHubSummary(success, screenshotPath, checks) {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
   if (!summaryFile) return;
 
   const platform = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }[process.platform] || process.platform;
-  const check = (v) => v ? '✅' : '❌';
-  const installOk = firstResult.signal && firstResult.signal.status === 'success';
-  const nocrash = secondResult.exitCode === 0 || secondResult.exitCode === null;
+  const chk = (v) => v ? '✅' : '❌';
 
   let md = `## E2E Test — ${platform}\n\n`;
   md += `| Check | Status |\n`;
   md += `|-------|--------|\n`;
-  md += `| Overall | ${check(success)} ${success ? 'PASS' : 'FAIL'} |\n`;
-  md += `| Extension signal | ${check(installOk)} ${firstResult.signal ? firstResult.signal.status : 'no signal'} |\n`;
-  md += `| Post-restart crash | ${check(nocrash)} |\n`;
-  if (firstResult.signal && firstResult.signal.message) {
-    md += `| Signal message | ${firstResult.signal.message} |\n`;
-  }
+  md += `| Overall | ${chk(success)} ${success ? 'PASS' : 'FAIL'} |\n`;
+  md += `| Install signal | ${chk(checks.installOk)} |\n`;
+  md += `| Post-install crash | ${chk(checks.nocrash)} |\n`;
+  md += `| Green visible (${checks.greenPct !== null ? checks.greenPct.toFixed(1) + '%' : '?'}) | ${chk(checks.greenOk)} |\n`;
+  md += `| Uninstall signal | ${chk(checks.uninstallOk)} |\n`;
+  md += `| Post-uninstall crash | ${chk(checks.postUninstallNocrash)} |\n`;
+  md += `| Green removed (${checks.postUninstallGreen !== null ? checks.postUninstallGreen.toFixed(1) + '%' : '?'}) | ${chk(checks.uninstallClean)} |\n`;
   md += `\n`;
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
-    const size = (fs.statSync(screenshotPath).size / 1024).toFixed(1);
-    md += `📸 Screenshot captured (${size} KB) — see **screenshots** artifact.\n`;
+    md += `📸 Screenshots captured — see **screenshots** artifact.\n`;
   } else {
     md += `_No screenshot captured._\n`;
   }

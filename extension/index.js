@@ -356,16 +356,21 @@ function activate(context) {
     vscode.window.showInformationMessage('Vibrancy Continued: Test mode active');
   }
 
+  const testSignalPath = testMode ? path.join(path.dirname(testModeFile), 'test-result') : null;
+
   function writeTestSignal(status, message) {
     if (!testMode) return;
     try {
-      const signalPath = path.join(path.dirname(testModeFile), 'test-result');
-      require('fs').writeFileSync(signalPath, JSON.stringify({ status, message, ts: Date.now() }));
+      require('fs').writeFileSync(testSignalPath, JSON.stringify({ status, message, ts: Date.now() }));
       console.log(`Vibrancy test signal: ${status} — ${message}`);
     } catch (err) {
       console.error('Failed to write test signal:', err);
     }
   }
+
+  // Check if the harness is requesting an uninstall
+  const testUninstallFile = testMode ? path.join(path.dirname(testModeFile), 'test-uninstall') : null;
+  const testUninstallRequested = testMode && require('fs').existsSync(testUninstallFile);
 
   var appDir;
   try {
@@ -1186,6 +1191,16 @@ function activate(context) {
     }
     // Update the global state with the current version
     context.globalState.update('lastVersion', currentVersion);
+  }
+
+  // Test harness can request an uninstall by creating a test-uninstall file
+  if (testUninstallRequested) {
+    runExclusive(() => Uninstall(false)).then(() => {
+      try { require('fs').unlinkSync(testUninstallFile); } catch {}
+      writeTestSignal('uninstalled', 'Uninstall completed');
+    }).catch((err) => {
+      writeTestSignal('error', `Uninstall failed: ${err && err.message || err}`);
+    });
   }
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
