@@ -1,3 +1,8 @@
+# 1.1.68
+
+* Themes:
+  * Fix Jupyter notebook backgrounds having a dark rectangle behind them
+
 # 1.1.67
 
 * Core:

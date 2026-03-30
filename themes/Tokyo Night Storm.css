@@ -58,7 +58,7 @@ body {
 
 .monaco-list.settings-toc-tree .monaco-list-row.selected,
 .monaco-list.settings-toc-tree .monaco-list-row.focused,
-.monaco-list .monaco-list-row.selected,
+.monaco-list.settings-toc-tree .monaco-list-row.selected,
 .monaco-list.settings-toc-tree:not(.drop-target)
   .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: rgb(26, 27, 38, 0.4) !important;
