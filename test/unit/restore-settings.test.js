@@ -77,7 +77,7 @@ describe('restorePreviousSettings', () => {
     expect(result).toContain('"files.autoSave"');
   });
 
-  it('restores user terminal.background from saved customizations', () => {
+  it('restores user terminal.background when key still exists (transparent value replaced)', () => {
     fs.writeFileSync(settingsPath, buildVibrancySettings());
 
     restorePreviousSettings({
@@ -86,11 +86,13 @@ describe('restorePreviousSettings', () => {
     }, settingsPath);
 
     const result = fs.readFileSync(settingsPath, 'utf-8');
-    // The vibrancy transparent terminal.background was removed, but since
-    // the user had an original value, it cannot be re-inserted via regex
-    // (the key was already stripped). This is a known limitation documented
-    // in the code — the VSCode API handles this case during normal uninstall.
-    // The uninstall hook is best-effort for settings the user never touched.
+    // The cleanup pass removes the transparent #00000000 terminal.background first,
+    // then the restore pass tries to replace it — but the key is already gone.
+    // This is a known limitation: the regex restore can't re-insert removed keys.
+    // The primary uninstall path via VSCode API handles this correctly.
+    expect(result).not.toContain('"terminal.background"');
+    // Other settings are still preserved
+    expect(result).toContain('"editor.fontSize"');
   });
 
   it('removes terminal.background if user original was also transparent', () => {
@@ -177,7 +179,7 @@ describe('restorePreviousSettings', () => {
     expect(result).not.toContain('"window.autoDetectColorScheme"');
   });
 
-  it('restores user-customized vibrancy background keys', () => {
+  it('cannot re-insert vibrancy background keys after cleanup strips them (known limitation)', () => {
     // User had a custom sidebar background before vibrancy was installed.
     // Vibrancy overwrote it with a transparent value.
     fs.writeFileSync(settingsPath, buildVibrancySettings());
@@ -193,9 +195,13 @@ describe('restorePreviousSettings', () => {
     const result = fs.readFileSync(settingsPath, 'utf-8');
     // These keys were first stripped by the cleanup pass, so the regex
     // restore can't re-insert them (the key no longer exists in the text).
-    // This is a known limitation — see the code comment about JSONC.
-    // The primary uninstall path via VSCode API handles this correctly;
-    // the hook is a best-effort fallback.
+    // This is a known limitation — the primary uninstall path via VSCode
+    // API handles this correctly; the hook is a best-effort fallback.
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"editor.background"');
+    // Non-vibrancy settings survive
+    expect(result).toContain('"editor.fontSize"');
+    expect(result).toContain('"files.autoSave"');
   });
 
   it('handles settings with no previousCustomizations (null)', () => {

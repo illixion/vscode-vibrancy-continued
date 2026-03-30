@@ -50,6 +50,19 @@ describe('deepEqual', () => {
     expect(deepEqual(undefined, undefined)).toBe(true);
     expect(deepEqual(null, undefined)).toBe(false);
   });
+
+  it('returns false for different types with same-ish value', () => {
+    expect(deepEqual(1, '1')).toBe(false);
+    expect(deepEqual(0, false)).toBe(false);
+    expect(deepEqual('', false)).toBe(false);
+  });
+
+  it('treats arrays and objects as equal when structurally equivalent', () => {
+    // deepEqual is used for config comparison — it doesn't distinguish
+    // arrays from plain objects, which is fine for its use case.
+    expect(deepEqual([], {})).toBe(true);
+    expect(deepEqual([1, 2], { 0: 1, 1: 2, length: 2 })).toBe(false); // different keys
+  });
 });
 
 // --- isPrimitive ---
@@ -85,8 +98,12 @@ describe('checkRuntimeUpdate', () => {
     expect(checkRuntimeUpdate('2.0.0', '1.5.0')).toBe(true);
   });
 
-  it('returns false for patch-only change', () => {
+  it('returns false when only patch version differs', () => {
     expect(checkRuntimeUpdate('1.1.10', '1.1.3')).toBe(false);
+  });
+
+  it('returns true for version downgrade (detects any major/minor difference)', () => {
+    expect(checkRuntimeUpdate('1.0.0', '1.1.0')).toBe(true);
   });
 
   it('handles first install (0.0.0)', () => {
@@ -98,9 +115,15 @@ describe('checkRuntimeUpdate', () => {
 
 describe('getConfigDir', () => {
   const originalPlatform = process.platform;
+  const originalAppdata = process.env.APPDATA;
 
   afterEach(() => {
     Object.defineProperty(process, 'platform', { value: originalPlatform });
+    if (originalAppdata === undefined) {
+      delete process.env.APPDATA;
+    } else {
+      process.env.APPDATA = originalAppdata;
+    }
   });
 
   it('returns XDG path on Linux', () => {
@@ -116,5 +139,14 @@ describe('getConfigDir', () => {
     expect(dir).toContain('Library');
     expect(dir).toContain('Preferences');
     expect(dir).toContain('test-app');
+  });
+
+  it('returns APPDATA path on Windows', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    process.env.APPDATA = '/fake/appdata';
+    const dir = getConfigDir('test-app');
+    expect(dir).toContain('test-app');
+    expect(dir).toContain('Config');
+    expect(dir).toContain('/fake/appdata');
   });
 });

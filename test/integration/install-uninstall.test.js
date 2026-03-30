@@ -29,7 +29,10 @@ describe('install/uninstall round-trip', () => {
     it('full install then uninstall restores original files', () => {
       const mainPath = path.join(tmpDir, 'main.js');
       const htmlPath = path.join(tmpDir, 'workbench.html');
-      const electronPath = path.join(tmpDir, 'main-merged.js'); // as a stand-in for electron main
+      // Reuse main-merged.js as a stand-in for electron main.js — the content is
+      // structurally valid (contains experimentalDarkMode anchor) and exercises the
+      // same injectElectronOptions/removeElectronOptions code paths.
+      const electronPath = path.join(tmpDir, 'main-merged.js');
 
       const originalMain = fs.readFileSync(mainPath, 'utf-8');
       const originalHtml = fs.readFileSync(htmlPath, 'utf-8');

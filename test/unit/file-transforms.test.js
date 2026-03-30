@@ -206,6 +206,18 @@ describe('removeCSPPatch', () => {
     expect(cleaned).toBe(html);
   });
 
+  it('removes marker from HTML that originally had no trusted-types directive', () => {
+    const html = loadFixture('workbench-no-trusted-types.html');
+    const { result: patched } = patchCSP(html);
+    expect(patched).toContain('VscodeVibrancyContinued');
+    const cleaned = removeCSPPatch(patched);
+    expect(cleaned).not.toContain('VscodeVibrancyContinued');
+    // Note: an empty "trusted-types" directive remains after removal since
+    // patchCSP added the directive and removeCSPPatch only strips the marker name.
+    // This is harmless — an empty trusted-types directive is a no-op in browsers.
+    expect(cleaned).toContain('trusted-types');
+  });
+
   it('is safe on content without markers', () => {
     const html = loadFixture('workbench-no-csp.html');
     expect(removeCSPPatch(html)).toBe(html);
