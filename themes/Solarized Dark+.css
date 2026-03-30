@@ -10,6 +10,11 @@
   background: transparent !important;
 }
 
+.modal-editor-part > .content,
+.modal-editor-part .editor-container {
+  background-color: var(--vscode-quickInput-background) !important;
+}
+
 .search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
 .monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab,
 .monaco-editor-background,
@@ -41,7 +46,7 @@ body {
 
 .monaco-list.settings-toc-tree .monaco-list-row.selected,
 .monaco-list.settings-toc-tree .monaco-list-row.focused,
-.monaco-list .monaco-list-row.selected,
+.monaco-list.settings-toc-tree .monaco-list-row.selected,
 .monaco-list.settings-toc-tree:not(.drop-target) .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: rgb(0, 43, 54, 0.6) !important;
 }

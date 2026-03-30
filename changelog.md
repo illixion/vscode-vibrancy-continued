@@ -1,9 +1,27 @@
+# 1.1.68
+
+* Themes:
+  * Fix Jupyter notebook backgrounds having a dark rectangle behind them
+  * Fix hover text popups using a transparent background that makes them unreadable
+
+# 1.1.67
+
+* Core:
+  * Update checkColorTheme function to accept testMode parameter, fixes error on enabling
+
 # 1.1.66
 
 * Core:
   * Background override now recolors all theme element backgrounds (sidebar, tabs, lists, etc.), not just the base HTML background
-  * Set transparent `workbench.colorCustomizations` backgrounds so extension webviews (e.g. Claude Code) inherit vibrancy
+  * Set transparent `workbench.colorCustomizations` backgrounds so extension webviews (e.g. Claude Code, Jupyter) inherit vibrancy
   * Fix bug affecting restoration of settings in IDEs that are not VSCode when uninstalling
+  * Fix modal editor losing opaque background due to theme CSS overrides (e.g.  VSCode settings editor)
+  * Fix uninstall hook losing user's original background colors
+  * Fix runtime folder not copying correctly on Windows leading to crash
+  * Implement deferred settings restoration for Windows during uninstallation
+  * Sanitize user-provided JS/CSS to prevent script/style tag escaping
+* Testing:
+  * Add automated test infrastructure with unit, integration, and E2E tests
 
   * Fix modal editor losing opaque background due to theme CSS overrides (for example, VSCode settings editor)
   * Fix uninstall hook losing user's original background colors
