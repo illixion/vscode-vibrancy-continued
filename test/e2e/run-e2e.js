@@ -58,12 +58,12 @@ async function main() {
   try {
     execSync(
       `npx @vscode/vsce package --out "${vsixPath}" --no-dependencies --allow-star-activation`,
-      { cwd: extensionDir, stdio: 'inherit', timeout: 60000 }
+      { cwd: extensionDir, stdio: 'inherit', timeout: 180000 }
     );
     console.log(`  Packaged: ${vsixPath}`);
     execSync(
       `"${cliPath}" --install-extension "${vsixPath}" --user-data-dir "${userDataDir}" --force`,
-      { stdio: 'inherit', timeout: 60000 }
+      { stdio: 'inherit', timeout: 120000 }
     );
   } catch (err) {
     console.error('Failed to package/install extension:', err.message);

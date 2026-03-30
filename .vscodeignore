@@ -4,3 +4,11 @@ images/*
 images/types/*
 !images/logo.png
 docs/*
+test/
+__mocks__/
+.github/
+.claude/
+vitest.config.mjs
+CLAUDE.md
+binding.gyp.dist
+nls-schema.json
