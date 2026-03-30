@@ -16,6 +16,11 @@
   background-color: var(--base-background) !important;
 }
 
+.modal-editor-part > .content,
+.modal-editor-part .editor-container {
+  background-color: var(--vscode-quickInput-background) !important;
+}
+
 .search-view .search-widget .input-box,
 .search-view .search-widget .input-box .monaco-inputbox,
 .monaco-workbench

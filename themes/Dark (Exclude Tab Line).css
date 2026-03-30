@@ -10,6 +10,11 @@
   background: transparent !important;
 }
 
+.modal-editor-part > .content,
+.modal-editor-part .editor-container {
+  background-color: var(--vscode-quickInput-background) !important;
+}
+
 .search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
 .monaco-editor-background,
 .monaco-editor .margin,

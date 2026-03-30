@@ -3,11 +3,16 @@
 }
 
 .minimap, .editor-scrollable>.decorationsOverviewRuler {
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .editor-container:not(.modal-editor-part .editor-container) {
   background: transparent !important;
+}
+
+.modal-editor-part > .content,
+.modal-editor-part .editor-container {
+  background-color: var(--vscode-quickInput-background) !important;
 }
 
 .search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,

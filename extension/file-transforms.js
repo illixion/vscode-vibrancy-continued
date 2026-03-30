@@ -191,9 +191,7 @@ const SEMITRANSPARENT_BG_KEYS = [
   "sideBarTitle.background",
   "sideBarStickyScroll.background",
   "activityBar.background",
-  "editorWidget.background",
-  "editorHoverWidget.background",
-  "editorSuggestWidget.background",
+  "editor.background",
   "editorStickyScroll.background",
   "editorStickyScrollGutter.background",
   "tab.inactiveBackground",
@@ -202,7 +200,9 @@ const SEMITRANSPARENT_BG_KEYS = [
 ];
 
 const OPAQUE_BG_KEYS = [
-  "editor.background",
+  "editorWidget.background",
+  "editorHoverWidget.background",
+  "editorSuggestWidget.background",
   "notifications.background",
   "notificationCenterHeader.background",
   "menu.background",

@@ -2,6 +2,7 @@
 
 * Themes:
   * Fix Jupyter notebook backgrounds having a dark rectangle behind them
+  * Fix hover text popups using a transparent background that makes them unreadable
 
 # 1.1.67
 
