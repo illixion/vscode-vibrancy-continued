@@ -2,7 +2,7 @@
  * E2E test for VSCode Vibrancy Continued.
  *
  * Downloads a real VSCode instance, installs the extension with testMode enabled,
- * verifies it installs without crashing, and captures a screenshot.
+ * verifies it installs without crashing, and captures a screenshot while running.
  *
  * Usage:
  *   node test/e2e/run-e2e.js
@@ -20,8 +20,6 @@ const os = require('os');
 const { execSync, spawn } = require('child_process');
 
 async function main() {
-  // Lazy-require so this script doesn't fail at import time if the package
-  // isn't installed (it's only needed for E2E).
   const { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } = require('@vscode/test-electron');
 
   const screenshotDir = path.join(__dirname, '..', 'screenshots');
@@ -30,7 +28,7 @@ async function main() {
   console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
 
   // Step 1: Download VSCode
-  console.log('[1/6] Downloading VSCode...');
+  console.log('[1/5] Downloading VSCode...');
   const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
   const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
   console.log(`  VSCode: ${vscodeExecutablePath}`);
@@ -44,7 +42,6 @@ async function main() {
     "vscode_vibrancy.testMode": true,
     "vscode_vibrancy.theme": "__Test Green",
     "workbench.colorTheme": "Default Dark+",
-    // Disable telemetry and update checks for cleaner test
     "telemetry.telemetryLevel": "off",
     "update.mode": "none",
     "extensions.autoUpdate": false,
@@ -52,7 +49,7 @@ async function main() {
   console.log(`  User data dir: ${userDataDir}`);
 
   // Step 3: Package and install the extension
-  console.log('\n[2/6] Packaging and installing extension...');
+  console.log('\n[2/5] Packaging and installing extension...');
   const extensionDir = path.resolve(__dirname, '..', '..');
   const vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
   try {
@@ -70,34 +67,42 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 4: First launch — extension activates, testMode auto-installs
-  console.log('\n[3/6] First launch (extension installs vibrancy)...');
+  // Step 4: First launch — extension activates, testMode auto-installs, then exits
+  console.log('\n[3/5] First launch (extension installs vibrancy)...');
   const tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
-  const firstLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, 15000);
+  const firstLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
+    totalTimeout: 20000,
+  });
   console.log(`  Exit code: ${firstLaunchExitCode}`);
 
-  // Step 5: Second launch — verify modified VSCode doesn't crash
-  console.log('\n[4/6] Second launch (verify no crash)...');
-  const secondLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, 15000);
+  // Step 5: Second launch — let it render, capture screenshot while running, then kill
+  console.log('\n[4/5] Second launch (screenshot + crash check)...');
+  const screenshotPath = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-${Date.now()}.png`);
+  const secondLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
+    totalTimeout: 20000,
+    // Wait for the window to fully render before capturing
+    screenshotDelay: 10000,
+    screenshotPath,
+  });
   console.log(`  Exit code: ${secondLaunchExitCode}`);
 
-  // Step 6: Capture screenshot
-  console.log('\n[5/6] Capturing screenshot...');
-  const screenshotPath = await captureScreenshot(screenshotDir);
-  if (screenshotPath) {
+  if (fs.existsSync(screenshotPath)) {
     console.log(`  Screenshot saved: ${screenshotPath}`);
   } else {
-    console.log('  Screenshot capture not available on this platform/environment');
+    console.log('  Screenshot capture failed or not available');
   }
 
-  // Step 7: Report results
-  console.log('\n[6/6] Results:');
+  // Results
+  console.log('\n[5/5] Results:');
   const success = secondLaunchExitCode === 0 || secondLaunchExitCode === null;
   if (success) {
     console.log('  PASS: VSCode launched successfully after vibrancy install');
   } else {
     console.log(`  FAIL: VSCode crashed with exit code ${secondLaunchExitCode}`);
   }
+
+  // Write GitHub Actions job summary if available
+  writeGitHubSummary(success, screenshotPath, secondLaunchExitCode);
 
   // Cleanup
   fs.rmSync(userDataDir, { recursive: true, force: true });
@@ -108,11 +113,21 @@ async function main() {
 }
 
 /**
- * Launch VSCode, wait for it to start, then kill it after a timeout.
- * Returns the exit code (0 if killed by us, non-zero if it crashed).
+ * Launch VSCode, optionally capture a screenshot while it's running, then kill it.
+ *
+ * @param {string} executablePath
+ * @param {string} userDataDir
+ * @param {string} workspace
+ * @param {object} opts
+ * @param {number} opts.totalTimeout  - Kill VSCode after this many ms
+ * @param {number} [opts.screenshotDelay] - Capture screenshot after this many ms (must be < totalTimeout)
+ * @param {string} [opts.screenshotPath] - Where to save the screenshot
+ * @returns {Promise<number|null>} Exit code, or null if we killed it (success)
  */
-function launchVSCode(executablePath, userDataDir, workspace, timeoutMs) {
+function launchVSCode(executablePath, userDataDir, workspace, opts) {
   return new Promise((resolve) => {
+    const { totalTimeout, screenshotDelay, screenshotPath } = opts;
+
     const args = [
       '--user-data-dir', userDataDir,
       '--disable-gpu',
@@ -137,60 +152,95 @@ function launchVSCode(executablePath, userDataDir, workspace, timeoutMs) {
       resolve(code);
     });
 
-    // Kill after timeout — this is expected/success
+    // Capture screenshot while VSCode is still running
+    if (screenshotDelay && screenshotPath) {
+      setTimeout(() => {
+        if (!exited) {
+          console.log('  Capturing screenshot...');
+          captureScreenshot(screenshotPath);
+        }
+      }, screenshotDelay);
+    }
+
+    // Kill after total timeout
     setTimeout(() => {
       if (!exited) {
         proc.kill('SIGTERM');
-        // Give it a moment to exit gracefully
         setTimeout(() => {
           if (!exited) {
             proc.kill('SIGKILL');
-            resolve(null); // killed by us = success
+            resolve(null);
           }
         }, 3000);
       }
-    }, timeoutMs);
+    }, totalTimeout);
   });
 }
 
 /**
  * Capture a screenshot of the current display.
- * Platform-specific: macOS (screencapture), Linux (import/xdg), Windows (nircmd/PowerShell).
  */
-async function captureScreenshot(outputDir) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = `vibrancy-e2e-${process.platform}-${timestamp}.png`;
-  const outputPath = path.join(outputDir, filename);
-
+function captureScreenshot(outputPath) {
   try {
     if (process.platform === 'darwin') {
       execSync(`screencapture -x "${outputPath}"`, { timeout: 5000 });
     } else if (process.platform === 'linux') {
-      // Try import (ImageMagick) first, then gnome-screenshot
       try {
         execSync(`import -window root "${outputPath}"`, { timeout: 5000 });
       } catch {
         execSync(`gnome-screenshot -f "${outputPath}"`, { timeout: 5000 });
       }
     } else if (process.platform === 'win32') {
-      // PowerShell screenshot
       const psScript = `
         Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
         [System.Windows.Forms.Screen]::PrimaryScreen | ForEach-Object {
           $bitmap = New-Object System.Drawing.Bitmap($_.Bounds.Width, $_.Bounds.Height)
           $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
           $graphics.CopyFromScreen($_.Bounds.Location, [System.Drawing.Point]::Empty, $_.Bounds.Size)
-          $bitmap.Save('${outputPath.replace(/'/g, "''")}')
+          $bitmap.Save('${outputPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}')
           $graphics.Dispose()
           $bitmap.Dispose()
         }
       `.trim();
       execSync(`powershell -Command "${psScript}"`, { timeout: 10000 });
     }
-    return fs.existsSync(outputPath) ? outputPath : null;
-  } catch {
-    return null;
+  } catch (err) {
+    console.log(`  Screenshot capture error: ${err.message}`);
   }
+}
+
+/**
+ * Write a GitHub Actions job summary with inline screenshot.
+ */
+function writeGitHubSummary(success, screenshotPath, exitCode) {
+  const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryFile) return;
+
+  const platform = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }[process.platform] || process.platform;
+  const status = success ? '✅ PASS' : '❌ FAIL';
+  const exitInfo = exitCode === null ? 'killed by test (expected)' : `exit code ${exitCode}`;
+
+  let md = `## E2E Test — ${platform}\n\n`;
+  md += `| Result | Exit | Platform |\n`;
+  md += `|--------|------|----------|\n`;
+  md += `| ${status} | ${exitInfo} | ${platform} |\n\n`;
+
+  if (screenshotPath && fs.existsSync(screenshotPath)) {
+    // Upload artifact path — the screenshot will be available as an artifact,
+    // but we can also embed it directly if the workflow uses a known path.
+    // For now, reference it so reviewers know to check artifacts.
+    md += `### Screenshot\n\n`;
+    md += `📸 Screenshot captured — see the **screenshots-${process.platform === 'win32' ? 'windows-latest' : process.platform === 'darwin' ? 'macos-latest' : 'ubuntu-latest'}** artifact for the full image.\n\n`;
+    md += `<details><summary>Screenshot details</summary>\n\n`;
+    md += `- Path: \`${screenshotPath}\`\n`;
+    md += `- Size: ${(fs.statSync(screenshotPath).size / 1024).toFixed(1)} KB\n`;
+    md += `</details>\n`;
+  } else {
+    md += `_No screenshot captured._\n`;
+  }
+
+  fs.appendFileSync(summaryFile, md);
 }
 
 main().catch((err) => {
