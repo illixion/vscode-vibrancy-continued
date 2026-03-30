@@ -211,6 +211,42 @@ function captureScreenshot(outputPath) {
 }
 
 /**
+ * Generate a small PNG thumbnail and return it as base64.
+ * Uses native OS tools to avoid heavy dependencies.
+ */
+function generateThumbnailBase64(screenshotPath) {
+  const thumbPath = screenshotPath.replace('.png', '-thumb.png');
+  try {
+    if (process.platform === 'darwin') {
+      // sips is built into macOS
+      execSync(`sips -z 270 480 "${screenshotPath}" --out "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
+    } else if (process.platform === 'linux') {
+      // ImageMagick convert — typically available in CI with xvfb
+      execSync(`convert "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
+    } else if (process.platform === 'win32') {
+      const psScript = `
+        Add-Type -AssemblyName System.Drawing
+        $src = [System.Drawing.Image]::FromFile('${screenshotPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}')
+        $thumb = $src.GetThumbnailImage(480, 270, $null, [IntPtr]::Zero)
+        $thumb.Save('${thumbPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Png)
+        $thumb.Dispose()
+        $src.Dispose()
+      `.trim();
+      execSync(`powershell -Command "${psScript}"`, { stdio: 'ignore', timeout: 10000 });
+    }
+
+    if (fs.existsSync(thumbPath)) {
+      const base64 = fs.readFileSync(thumbPath, 'base64');
+      fs.unlinkSync(thumbPath);
+      return base64;
+    }
+  } catch (err) {
+    console.log(`  Thumbnail generation error: ${err.message}`);
+  }
+  return null;
+}
+
+/**
  * Write a GitHub Actions job summary with inline screenshot.
  */
 function writeGitHubSummary(success, screenshotPath, exitCode) {
@@ -227,15 +263,15 @@ function writeGitHubSummary(success, screenshotPath, exitCode) {
   md += `| ${status} | ${exitInfo} | ${platform} |\n\n`;
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
-    // Upload artifact path — the screenshot will be available as an artifact,
-    // but we can also embed it directly if the workflow uses a known path.
-    // For now, reference it so reviewers know to check artifacts.
-    md += `### Screenshot\n\n`;
-    md += `📸 Screenshot captured — see the **screenshots-${process.platform === 'win32' ? 'windows-latest' : process.platform === 'darwin' ? 'macos-latest' : 'ubuntu-latest'}** artifact for the full image.\n\n`;
-    md += `<details><summary>Screenshot details</summary>\n\n`;
-    md += `- Path: \`${screenshotPath}\`\n`;
-    md += `- Size: ${(fs.statSync(screenshotPath).size / 1024).toFixed(1)} KB\n`;
-    md += `</details>\n`;
+    const thumbBase64 = generateThumbnailBase64(screenshotPath);
+    if (thumbBase64) {
+      md += `### Screenshot\n\n`;
+      md += `<img src="data:image/png;base64,${thumbBase64}" width="480" alt="VSCode E2E screenshot — ${platform}">\n\n`;
+      md += `_Full-resolution image in the **screenshots** artifact._\n`;
+    } else {
+      md += `### Screenshot\n\n`;
+      md += `_Thumbnail generation failed — see the **screenshots** artifact for the full image._\n`;
+    }
   } else {
     md += `_No screenshot captured._\n`;
   }
