@@ -272,7 +272,7 @@ async function promptRestart(setControlsStyle) {
   vscode.commands.executeCommand('workbench.action.quit');
 }
 
-async function checkColorTheme() {
+async function checkColorTheme(testMode) {
   // Get the current color theme and target theme from configuration files
   const currentTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
 
@@ -973,7 +973,7 @@ function activate(context) {
   }
 
   async function applyPostInstallSettings() {
-    await checkColorTheme();
+    await checkColorTheme(testMode);
     await checkElectronDeprecatedType();
     await setLocalConfig(true, {
       workbenchHtmlPath: HTMLFile,

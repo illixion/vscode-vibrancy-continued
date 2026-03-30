@@ -1,3 +1,8 @@
+# 1.1.67
+
+* Core:
+  * Update checkColorTheme function to accept testMode parameter, fixes error on enabling
+
 # 1.1.66
 
 * Core:
