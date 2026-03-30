@@ -2,16 +2,10 @@
  * E2E test for VSCode Vibrancy Continued.
  *
  * Downloads a real VSCode instance, installs the extension with testMode enabled,
- * verifies it installs without crashing, and captures a screenshot while running.
+ * verifies it installs without crashing, and captures screenshots at each stage.
  *
- * Usage:
- *   node test/e2e/run-e2e.js
- *
- * Requirements:
- *   npm install --save-dev @vscode/test-electron
- *
- * On Linux CI, run under xvfb:
- *   xvfb-run node test/e2e/run-e2e.js
+ * Usage:   node test/e2e/run-e2e.js
+ * Linux:   xvfb-run node test/e2e/run-e2e.js
  */
 
 const path = require('path');
@@ -19,19 +13,38 @@ const fs = require('fs');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
 
-/**
- * Get the vibrancy config directory (must match getConfigDir in file-transforms.js).
- */
 function getConfigDir() {
   const homedir = os.homedir();
   const name = 'vscode-vibrancy-continued';
-  if (process.platform === 'darwin') {
-    return path.join(homedir, 'Library', 'Preferences', name);
-  }
-  if (process.platform === 'win32') {
-    return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
-  }
+  if (process.platform === 'darwin') return path.join(homedir, 'Library', 'Preferences', name);
+  if (process.platform === 'win32') return path.join(process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming'), name, 'Config');
   return path.join(process.env.XDG_CONFIG_HOME || path.join(homedir, '.config'), name);
+}
+
+/**
+ * Find the VSCode app resource directory (where main.js lives) from the executable path.
+ */
+function findAppDir(vscodeExecutablePath) {
+  // @vscode/test-electron downloads to .vscode-test/vscode-<platform>-<version>/
+  // macOS: ...Visual Studio Code.app/Contents/Resources/app/
+  // Linux: ...resources/app/
+  // Windows: ...resources/app/
+  const candidates = [];
+  if (process.platform === 'darwin') {
+    // Go up from MacOS/Electron to Contents/Resources/app
+    candidates.push(path.join(path.dirname(vscodeExecutablePath), '..', 'Resources', 'app'));
+  }
+  // Linux/Windows: resources/app is sibling to the executable's parent
+  candidates.push(path.join(path.dirname(vscodeExecutablePath), 'resources', 'app'));
+  candidates.push(path.join(path.dirname(vscodeExecutablePath), '..', 'resources', 'app'));
+
+  for (const candidate of candidates) {
+    const resolved = path.resolve(candidate);
+    if (fs.existsSync(path.join(resolved, 'main.js'))) {
+      return resolved;
+    }
+  }
+  return null;
 }
 
 async function main() {
@@ -41,51 +54,69 @@ async function main() {
   fs.mkdirSync(screenshotDir, { recursive: true });
 
   const greenCssPath = path.join(__dirname, 'test-green.css');
+  let testModeFile;
+  let userDataDir;
+  let tmpWorkspace;
+  let vsixPath;
 
-  console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
-
-  // Step 1: Download VSCode
-  console.log('[1/6] Downloading VSCode...');
-  const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
-  const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
-  console.log(`  VSCode: ${vscodeExecutablePath}`);
-  console.log(`  CLI: ${cliPath}`);
-
-  // Step 2: Create test-mode flag file in the extension's config directory
-  console.log('\n[2/6] Enabling test mode...');
-  const configDir = getConfigDir();
-  const testModeFile = path.join(configDir, 'test-mode');
-  fs.mkdirSync(configDir, { recursive: true });
-  fs.writeFileSync(testModeFile, `e2e-test-${Date.now()}`);
-  console.log(`  Test mode file: ${testModeFile}`);
-
-  // Step 3: Create a temporary user-data-dir with settings
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-userdata-'));
-  const userSettingsDir = path.join(userDataDir, 'User');
-  fs.mkdirSync(userSettingsDir, { recursive: true });
-  fs.writeFileSync(path.join(userSettingsDir, 'settings.json'), JSON.stringify({
-    // Use "Custom theme" with a green CSS import — relies on existing features only
-    "vscode_vibrancy.theme": "Custom theme (use imports)",
-    "vscode_vibrancy.imports": [greenCssPath],
-    "workbench.colorTheme": "Default Dark+",
-    // Disable workspace trust dialog — it blocks extension activation entirely
-    "security.workspace.trust.enabled": false,
-    // Suppress first-run experience and tips
-    "workbench.welcome.enabled": false,
-    "workbench.startupEditor": "none",
-    "workbench.tips.enabled": false,
-    // Disable telemetry and update checks
-    "telemetry.telemetryLevel": "off",
-    "update.mode": "none",
-    "extensions.autoUpdate": false,
-  }, null, 2));
-  console.log(`  User data dir: ${userDataDir}`);
-
-  // Step 4: Package and install the extension
-  console.log('\n[3/6] Packaging and installing extension...');
-  const extensionDir = path.resolve(__dirname, '..', '..');
-  const vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
   try {
+    console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
+
+    // --- Download VSCode ---
+    console.log('[1/7] Downloading VSCode...');
+    const vscodeExecutablePath = await downloadAndUnzipVSCode('stable');
+    const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
+    console.log(`  Executable: ${vscodeExecutablePath}`);
+    console.log(`  CLI: ${cliPath}`);
+
+    const appDir = findAppDir(vscodeExecutablePath);
+    if (!appDir) {
+      console.error('  ERROR: Could not find VSCode app directory (main.js)');
+      process.exit(1);
+    }
+    console.log(`  App dir: ${appDir}`);
+
+    const mainJsPath = path.join(appDir, 'main.js');
+    // Determine which HTML file exists
+    const htmlCandidates = [
+      path.join(appDir, 'vs/code/electron-browser/workbench/workbench.html'),
+      path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html'),
+      path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html'),
+    ];
+    const htmlPath = htmlCandidates.find(p => fs.existsSync(p));
+    console.log(`  main.js: ${mainJsPath} (exists: ${fs.existsSync(mainJsPath)})`);
+    console.log(`  HTML: ${htmlPath || 'NOT FOUND'}`);
+
+    // --- Enable test mode ---
+    console.log('\n[2/7] Enabling test mode...');
+    const configDir = getConfigDir();
+    testModeFile = path.join(configDir, 'test-mode');
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(testModeFile, `e2e-test-${Date.now()}`);
+    console.log(`  Test mode file: ${testModeFile}`);
+
+    // --- User settings ---
+    userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-userdata-'));
+    const userSettingsDir = path.join(userDataDir, 'User');
+    fs.mkdirSync(userSettingsDir, { recursive: true });
+    fs.writeFileSync(path.join(userSettingsDir, 'settings.json'), JSON.stringify({
+      "vscode_vibrancy.theme": "Custom theme (use imports)",
+      "vscode_vibrancy.imports": [greenCssPath],
+      "workbench.colorTheme": "Default Dark+",
+      "security.workspace.trust.enabled": false,
+      "workbench.welcome.enabled": false,
+      "workbench.startupEditor": "none",
+      "workbench.tips.enabled": false,
+      "telemetry.telemetryLevel": "off",
+      "update.mode": "none",
+      "extensions.autoUpdate": false,
+    }, null, 2));
+    console.log(`  User data dir: ${userDataDir}`);
+
+    // --- Package and install ---
+    console.log('\n[3/7] Packaging and installing extension...');
+    const extensionDir = path.resolve(__dirname, '..', '..');
+    vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
     execSync(
       `npx @vscode/vsce package --out "${vsixPath}" --no-dependencies --allow-star-activation`,
       { cwd: extensionDir, stdio: 'inherit', timeout: 180000 }
@@ -95,69 +126,101 @@ async function main() {
       `"${cliPath}" --install-extension "${vsixPath}" --user-data-dir "${userDataDir}" --force`,
       { stdio: 'inherit', timeout: 120000 }
     );
-  } catch (err) {
-    console.error('Failed to package/install extension:', err.message);
-    process.exit(1);
+
+    // Verify the extension is actually installed
+    const extensionsDir = path.join(userDataDir, 'extensions');
+    if (fs.existsSync(extensionsDir)) {
+      const installed = fs.readdirSync(extensionsDir);
+      console.log(`  Installed extensions: ${installed.join(', ') || '(none)'}`);
+    } else {
+      console.log('  WARNING: extensions directory does not exist');
+    }
+
+    // --- Snapshot main.js BEFORE first launch ---
+    const mainJsBefore = fs.readFileSync(mainJsPath, 'utf-8');
+    const htmlBefore = htmlPath ? fs.readFileSync(htmlPath, 'utf-8') : '';
+    console.log(`\n  main.js before: ${mainJsBefore.length} bytes, has vibrancy markers: ${mainJsBefore.includes('VSCODE-VIBRANCY-START')}`);
+    console.log(`  HTML before: ${htmlBefore.length} bytes, has CSP patch: ${htmlBefore.includes('VscodeVibrancyContinued')}`);
+
+    // --- First launch ---
+    console.log('\n[4/7] First launch (extension should install vibrancy)...');
+    tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
+    const screenshot1 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-1-first-launch.png`);
+    const firstExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
+      totalTimeout: 25000,
+      screenshotDelay: 12000,
+      screenshotPath: screenshot1,
+    });
+    console.log(`  Exit code: ${firstExitCode}`);
+
+    // --- Check if files were modified ---
+    console.log('\n[5/7] Checking file modifications...');
+    const mainJsAfter = fs.readFileSync(mainJsPath, 'utf-8');
+    const htmlAfter = htmlPath ? fs.readFileSync(htmlPath, 'utf-8') : '';
+    const mainJsModified = mainJsAfter !== mainJsBefore;
+    const htmlModified = htmlAfter !== htmlBefore;
+    const hasMarkers = mainJsAfter.includes('VSCODE-VIBRANCY-START');
+    const hasCspPatch = htmlAfter.includes('VscodeVibrancyContinued');
+    const runtimeDir = path.join(appDir, 'vscode-vibrancy-runtime-v6');
+    const runtimeExists = fs.existsSync(runtimeDir);
+
+    console.log(`  main.js modified: ${mainJsModified}`);
+    console.log(`  main.js has vibrancy markers: ${hasMarkers}`);
+    console.log(`  HTML modified: ${htmlModified}`);
+    console.log(`  HTML has CSP patch: ${hasCspPatch}`);
+    console.log(`  Runtime dir exists: ${runtimeExists}`);
+    if (runtimeExists) {
+      console.log(`  Runtime contents: ${fs.readdirSync(runtimeDir).join(', ')}`);
+    }
+    console.log(`  main.js after: ${mainJsAfter.length} bytes (was ${mainJsBefore.length})`);
+
+    if (!mainJsModified) {
+      console.log('\n  WARNING: main.js was NOT modified by the extension!');
+      console.log('  The extension may not have activated or may have failed silently.');
+      // Dump the last few lines of main.js to see if there's anything there
+      const lines = mainJsAfter.split('\n');
+      console.log(`  Last 5 lines of main.js:\n    ${lines.slice(-5).join('\n    ')}`);
+    }
+
+    // Check settings.json for any changes made by the extension
+    const settingsAfter = fs.readFileSync(path.join(userSettingsDir, 'settings.json'), 'utf-8');
+    console.log(`  settings.json after first launch (${settingsAfter.length} bytes):`);
+    console.log(`    ${settingsAfter.slice(0, 500).replace(/\n/g, '\n    ')}`);
+
+    // --- Second launch ---
+    console.log('\n[6/7] Second launch (screenshot + crash check)...');
+    const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-second-launch.png`);
+    const secondExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
+      totalTimeout: 25000,
+      screenshotDelay: 12000,
+      screenshotPath: screenshot2,
+    });
+    console.log(`  Exit code: ${secondExitCode}`);
+
+    // --- Results ---
+    console.log('\n[7/7] Results:');
+    const nocrash = secondExitCode === 0 || secondExitCode === null;
+    const filesModified = hasMarkers || hasCspPatch;
+
+    console.log(`  Crash check: ${nocrash ? 'PASS' : 'FAIL'}`);
+    console.log(`  Files modified: ${filesModified ? 'PASS' : 'FAIL'}`);
+
+    const success = nocrash && filesModified;
+    console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
+
+    writeGitHubSummary(success, screenshot2, secondExitCode, { hasMarkers, hasCspPatch, runtimeExists, mainJsModified });
+
+    process.exit(success ? 0 : 1);
+
+  } finally {
+    // Cleanup
+    try { if (testModeFile) fs.unlinkSync(testModeFile); } catch {}
+    try { if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true }); } catch {}
+    try { if (tmpWorkspace) fs.rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
+    try { if (vsixPath) fs.unlinkSync(vsixPath); } catch {}
   }
-
-  // Step 5: First launch — extension activates, test mode auto-installs, then exits
-  console.log('\n[4/6] First launch (extension installs vibrancy)...');
-  const tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
-  const firstLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
-    totalTimeout: 20000,
-  });
-  console.log(`  Exit code: ${firstLaunchExitCode}`);
-
-  // Step 6: Second launch — let it render, capture screenshot while running, then kill
-  console.log('\n[5/6] Second launch (screenshot + crash check)...');
-  const screenshotPath = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-${Date.now()}.png`);
-  const secondLaunchExitCode = await launchVSCode(vscodeExecutablePath, userDataDir, tmpWorkspace, {
-    totalTimeout: 20000,
-    // Wait for the window to fully render before capturing
-    screenshotDelay: 10000,
-    screenshotPath,
-  });
-  console.log(`  Exit code: ${secondLaunchExitCode}`);
-
-  if (fs.existsSync(screenshotPath)) {
-    console.log(`  Screenshot saved: ${screenshotPath}`);
-  } else {
-    console.log('  Screenshot capture failed or not available');
-  }
-
-  // Results
-  console.log('\n[6/6] Results:');
-  const success = secondLaunchExitCode === 0 || secondLaunchExitCode === null;
-  if (success) {
-    console.log('  PASS: VSCode launched successfully after vibrancy install');
-  } else {
-    console.log(`  FAIL: VSCode crashed with exit code ${secondLaunchExitCode}`);
-  }
-
-  // Write GitHub Actions job summary if available
-  writeGitHubSummary(success, screenshotPath, secondLaunchExitCode);
-
-  // Cleanup
-  try { fs.unlinkSync(testModeFile); } catch {}
-  fs.rmSync(userDataDir, { recursive: true, force: true });
-  fs.rmSync(tmpWorkspace, { recursive: true, force: true });
-  try { fs.unlinkSync(vsixPath); } catch {}
-
-  process.exit(success ? 0 : 1);
 }
 
-/**
- * Launch VSCode, optionally capture a screenshot while it's running, then kill it.
- *
- * @param {string} executablePath
- * @param {string} userDataDir
- * @param {string} workspace
- * @param {object} opts
- * @param {number} opts.totalTimeout  - Kill VSCode after this many ms
- * @param {number} [opts.screenshotDelay] - Capture screenshot after this many ms (must be < totalTimeout)
- * @param {string} [opts.screenshotPath] - Where to save the screenshot
- * @returns {Promise<number|null>} Exit code, or null if we killed it (success)
- */
 function launchVSCode(executablePath, userDataDir, workspace, opts) {
   return new Promise((resolve) => {
     const { totalTimeout, screenshotDelay, screenshotPath } = opts;
@@ -172,24 +235,26 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
       workspace,
     ];
 
+    console.log(`  Launching: ${path.basename(executablePath)} ${args.join(' ')}`);
+
     const proc = spawn(executablePath, args, {
       stdio: 'pipe',
       env: { ...process.env, ELECTRON_DISABLE_SANDBOX: '1' },
     });
 
+    let stdout = '';
     let stderr = '';
+    proc.stdout?.on('data', (chunk) => { stdout += chunk.toString(); });
     proc.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
 
     let exited = false;
     proc.on('exit', (code) => {
       exited = true;
-      if (stderr && code !== 0) {
-        console.log(`  stderr: ${stderr.slice(0, 500)}`);
-      }
+      if (stdout.trim()) console.log(`  stdout: ${stdout.slice(0, 500)}`);
+      if (stderr.trim()) console.log(`  stderr: ${stderr.slice(0, 500)}`);
       resolve(code);
     });
 
-    // Capture screenshot while VSCode is still running
     if (screenshotDelay && screenshotPath) {
       setTimeout(() => {
         if (!exited) {
@@ -199,7 +264,6 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
       }, screenshotDelay);
     }
 
-    // Kill after total timeout
     setTimeout(() => {
       if (!exited) {
         proc.kill('SIGTERM');
@@ -214,24 +278,18 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
   });
 }
 
-/**
- * Capture a screenshot of the current display.
- * Tries multiple methods per platform for reliability in CI.
- */
 function captureScreenshot(outputPath) {
   const methods = [];
 
   if (process.platform === 'darwin') {
     methods.push(() => execSync(`screencapture -x "${outputPath}"`, { timeout: 10000 }));
   } else if (process.platform === 'linux') {
-    // xvfb-run provides a virtual X display; import (ImageMagick) captures it
     methods.push(() => execSync(`import -window root "${outputPath}"`, { timeout: 10000 }));
     methods.push(() => execSync(`xwd -root -silent | convert xwd:- png:"${outputPath}"`, { timeout: 10000 }));
     methods.push(() => execSync(`scrot "${outputPath}"`, { timeout: 10000 }));
   } else if (process.platform === 'win32') {
     const escapedPath = outputPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
 
-    // Method 1: CopyFromScreen — works on interactive desktops
     methods.push(() => {
       const psScript = `
 Add-Type -AssemblyName System.Windows.Forms
@@ -250,8 +308,6 @@ $bitmap.Dispose()
       if (out.trim()) console.log(`  ${out.trim()}`);
     });
 
-    // Method 2: Win32 PrintWindow — captures a specific window even without
-    // an interactive desktop session. Finds the VSCode window by title.
     methods.push(() => {
       const psScript = `
 Add-Type @"
@@ -297,7 +353,7 @@ public class ScreenCapture {
     try {
       method();
       if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0) {
-        return; // success
+        return;
       }
     } catch (err) {
       console.log(`  Screenshot method failed: ${err.message.split('\n')[0]}`);
@@ -306,33 +362,28 @@ public class ScreenCapture {
   console.log('  All screenshot methods exhausted');
 }
 
-/**
- * Write a GitHub Actions job summary.
- *
- * Note: GitHub step summaries don't support data: URIs or local images.
- * Screenshots are uploaded as artifacts instead. To get inline images,
- * a future enhancement could use `gh-attach` (gh extension) with a PAT
- * to upload images to a GitHub issue and get a githubusercontent.com URL.
- */
-function writeGitHubSummary(success, screenshotPath, exitCode) {
+function writeGitHubSummary(success, screenshotPath, exitCode, checks) {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
   if (!summaryFile) return;
 
   const platform = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }[process.platform] || process.platform;
   const status = success ? '✅ PASS' : '❌ FAIL';
   const exitInfo = exitCode === null ? 'killed by test (expected)' : `exit code ${exitCode}`;
+  const check = (v) => v ? '✅' : '❌';
 
   let md = `## E2E Test — ${platform}\n\n`;
-  md += `| Result | Exit | Platform |\n`;
-  md += `|--------|------|----------|\n`;
-  md += `| ${status} | ${exitInfo} | ${platform} |\n\n`;
+  md += `| Check | Status |\n`;
+  md += `|-------|--------|\n`;
+  md += `| Overall | ${status} |\n`;
+  md += `| Crash check | ${check(exitCode === 0 || exitCode === null)} (${exitInfo}) |\n`;
+  md += `| main.js modified | ${check(checks.mainJsModified)} |\n`;
+  md += `| Vibrancy markers | ${check(checks.hasMarkers)} |\n`;
+  md += `| CSP patched | ${check(checks.hasCspPatch)} |\n`;
+  md += `| Runtime installed | ${check(checks.runtimeExists)} |\n\n`;
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
     const size = (fs.statSync(screenshotPath).size / 1024).toFixed(1);
-    md += `### Screenshot\n\n`;
-    md += `📸 Screenshot captured (${size} KB) — download the **screenshots-${
-      process.platform === 'win32' ? 'windows-11-arm' : process.platform === 'darwin' ? 'macos-latest' : 'ubuntu-latest'
-    }** artifact to view.\n`;
+    md += `📸 Screenshot captured (${size} KB) — see **screenshots** artifact.\n`;
   } else {
     md += `_No screenshot captured._\n`;
   }
