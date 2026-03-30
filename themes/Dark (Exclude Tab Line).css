@@ -6,14 +6,14 @@
   opacity: 0.6;
 }
 
-.editor-container {
+.editor-container:not(.modal-editor-part .editor-container) {
   background: transparent !important;
 }
 
 .search-view .search-widget .input-box, .search-view .search-widget .input-box .monaco-inputbox,
 .monaco-editor-background,
 .monaco-editor .margin,
-.monaco-workbench .part>.content,
+.monaco-workbench .part:not(.modal-editor-part)>.content,
 .monaco-workbench .editor>.content>.one-editor-silo.editor-one,
 .monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title,
 .monaco-workbench .part>.title,

@@ -7,7 +7,7 @@
   opacity: 0.6;
 }
 
-.editor-container {
+.editor-container:not(.modal-editor-part .editor-container) {
   background: transparent !important;
 }
 
@@ -23,7 +23,7 @@
   > .tab,
 .monaco-editor-background,
 .monaco-editor .margin,
-.monaco-workbench .part > .content,
+.monaco-workbench .part:not(.modal-editor-part) > .content,
 .monaco-workbench .editor > .content > .one-editor-silo.editor-one,
 .monaco-workbench
   .part.editor

@@ -8,7 +8,7 @@ body {
   background: rgba(0, 255, 0, 0.4) !important;
 }
 
-.editor-container,
+.editor-container:not(.modal-editor-part .editor-container),
 .editor-group-container > .tabs,
 .editor-group-container > .tabs .tab {
   background: rgba(0, 255, 0, 0.3) !important;
