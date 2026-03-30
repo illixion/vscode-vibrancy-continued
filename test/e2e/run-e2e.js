@@ -179,35 +179,49 @@ function launchVSCode(executablePath, userDataDir, workspace, opts) {
 
 /**
  * Capture a screenshot of the current display.
+ * Tries multiple methods per platform for reliability in CI.
  */
 function captureScreenshot(outputPath) {
-  try {
-    if (process.platform === 'darwin') {
-      execSync(`screencapture -x "${outputPath}"`, { timeout: 5000 });
-    } else if (process.platform === 'linux') {
-      try {
-        execSync(`import -window root "${outputPath}"`, { timeout: 5000 });
-      } catch {
-        execSync(`gnome-screenshot -f "${outputPath}"`, { timeout: 5000 });
-      }
-    } else if (process.platform === 'win32') {
+  const methods = [];
+
+  if (process.platform === 'darwin') {
+    methods.push(() => execSync(`screencapture -x "${outputPath}"`, { timeout: 10000 }));
+  } else if (process.platform === 'linux') {
+    // xvfb-run provides a virtual X display; import (ImageMagick) captures it
+    methods.push(() => execSync(`import -window root "${outputPath}"`, { timeout: 10000 }));
+    methods.push(() => execSync(`xwd -root -silent | convert xwd:- png:"${outputPath}"`, { timeout: 10000 }));
+    methods.push(() => execSync(`scrot "${outputPath}"`, { timeout: 10000 }));
+  } else if (process.platform === 'win32') {
+    // Windows GH runners have a desktop. Use PowerShell screen capture with
+    // explicit virtual screen bounds to handle multi-monitor / DPI edge cases.
+    const escapedPath = outputPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
+    methods.push(() => {
       const psScript = `
-        Add-Type -AssemblyName System.Windows.Forms
-        Add-Type -AssemblyName System.Drawing
-        [System.Windows.Forms.Screen]::PrimaryScreen | ForEach-Object {
-          $bitmap = New-Object System.Drawing.Bitmap($_.Bounds.Width, $_.Bounds.Height)
-          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-          $graphics.CopyFromScreen($_.Bounds.Location, [System.Drawing.Point]::Empty, $_.Bounds.Size)
-          $bitmap.Save('${outputPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}')
-          $graphics.Dispose()
-          $bitmap.Dispose()
-        }
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
+$bitmap = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+$bitmap.Save('${escapedPath}', [System.Drawing.Imaging.ImageFormat]::Png)
+$graphics.Dispose()
+$bitmap.Dispose()
       `.trim();
-      execSync(`powershell -Command "${psScript}"`, { timeout: 10000 });
-    }
-  } catch (err) {
-    console.log(`  Screenshot capture error: ${err.message}`);
+      execSync(`powershell -NoProfile -Command "${psScript}"`, { timeout: 15000, stdio: 'pipe' });
+    });
   }
+
+  for (const method of methods) {
+    try {
+      method();
+      if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0) {
+        return; // success
+      }
+    } catch (err) {
+      console.log(`  Screenshot method failed: ${err.message.split('\n')[0]}`);
+    }
+  }
+  console.log('  All screenshot methods exhausted');
 }
 
 /**
@@ -221,18 +235,23 @@ function generateThumbnailBase64(screenshotPath) {
       // sips is built into macOS
       execSync(`sips -z 270 480 "${screenshotPath}" --out "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
     } else if (process.platform === 'linux') {
-      // ImageMagick convert — typically available in CI with xvfb
-      execSync(`convert "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
+      try {
+        execSync(`convert "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
+      } catch {
+        execSync(`magick "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
+      }
     } else if (process.platform === 'win32') {
+      const escapedSrc = screenshotPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
+      const escapedDst = thumbPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
       const psScript = `
-        Add-Type -AssemblyName System.Drawing
-        $src = [System.Drawing.Image]::FromFile('${screenshotPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}')
-        $thumb = $src.GetThumbnailImage(480, 270, $null, [IntPtr]::Zero)
-        $thumb.Save('${thumbPath.replace(/\\/g, '\\\\').replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Png)
-        $thumb.Dispose()
-        $src.Dispose()
+Add-Type -AssemblyName System.Drawing
+$src = [System.Drawing.Image]::FromFile('${escapedSrc}')
+$thumb = $src.GetThumbnailImage(480, 270, $null, [IntPtr]::Zero)
+$thumb.Save('${escapedDst}', [System.Drawing.Imaging.ImageFormat]::Png)
+$thumb.Dispose()
+$src.Dispose()
       `.trim();
-      execSync(`powershell -Command "${psScript}"`, { stdio: 'ignore', timeout: 10000 });
+      execSync(`powershell -NoProfile -Command "${psScript}"`, { stdio: 'ignore', timeout: 10000 });
     }
 
     if (fs.existsSync(thumbPath)) {

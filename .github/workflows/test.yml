@@ -47,11 +47,17 @@ jobs:
           node-version: '20'
       - run: npm install
       - run: npm install @vscode/test-electron
+      - name: Install screenshot tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run npm run test:e2e
-      - name: Run E2E tests (non-Linux)
-        if: runner.os != 'Linux'
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" npm run test:e2e
+      - name: Run E2E tests (macOS)
+        if: runner.os == 'macOS'
+        run: npm run test:e2e
+      - name: Run E2E tests (Windows)
+        if: runner.os == 'Windows'
         run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
