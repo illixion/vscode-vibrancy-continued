@@ -243,7 +243,11 @@ function showFatalError(message) {
     }
 }
 
-(async () => {
+// Exported for testing
+module.exports = { restorePreviousSettings, getVSCodeSettingsPath };
+
+// Only run uninstall logic when invoked directly as a script (not when required by tests)
+if (require.main === module) (async () => {
   try {
     const configDir = getConfigDir('vscode-vibrancy-continued');
     const configFilePath = path.join(configDir, 'config.json');
