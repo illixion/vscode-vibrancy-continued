@@ -1,3 +1,8 @@
+# 1.1.69
+
+* Core:
+  * Respect user's `workbench.colorCustomizations` settings for background colors instead of overriding them, allowing users to customize the Vibrancy theme further
+
 # 1.1.68
 
 * Themes:
