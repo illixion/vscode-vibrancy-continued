@@ -1167,7 +1167,12 @@ function activate(context) {
   if (checkRuntimeUpdate(currentVersion, lastVersion)) {
     if (testMode) {
       runExclusive(() => Update()).then(() => {
-        writeTestSignal('success', 'Install completed, restart needed');
+        // Include diagnostic info about the runtime directory
+        const runtimeFiles = require('fs').existsSync(runtimeDir)
+          ? require('fs').readdirSync(runtimeDir).join(', ')
+          : 'DIR NOT FOUND';
+        const pendingCopies = typeof pendingNodeCopies !== 'undefined' ? pendingNodeCopies.length : 0;
+        writeTestSignal('success', `Install completed. Runtime: [${runtimeFiles}]. Pending .node copies: ${pendingCopies}. appDir: ${appDir}`);
       }).catch((err) => {
         writeTestSignal('error', String(err && err.message || err));
       });
