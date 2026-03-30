@@ -225,48 +225,12 @@ $bitmap.Dispose()
 }
 
 /**
- * Generate a small PNG thumbnail and return it as base64.
- * Uses native OS tools to avoid heavy dependencies.
- */
-function generateThumbnailBase64(screenshotPath) {
-  const thumbPath = screenshotPath.replace('.png', '-thumb.png');
-  try {
-    if (process.platform === 'darwin') {
-      // sips is built into macOS
-      execSync(`sips -z 270 480 "${screenshotPath}" --out "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
-    } else if (process.platform === 'linux') {
-      try {
-        execSync(`convert "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
-      } catch {
-        execSync(`magick "${screenshotPath}" -resize 480x270 "${thumbPath}"`, { stdio: 'ignore', timeout: 10000 });
-      }
-    } else if (process.platform === 'win32') {
-      const escapedSrc = screenshotPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
-      const escapedDst = thumbPath.replace(/\\/g, '\\\\').replace(/'/g, "''");
-      const psScript = `
-Add-Type -AssemblyName System.Drawing
-$src = [System.Drawing.Image]::FromFile('${escapedSrc}')
-$thumb = $src.GetThumbnailImage(480, 270, $null, [IntPtr]::Zero)
-$thumb.Save('${escapedDst}', [System.Drawing.Imaging.ImageFormat]::Png)
-$thumb.Dispose()
-$src.Dispose()
-      `.trim();
-      execSync(`powershell -NoProfile -Command "${psScript}"`, { stdio: 'ignore', timeout: 10000 });
-    }
-
-    if (fs.existsSync(thumbPath)) {
-      const base64 = fs.readFileSync(thumbPath, 'base64');
-      fs.unlinkSync(thumbPath);
-      return base64;
-    }
-  } catch (err) {
-    console.log(`  Thumbnail generation error: ${err.message}`);
-  }
-  return null;
-}
-
-/**
- * Write a GitHub Actions job summary with inline screenshot.
+ * Write a GitHub Actions job summary.
+ *
+ * Note: GitHub step summaries don't support data: URIs or local images.
+ * Screenshots are uploaded as artifacts instead. To get inline images,
+ * a future enhancement could use `gh-attach` (gh extension) with a PAT
+ * to upload images to a GitHub issue and get a githubusercontent.com URL.
  */
 function writeGitHubSummary(success, screenshotPath, exitCode) {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
@@ -282,15 +246,11 @@ function writeGitHubSummary(success, screenshotPath, exitCode) {
   md += `| ${status} | ${exitInfo} | ${platform} |\n\n`;
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
-    const thumbBase64 = generateThumbnailBase64(screenshotPath);
-    if (thumbBase64) {
-      md += `### Screenshot\n\n`;
-      md += `<img src="data:image/png;base64,${thumbBase64}" width="480" alt="VSCode E2E screenshot — ${platform}">\n\n`;
-      md += `_Full-resolution image in the **screenshots** artifact._\n`;
-    } else {
-      md += `### Screenshot\n\n`;
-      md += `_Thumbnail generation failed — see the **screenshots** artifact for the full image._\n`;
-    }
+    const size = (fs.statSync(screenshotPath).size / 1024).toFixed(1);
+    md += `### Screenshot\n\n`;
+    md += `📸 Screenshot captured (${size} KB) — download the **screenshots-${
+      process.platform === 'win32' ? 'windows-11-arm' : process.platform === 'darwin' ? 'macos-latest' : 'ubuntu-latest'
+    }** artifact to view.\n`;
   } else {
     md += `_No screenshot captured._\n`;
   }

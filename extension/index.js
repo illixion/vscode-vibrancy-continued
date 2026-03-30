@@ -298,6 +298,12 @@ async function checkColorTheme() {
 
   // Show a message to the user if the current color theme doesn't match the target theme
   if (!themesMatch) {
+    if (testMode) {
+      // In test mode, force-set the color theme without prompting
+      await vscode.workspace.getConfiguration().update("workbench.colorTheme", targetTheme, vscode.ConfigurationTarget.Global);
+      return;
+    }
+
     const message = localize('messages.recommendedColorTheme')
       .replace('%1', currentColorTheme)
       .replace('%2', targetTheme);
@@ -346,6 +352,10 @@ async function checkElectronDeprecatedType() {
 function activate(context) {
   const testMode = vscode.workspace.getConfiguration("vscode_vibrancy").get("testMode", false);
   console.log('vscode-vibrancy is active!' + (testMode ? ' (test mode)' : ''));
+
+  if (testMode) {
+    vscode.window.showInformationMessage('Vibrancy Continued: Test mode active');
+  }
 
   var appDir;
   try {
