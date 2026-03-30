@@ -50,8 +50,15 @@ async function main() {
     console.log(`  Executable: ${vscodeExe}`);
     console.log(`  CLI: ${cliPath}`);
 
-    // --- Step 2: Prepare user-data-dir with settings ---
-    console.log('\n[2/7] Preparing settings...');
+    // --- Step 2: Enable test mode BEFORE extension ever runs ---
+    console.log('\n[2/7] Enabling test mode...');
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(testModeFile, `e2e-${Date.now()}`);
+    try { fs.unlinkSync(signalFile); } catch {}
+    console.log(`  Test mode file: ${testModeFile}`);
+
+    // --- Step 3: Prepare user-data-dir with settings ---
+    console.log('\n[3/7] Preparing settings...');
     userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-userdata-'));
     const userSettingsDir = path.join(userDataDir, 'User');
     fs.mkdirSync(userSettingsDir, { recursive: true });
@@ -69,8 +76,8 @@ async function main() {
     }, null, 2));
     console.log(`  User data dir: ${userDataDir}`);
 
-    // --- Step 3: Package and install extension ---
-    console.log('\n[3/7] Packaging and installing extension...');
+    // --- Step 4: Package and install extension ---
+    console.log('\n[4/7] Packaging and installing extension...');
     const extensionDir = path.resolve(__dirname, '..', '..');
     vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
     execSync(
@@ -89,15 +96,7 @@ async function main() {
       console.log(`  Installed: ${fs.readdirSync(extensionsDir).join(', ')}`);
     }
 
-    // --- Step 4: Enable test mode ---
-    console.log('\n[4/7] Enabling test mode...');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(testModeFile, `e2e-${Date.now()}`);
-    // Clear any stale signal
-    try { fs.unlinkSync(signalFile); } catch {}
-    console.log(`  Test mode file: ${testModeFile}`);
-
-    // --- Step 5: First launch — extension installs vibrancy ---
+    // --- Step 5: First launch — extension activates, sees test-mode, auto-installs ---
     console.log('\n[5/7] First launch (extension installs vibrancy)...');
     tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
     const screenshot1 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-1-install.png`);
