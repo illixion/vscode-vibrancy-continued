@@ -58,6 +58,16 @@ jobs:
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" npm run test:e2e
+      - name: Grant screen recording permission (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true  # Does not block screenshots if not granted
+        run: |
+          # Pre-grant screen recording permission so screencapture doesn't
+          # trigger a blocking privacy dialog after vibrancy modifies window compositing
+          DB="/Library/Application Support/com.apple.TCC/TCC.db"
+          if [ -f "$DB" ]; then
+            sudo sqlite3 "$DB" "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES ('kTCCServiceScreenCapture', '/usr/sbin/screencapture', 1, 2, 0, 1);" 2>/dev/null || true
+          fi
       - name: Run E2E tests (macOS)
         if: runner.os == 'macOS'
         run: npm run test:e2e
