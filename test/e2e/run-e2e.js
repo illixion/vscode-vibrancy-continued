@@ -66,6 +66,9 @@ async function main() {
       "vscode_vibrancy.theme": "Custom theme (use imports)",
       "vscode_vibrancy.imports": [greenCssPath],
       "workbench.colorTheme": "Default Dark+",
+      // Pin dark theme so uninstall restores to dark (not system default which may be light)
+      "window.systemColorTheme": "dark",
+      "window.autoDetectColorScheme": false,
       "security.workspace.trust.enabled": false,
       "workbench.welcome.enabled": false,
       "workbench.startupEditor": "none",
