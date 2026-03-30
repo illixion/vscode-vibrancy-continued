@@ -281,28 +281,8 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
     if (screenshotDelay && screenshotPath) {
       setTimeout(() => {
         if (!exited) {
-          // Bring VSCode to the foreground on Windows (Start Menu or other
-          // windows may be covering it)
-          if (process.platform === 'win32') {
-            try {
-              runPsScript([
-                `Add-Type @"`,
-                `using System;`,
-                `using System.Runtime.InteropServices;`,
-                `public class FocusHelper {`,
-                `    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);`,
-                `    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);`,
-                `}`,
-                `"@`,
-                `$p = Get-Process -Name Code -ErrorAction SilentlyContinue | Select-Object -First 1`,
-                `if ($p -and $p.MainWindowHandle -ne [IntPtr]::Zero) {`,
-                `    [FocusHelper]::ShowWindow($p.MainWindowHandle, 9)  # SW_RESTORE`,
-                `    [FocusHelper]::SetForegroundWindow($p.MainWindowHandle)`,
-                `    Start-Sleep -Milliseconds 500`,
-                `}`,
-              ].join('\r\n'));
-            } catch {}
-          }
+          // No special pre-screenshot action needed — on Windows we capture
+          // the VSCode window directly via PrintWindow (not the whole screen)
           console.log('  Capturing screenshot...');
           captureScreenshot(screenshotPath);
         }
@@ -354,6 +334,39 @@ function captureScreenshot(outputPath) {
   } else if (process.platform === 'win32') {
     const psPath = outputPath.replace(/'/g, "''");
 
+    // Method 1: Capture just the VSCode window via PrintWindow — avoids
+    // Start Menu, WSL terminal, or any other window covering it
+    methods.push(() => runPsScript([
+      `Add-Type @"`,
+      `using System;`,
+      `using System.Runtime.InteropServices;`,
+      `using System.Drawing;`,
+      `using System.Drawing.Imaging;`,
+      `public class WindowCapture {`,
+      `    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);`,
+      `    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);`,
+      `    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }`,
+      `    public static void Capture(IntPtr hWnd, string path) {`,
+      `        RECT r; GetWindowRect(hWnd, out r);`,
+      `        int w = r.R - r.L, h = r.B - r.T;`,
+      `        if (w <= 0 || h <= 0) throw new Exception("Window " + w + "x" + h);`,
+      `        var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);`,
+      `        var g = Graphics.FromImage(bmp);`,
+      `        PrintWindow(hWnd, g.GetHdc(), 2);`,
+      `        g.ReleaseHdc();`,
+      `        g.Dispose();`,
+      `        bmp.Save(path, ImageFormat.Png);`,
+      `        bmp.Dispose();`,
+      `    }`,
+      `}`,
+      `"@`,
+      `$p = Get-Process -Name Code -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1`,
+      `if (-not $p) { throw "No Code process with a visible window" }`,
+      `Write-Host "Capturing Code window (PID $($p.Id), handle $($p.MainWindowHandle))"`,
+      `[WindowCapture]::Capture($p.MainWindowHandle, '${psPath}')`,
+    ].join('\r\n')));
+
+    // Method 2: Full screen capture as fallback
     methods.push(() => {
       const out = runPsScript([
         `Add-Type -AssemblyName System.Windows.Forms`,
@@ -370,43 +383,6 @@ function captureScreenshot(outputPath) {
       ].join('\r\n'));
       if (out.trim()) console.log(`  ${out.trim()}`);
     });
-
-    methods.push(() => runPsScript([
-      `Add-Type @"`,
-      `using System;`,
-      `using System.Runtime.InteropServices;`,
-      `using System.Drawing;`,
-      `using System.Drawing.Imaging;`,
-      `public class ScreenCapture {`,
-      `    [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();`,
-      `    [DllImport("user32.dll")] static extern IntPtr GetWindowDC(IntPtr hWnd);`,
-      `    [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);`,
-      `    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleDC(IntPtr hdc);`,
-      `    [DllImport("gdi32.dll")] static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int w, int h);`,
-      `    [DllImport("gdi32.dll")] static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);`,
-      `    [DllImport("gdi32.dll")] static extern bool BitBlt(IntPtr hdcDst, int x1, int y1, int w, int h, IntPtr hdcSrc, int x2, int y2, int op);`,
-      `    [DllImport("gdi32.dll")] static extern bool DeleteDC(IntPtr hdc);`,
-      `    [DllImport("gdi32.dll")] static extern bool DeleteObject(IntPtr obj);`,
-      `    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out RECT r);`,
-      `    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }`,
-      `    public static void Capture(string path) {`,
-      `        IntPtr desk = GetDesktopWindow();`,
-      `        RECT r; GetWindowRect(desk, out r);`,
-      `        int w = r.R - r.L, h = r.B - r.T;`,
-      `        if (w <= 0 || h <= 0) throw new Exception("Desktop " + w + "x" + h);`,
-      `        IntPtr hdc = GetWindowDC(desk);`,
-      `        IntPtr mdc = CreateCompatibleDC(hdc);`,
-      `        IntPtr bmp = CreateCompatibleBitmap(hdc, w, h);`,
-      `        SelectObject(mdc, bmp);`,
-      `        BitBlt(mdc, 0, 0, w, h, hdc, r.L, r.T, 0x00CC0020);`,
-      `        var img = Image.FromHbitmap(bmp);`,
-      `        img.Save(path, ImageFormat.Png);`,
-      `        img.Dispose(); DeleteObject(bmp); DeleteDC(mdc); ReleaseDC(desk, hdc);`,
-      `    }`,
-      `}`,
-      `"@`,
-      `[ScreenCapture]::Capture('${psPath}')`,
-    ].join('\r\n')));
   }
 
   for (const method of methods) {
