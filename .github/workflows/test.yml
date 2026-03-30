@@ -39,6 +39,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # To use self-hosted runners with a real desktop for reliable screenshots,
+        # replace entries with your self-hosted labels, e.g.:
+        #   os: [self-hosted-linux, self-hosted-macos, self-hosted-windows]
+        # Self-hosted runners need: Node.js 20+, git, and a desktop session.
+        # On Linux self-hosted: also install imagemagick.
         os: [ubuntu-latest, macos-latest, windows-11-arm]
     steps:
       - uses: actions/checkout@v4
