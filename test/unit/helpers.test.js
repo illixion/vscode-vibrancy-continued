@@ -1,3 +1,4 @@
+const path = require('path');
 const {
   deepEqual,
   isPrimitive,
@@ -147,6 +148,6 @@ describe('getConfigDir', () => {
     const dir = getConfigDir('test-app');
     expect(dir).toContain('test-app');
     expect(dir).toContain('Config');
-    expect(dir).toContain('/fake/appdata');
+    expect(dir).toContain(path.join('fake', 'appdata'));
   });
 });
