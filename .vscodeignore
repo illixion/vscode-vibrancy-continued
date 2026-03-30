@@ -12,3 +12,6 @@ vitest.config.mjs
 CLAUDE.md
 binding.gyp.dist
 nls-schema.json
+native/vibrancy.cc
+native/displayconfig.cc
+!native/prebuilt/**
