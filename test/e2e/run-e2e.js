@@ -51,16 +51,22 @@ async function main() {
   }, null, 2));
   console.log(`  User data dir: ${userDataDir}`);
 
-  // Step 3: Install the extension
-  console.log('\n[2/6] Installing extension...');
+  // Step 3: Package and install the extension
+  console.log('\n[2/6] Packaging and installing extension...');
   const extensionDir = path.resolve(__dirname, '..', '..');
+  const vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
   try {
     execSync(
-      `"${cliPath}" --install-extension "${extensionDir}" --user-data-dir "${userDataDir}" --force`,
+      `npx @vscode/vsce package --out "${vsixPath}" --no-dependencies --allow-star-activation`,
+      { cwd: extensionDir, stdio: 'inherit', timeout: 60000 }
+    );
+    console.log(`  Packaged: ${vsixPath}`);
+    execSync(
+      `"${cliPath}" --install-extension "${vsixPath}" --user-data-dir "${userDataDir}" --force`,
       { stdio: 'inherit', timeout: 60000 }
     );
   } catch (err) {
-    console.error('Failed to install extension:', err.message);
+    console.error('Failed to package/install extension:', err.message);
     process.exit(1);
   }
 
@@ -96,6 +102,7 @@ async function main() {
   // Cleanup
   fs.rmSync(userDataDir, { recursive: true, force: true });
   fs.rmSync(tmpWorkspace, { recursive: true, force: true });
+  try { fs.unlinkSync(vsixPath); } catch {}
 
   process.exit(success ? 0 : 1);
 }

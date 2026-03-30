@@ -44,8 +44,10 @@ describe('generateNewJS', () => {
 
   it('includes the correct runtime path as file URL', () => {
     const original = loadFixture('main.js');
-    const result = generateNewJS(original, '/app', {}, '/some/path/index.mjs');
-    expect(result).toContain('file:///some/path/index.mjs');
+    const runtimePath = path.resolve('/some/path/index.mjs');
+    const result = generateNewJS(original, '/app', {}, runtimePath);
+    const { pathToFileURL } = require('url');
+    expect(result).toContain(pathToFileURL(runtimePath).href);
   });
 });
 
