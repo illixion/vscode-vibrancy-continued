@@ -200,11 +200,15 @@ async function promptRestart(setControlsStyle) {
           `WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ""Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File """"${psPath.replace(/"/g, '""')}""""' -Verb RunAs -WindowStyle Hidden -Wait""", 0, True`,
         );
       } else {
-        // No elevation needed — copy directly via FSO
-        nodeCopyLines.push(`Set fso = CreateObject("Scripting.FileSystemObject")`);
-        for (const { src, dest } of pendingNodeCopies) {
-          nodeCopyLines.push(`fso.CopyFile "${src.replace(/"/g, '""')}", "${dest.replace(/"/g, '""')}", True`);
-        }
+        // No elevation needed — copy via PowerShell (handles Unicode paths
+        // correctly, unlike VBScript's FileSystemObject which is ANSI-only).
+        const psCommands = pendingNodeCopies.map(({ src, dest }) =>
+          `Copy-Item -Path '${src.replace(/'/g, "''")}' -Destination '${dest.replace(/'/g, "''")}' -Force`
+        );
+        const psInline = psCommands.join('; ');
+        nodeCopyLines.push(
+          `WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ""${psInline.replace(/"/g, '""')}""", 0, True`,
+        );
       }
     }
 
@@ -224,7 +228,11 @@ async function promptRestart(setControlsStyle) {
       `CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName`,
     ].join('\r\n');
     const vbsPath = path.join(os.tmpdir(), 'vibrancy-restart.vbs');
-    require('fs').writeFileSync(vbsPath, vbsScript);
+    // Write as UTF-16LE with BOM so wscript.exe correctly handles Unicode
+    // paths (e.g. non-ASCII usernames) instead of misinterpreting UTF-8.
+    const vbsBom = Buffer.from([0xFF, 0xFE]);
+    const vbsContent = Buffer.from(vbsScript, 'utf16le');
+    require('fs').writeFileSync(vbsPath, Buffer.concat([vbsBom, vbsContent]));
     spawn('wscript', [vbsPath], {
       detached: true,
       stdio: 'ignore',
@@ -427,23 +435,53 @@ function activate(context) {
 
   async function installRuntimeWin(writer) {
     if (fs.existsSync(runtimeDir)) {
-      await writer.rmdir(runtimeDir);
+      try {
+        await writer.rmdir(runtimeDir);
+      } catch (err) {
+        // On Windows, locked .node files may prevent full deletion.
+        // Continue — copyDir will overwrite unlocked files, and locked
+        // .node files will be handled by the deferred copy below.
+        if (err.code !== 'EBUSY' && err.code !== 'EPERM') {
+          throw err;
+        }
+      }
     }
     await writer.mkdir(runtimeDir);
     await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
 
-    // .node files are locked by the running VSCode process — skip them here
-    // and defer to the restart script which copies them after VSCode exits.
+    // .node files may be locked by the running VSCode process on Windows.
+    // Try to copy them directly first; if locked (EBUSY/EPERM), defer to
+    // the restart script which copies them after VSCode exits.
+    // When elevation is required, the staged flush() also runs while VSCode
+    // is active, so .node files must always be deferred in that case.
     pendingNodeCopies = [];
     const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
     if (fs.existsSync(nativePrebuiltDir)) {
       const files = fs.readdirSync(nativePrebuiltDir);
       for (const file of files) {
         if (file.endsWith('.node')) {
-          pendingNodeCopies.push({
-            src: path.join(nativePrebuiltDir, file),
-            dest: path.join(runtimeDir, file),
-          });
+          if (writer.requiresElevation) {
+            pendingNodeCopies.push({
+              src: path.join(nativePrebuiltDir, file),
+              dest: path.join(runtimeDir, file),
+            });
+          } else {
+            try {
+              await writer.copyFile(
+                path.join(nativePrebuiltDir, file),
+                path.join(runtimeDir, file)
+              );
+            } catch (err) {
+              if (err.code === 'EBUSY' || err.code === 'EPERM') {
+                pendingNodeCopies.push({
+                  src: path.join(nativePrebuiltDir, file),
+                  dest: path.join(runtimeDir, file),
+                });
+              } else {
+                throw err;
+              }
+            }
+          }
         } else {
           await writer.copyFile(
             path.join(nativePrebuiltDir, file),
