@@ -52,22 +52,24 @@ jobs:
           node-version: '20'
       - run: npm install
       - run: npm install @vscode/test-electron
+      - name: Build native modules (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          npm install -g node-gyp
+          npm install node-addon-api
+          mv binding.gyp.dist binding.gyp
+          npm run build-win10
+          mkdir -p native/prebuilt
+          cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
+          cp build/Release/displayconfig.node native/prebuilt/displayconfig-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
+          mv binding.gyp binding.gyp.dist
+        shell: bash
       - name: Install screenshot tools (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y imagemagick
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" npm run test:e2e
-      - name: Grant screen recording permission (macOS)
-        if: runner.os == 'macOS'
-        continue-on-error: true  # Does not block screenshots if not granted
-        run: |
-          # Pre-grant screen recording permission so screencapture doesn't
-          # trigger a blocking privacy dialog after vibrancy modifies window compositing
-          DB="/Library/Application Support/com.apple.TCC/TCC.db"
-          if [ -f "$DB" ]; then
-            sudo sqlite3 "$DB" "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES ('kTCCServiceScreenCapture', '/usr/sbin/screencapture', 1, 2, 0, 1);" 2>/dev/null || true
-          fi
       - name: Run E2E tests (macOS)
         if: runner.os == 'macOS'
         run: npm run test:e2e
