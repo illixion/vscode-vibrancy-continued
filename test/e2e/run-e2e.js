@@ -80,20 +80,24 @@ async function main() {
     console.log('\n[4/7] Packaging and installing extension...');
     const extensionDir = path.resolve(__dirname, '..', '..');
     vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
+    const extensionsInstallDir = path.join(userDataDir, 'extensions');
     execSync(
-      `npx @vscode/vsce package --out "${vsixPath}" --no-dependencies --allow-star-activation`,
+      `npx @vscode/vsce package --out "${vsixPath}" --allow-star-activation`,
       { cwd: extensionDir, stdio: 'inherit', timeout: 180000 }
     );
     console.log(`  Packaged: ${vsixPath}`);
+    // --extensions-dir is required; --user-data-dir alone does NOT control
+    // where extensions get installed (they'd go to ~/.vscode/extensions/)
     execSync(
-      `"${cliPath}" --install-extension "${vsixPath}" --user-data-dir "${userDataDir}" --force`,
+      `"${cliPath}" --install-extension "${vsixPath}" --extensions-dir "${extensionsInstallDir}" --force`,
       { stdio: 'inherit', timeout: 120000 }
     );
 
     // Verify extension installed
-    const extensionsDir = path.join(userDataDir, 'extensions');
-    if (fs.existsSync(extensionsDir)) {
-      console.log(`  Installed: ${fs.readdirSync(extensionsDir).join(', ')}`);
+    if (fs.existsSync(extensionsInstallDir)) {
+      console.log(`  Installed: ${fs.readdirSync(extensionsInstallDir).filter(f => !f.startsWith('.')).join(', ')}`);
+    } else {
+      console.log('  WARNING: extensions directory not created');
     }
 
     // --- Step 5: First launch — extension activates, sees test-mode, auto-installs ---
@@ -101,7 +105,7 @@ async function main() {
     tmpWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-e2e-workspace-'));
     const screenshot1 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-1-install.png`);
 
-    const firstResult = await launchAndWaitForSignal(vscodeExe, userDataDir, tmpWorkspace, {
+    const firstResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
       signalFile,
       signalTimeout: 30000,
       screenshotDelay: 15000,
@@ -126,7 +130,7 @@ async function main() {
     console.log('\n[6/7] Second launch (post-restart, screenshot)...');
     const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-post-restart.png`);
 
-    const secondResult = await launchAndWaitForSignal(vscodeExe, userDataDir, tmpWorkspace, {
+    const secondResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
       signalFile: null, // Don't wait for signal on second launch
       screenshotDelay: 12000,
       screenshotPath: screenshot2,
@@ -160,12 +164,13 @@ async function main() {
 /**
  * Launch VSCode, optionally poll for a signal file, capture a screenshot, then kill.
  */
-function launchAndWaitForSignal(executablePath, userDataDir, workspace, opts) {
+function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, workspace, opts) {
   const { signalFile, signalTimeout, screenshotDelay, screenshotPath, killTimeout } = opts;
 
   return new Promise((resolve) => {
     const args = [
       '--user-data-dir', userDataDir,
+      '--extensions-dir', extensionsDir,
       '--disable-gpu',
       '--no-sandbox',
       '--disable-workspace-trust',
