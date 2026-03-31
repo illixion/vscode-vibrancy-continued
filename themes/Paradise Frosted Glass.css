@@ -84,9 +84,6 @@ body {
     border-top-color: transparent !important;
 }
 
-.monaco-workbench.fullscreen {
-    background-color: var(--primary-bg) !important;
-}
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
     background-color: var(--primary-bg) !important;
@@ -213,4 +210,13 @@ body {
 .monaco-workbench .part.sidebar > .content > div,
 .monaco-workbench .part.sidebar {
     width: calc(100% - var(--border)) !important;
+}
+
+/* Fullscreen */
+
+.monaco-workbench.fullscreen {
+    --primary-bg: #efefef !important;
+    --editor-bg: var(--primary-bg) !important;
+
+    background-color: var(--secondary-bg) !important;
 }

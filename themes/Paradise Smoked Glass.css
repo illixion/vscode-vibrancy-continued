@@ -84,10 +84,6 @@ body {
     border-top-color: transparent !important;
 }
 
-.monaco-workbench.fullscreen {
-    background-color: var(--secondary-bg) !important;
-}
-
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container,
 .monaco-workbench .monaco-scrollable-element .monaco-tree-sticky-container .monaco-tree-sticky-row {
     background-color: var(--primary-bg) !important;
@@ -127,10 +123,6 @@ body {
 
 .monaco-workbench .part.panel.bottom > .content {
     background-color: var(--semi-opaque-dark) !important;
-}
-
-.monaco-workbench.fullscreen .part.panel.bottom > .content {
-    background-color: transparent !important;
 }
 
 #status\.host {
@@ -204,4 +196,17 @@ body {
 .monaco-workbench .part.sidebar > .content > div,
 .monaco-workbench .part.sidebar {
     width: calc(100% - var(--border)) !important;
+}
+
+/* Fullscreen */
+
+.monaco-workbench.fullscreen {
+    --primary-bg: #151515 !important;
+    --editor-bg: var(--primary-bg) !important;
+
+    background-color: var(--secondary-bg) !important;
+
+    .part.panel.bottom > .content {
+        background-color: transparent !important;
+    }
 }
