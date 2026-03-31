@@ -36,7 +36,6 @@
 .monaco-workbench .monaco-list-rows,
 .monaco-workbench .part.sidebar > .title,
 .monaco-workbench .part.auxiliarybar > .title,
-.monaco-workbench .part.editor,
 .monaco-workbench .monaco-inputbox,
 .monaco-workbench .part > .title > .title-actions .start-debug-action-item,
 .monaco-workbench .pane-header,
@@ -54,6 +53,24 @@ body {
     background-color: transparent !important;
 }
 
+.monaco-workbench .part.editor {
+    background: var(--editor-bg) !important;
+}
+
+.monaco-workbench .part.editor .content,
+.monaco-workbench .part.editor .editor-container,
+.monaco-workbench .part.editor .monaco-editor,
+.monaco-workbench .part.editor .monaco-editor-background,
+.monaco-workbench .part.editor .editor-group-container > .tabs,
+.monaco-workbench .part.editor .editor-group-container > .tabs .tab.active,
+.monaco-workbench .part.editor .editor-group-container > .tabs .tab.selected {
+    background: transparent !important;
+}
+
+.monaco-workbench .part.editor .editor-group-container > .tabs .tab {
+    background: var(--semi-opaque-tertiary) !important;
+}
+
 .monaco-workbench
     .part.editor
     .editor-group-container
@@ -62,14 +79,6 @@ body {
     .tab-label
     > .monaco-icon-label-container::after {
     background: transparent !important;
-}
-
-.monaco-workbench .part.editor .editor-container:not(.modal-editor-part .editor-container) {
-    background-color: var(--editor-bg) !important;
-}
-
-.monaco-workbench .part.editor .editor-group-container > .tabs {
-    background-color: var(--editor-bg) !important;
 }
 
 .monaco-workbench .part.editor .scroll-decoration {
