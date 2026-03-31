@@ -15,6 +15,11 @@ jobs:
           node-version: '20'
       - run: npm install
       - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vitest-report
+          path: test-results/vitest-report.xml
 
   e2e-tests:
     runs-on: ${{ matrix.os }}
@@ -64,3 +69,25 @@ jobs:
           name: screenshots-${{ matrix.os }}
           path: test/screenshots/
           if-no-files-found: ignore
+
+  ci:
+    if: always()
+    needs: [tests, e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        if: always()
+        with:
+          name: vitest-report
+          path: test-results/
+      - uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+        if: always()
+        with:
+          report_paths: test-results/vitest-report.xml
+          include_passed: true
+          check_name: Vitest Results
+      - run: |
+          if [[ "${{ needs.tests.result }}" != "success" || "${{ needs.e2e-tests.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
