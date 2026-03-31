@@ -165,7 +165,7 @@ body {
 
 /* Rounded Corners */
 .monaco-workbench .part.editor,
-.monaco-workbench .panel:not(#terminal),
+.monaco-workbench .panel,
 .monaco-list .monaco-list-row,
 .monaco-workbench .sidebar,
 .monaco-workbench .monaco-inputbox,
