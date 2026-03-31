@@ -150,10 +150,8 @@ body {
     background-color: rgb(50, 103, 160, 0.55) !important;
 }
 
-body:has(.codicon-debug-stop){
-    .monaco-workbench .part.statusbar {
-        background-color: rgb(203, 84, 88, .55) !important;
-    }
+.monaco-workbench .part.statusbar:has(.codicon-debug-stop) {
+    background-color: rgb(203, 84, 88, 0.55) !important;
 }
 
 /* Box Shadow */
@@ -167,16 +165,6 @@ body:has(.codicon-debug-stop){
 .monaco-workbench .part.statusbar {
     box-shadow: var(--shadow-inverted) !important;
 }
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content,
-.monaco-workbench .split-view-container:has(> .split-view-view > .part.panel.bottom > .content),
-.monaco-scrollable-element:has(> .split-view-container > .split-view-view > .part.panel.bottom > .content),
-.monaco-workbench .split-view-container:has(> .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content),
-.monaco-workbench .monaco-scrollable-element:has(> .split-view-container > .split-view-view > .monaco-grid-branch-node > .monaco-split-view2 > .monaco-scrollable-element > .split-view-container > .split-view-view > .part.panel.bottom > .content) {
-    overflow: unset !important;
-}
-
 
 /* Rounded Corners */
 .monaco-workbench .part.editor,
@@ -200,13 +188,6 @@ body:has(.codicon-debug-stop){
 .monaco-scrollable-element > canvas.decorationsOverviewRuler,
 .xterm .xterm-scrollable-element > .scrollbar > .slider {
     border-radius: 100px !important;
-}
-
-body:not(:has(.visible > .part.panel.bottom)){
-    .monaco-workbench .part.editor {
-        border-bottom-right-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-    }
 }
 
 .monaco-workbench .part.panel.bottom,
