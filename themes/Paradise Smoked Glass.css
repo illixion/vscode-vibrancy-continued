@@ -150,18 +150,6 @@ body {
     background-color: var(--semi-opaque-dark) !important;
 }
 
-#status\.host {
-    background-color: rgba(178, 197, 152, 0.65) !important;
-}
-
-.monaco-workbench .part.statusbar {
-    background-color: rgba(155, 205, 255, 0.5) !important;
-}
-
-.monaco-workbench .part.statusbar:has(.codicon-debug-stop) {
-    background-color: rgba(255, 136, 140, 0.5) !important;
-}
-
 /* Box Shadow */
 .monaco-workbench .part.editor,
 .monaco-workbench .part.panel.bottom > .content,
