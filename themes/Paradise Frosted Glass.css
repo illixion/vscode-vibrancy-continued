@@ -25,6 +25,14 @@
     --primary-bg: #e8e3e3;
     --secondary-bg: #e8e3e3;
     --editor-bg: #efefefcc;
+
+    --selectable-transition: background-color 0.25s ease-out, color 0.25s ease-out;
+}
+
+.monaco-workbench .part.editor .editor-group-container > .tabs *,
+.monaco-workbench .monaco-action-bar *,
+.monaco-workbench .part.statusbar * {
+    transition: var(--selectable-transition);
 }
 
 /* Transparent Background */
