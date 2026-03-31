@@ -1,34 +1,20 @@
-.composer-bar,
-.composer-bar .conversations,
-.messages.text-search-provider-messages,
-.composer-sticky-human-message::before,
-.monaco-workbench .part.panel .pane-body.integrated-terminal .terminal-outer-container
-.terminal.xterm .xterm-scrollable-element,
-.composer-bar .conversations > div > div > .scrollable-div-container > .monaco-scrollable-element > div:not(.scrollbar) > div > div > div > div,
-.terminal-outer-container,
-.composer-bar .composer-human-message-container,
-.composer-bar .composer-code-block-content .lines-content.monaco-editor-background,
-.composer-bar.editor,
-.composer-bar.editor .conversations,
-.monaco-workbench .unifiedsidebar.part,
-.composer-message-group .composer-rendered-message,
-.composer-bar.editor .composer-sticky-human-message:after,
-.composer-bar.editor .composer-sticky-human-message:before {
-    background-color: transparent !important;
-}
-
-.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div
-.bg-composer-modal-input,
-.composer-bar .full-input-box,
-.composer-bar .composer-human-message,
-.composer-bar .composer-tool-call-container,
-.composer-bar .composer-code-block-content,
-.composer-bar .composer-code-block-header {
-    background-color: var(--semi-opaque) !important;
+.monaco-workbench .part.auxiliarybar .composer-bar.editor,
+.monaco-workbench .part.auxiliarybar .composer-bar .conversations,
+.monaco-workbench .part.auxiliarybar .composer-bar .composer-rendered-message,
+.monaco-workbench .part.auxiliarybar .composer-bar .composer-pane-controls-feedback {
+    background: transparent !important;
 }
 
 .monaco-workbench .part.auxiliarybar.basepanel {
     border: none !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composer-bar .ui-tool-call-card {
+    background-color: var(--semi-opaque-tertiary) !important;
+}
+
+.monaco-workbench .part.auxiliarybar .composer-bar .ui-code-block {
+    background-color: var(--semi-opaque) !important;
 }
 
 .monaco-workbench .part.panel.bottom .title .monaco-action-bar .action-item:not(.checked) .action-label,
@@ -37,12 +23,13 @@
 }
 
 .monaco-workbench .part.panel.bottom .title .monaco-action-bar .action-item:not(.checked) .action-label:hover,
-.monaco-workbench .part.auxiliarybar.basepanel .title .monaco-action-bar .action-item:not(.checked) .action-label:hover {
+.monaco-workbench
+    .part.auxiliarybar.basepanel
+    .title
+    .monaco-action-bar
+    .action-item:not(.checked)
+    .action-label:hover {
     color: var(--semi-opaque-text-secondary) !important;
-}
-
-.composer-bar .composer-code-block-header {
-    border-bottom: 1px solid var(--cursor-stroke-secondary) !important;
 }
 
 .monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div {
@@ -53,7 +40,13 @@
     background-color: var(--semi-opaque) !important;
 }
 
-.monaco-workbench .sidebar > div > div > div:not(.sidebar2-compositeComponent) > div > div:has(div > .sidebar-list-item) {
+.monaco-workbench
+    .sidebar
+    > div
+    > div
+    > div:not(.sidebar2-compositeComponent)
+    > div
+    > div:has(div > .sidebar-list-item) {
     background-color: var(--semi-opaque) !important;
     border-radius: var(--corner) !important;
     border-bottom: 0 solid var(--semi-opaque) !important;
