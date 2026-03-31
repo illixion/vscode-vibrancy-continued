@@ -81,7 +81,7 @@ body {
 }
 
 .monaco-workbench .part.panel.bottom .composite.title {
-    border-top-color: rgba(0, 0, 0, 0) !important;
+    border-top-color: transparent !important;
 }
 
 .monaco-workbench.fullscreen {
@@ -130,7 +130,7 @@ body {
 }
 
 .monaco-workbench.fullscreen .part.panel.bottom > .content {
-    background-color: rgba(5, 5, 5, 0) !important;
+    background-color: transparent !important;
 }
 
 #status\.host {

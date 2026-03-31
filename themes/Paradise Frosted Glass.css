@@ -81,7 +81,7 @@ body {
 }
 
 .monaco-workbench .part.panel.bottom .composite.title {
-    border-top-color: rgba(0, 0, 0, 0) !important;
+    border-top-color: transparent !important;
 }
 
 .monaco-workbench.fullscreen {
@@ -143,15 +143,15 @@ body {
 }
 
 #status\.host {
-    background-color: rgb(127, 180, 126, 0.75) !important;
+    background-color: rgba(127, 180, 126, 0.75) !important;
 }
 
 .monaco-workbench .part.statusbar {
-    background-color: rgb(50, 103, 160, 0.55) !important;
+    background-color: rgba(50, 103, 160, 0.55) !important;
 }
 
 .monaco-workbench .part.statusbar:has(.codicon-debug-stop) {
-    background-color: rgb(203, 84, 88, 0.55) !important;
+    background-color: rgba(203, 84, 88, 0.55) !important;
 }
 
 /* Box Shadow */
