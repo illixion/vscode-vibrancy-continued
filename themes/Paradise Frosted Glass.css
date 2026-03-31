@@ -17,14 +17,14 @@
     --semi-opaque-light-secondary: rgba(255, 255, 255, 0.7);
     --semi-opaque-light-tertiary: rgba(255, 255, 255, 0.3);
     --semi-opaque: var(--semi-opaque-light-secondary);
-    --semi-opaque-secondary: var(--semi-opaque-dark-secondary);
-    --semi-opaque-tertiary: var(--semi-opaque-dark-tertiary);
+    --semi-opaque-secondary: var(--semi-opaque-light-secondary);
+    --semi-opaque-tertiary: var(--semi-opaque-light-tertiary);
     --semi-opaque-text: var(--semi-opaque-dark);
     --semi-opaque-text-secondary: var(--semi-opaque-dark-secondary);
     --semi-opaque-text-tertiary: var(--semi-opaque-dark-tertiary);
     --primary-bg: #e8e3e3;
     --secondary-bg: #e8e3e3;
-    --editor-bg: #e8e3e3cc;
+    --editor-bg: #efefefcc;
 }
 
 /* Transparent Background */
