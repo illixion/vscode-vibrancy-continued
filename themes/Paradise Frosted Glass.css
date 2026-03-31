@@ -225,7 +225,8 @@ body {
 /* Section Borders */
 
 .monaco-workbench .part.sidebar > .content > div,
-.monaco-workbench .part.sidebar {
+.monaco-workbench .part.sidebar,
+.monaco-workbench .part.sidebar .monaco-list-row {
     width: calc(100% - var(--border)) !important;
 }
 
