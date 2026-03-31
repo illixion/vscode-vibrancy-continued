@@ -362,7 +362,7 @@ function captureScreenshot(outputPath) {
       `    }`,
       `}`,
       `"@`,
-      `$p = Get-Process -Name Code -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1`,
+      `$p = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^Code( - Insiders)?$' -and $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1`,
       `if (-not $p) { throw "No Code process with a visible window" }`,
       `Write-Host "Capturing Code window (PID $($p.Id), handle $($p.MainWindowHandle))"`,
       `[WindowCapture]::Capture($p.MainWindowHandle, '${psPath}')`,
