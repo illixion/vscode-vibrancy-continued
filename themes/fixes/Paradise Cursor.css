@@ -51,3 +51,8 @@
     border-radius: var(--corner) !important;
     border-bottom: 0 solid var(--semi-opaque) !important;
 }
+
+.anysphere-icon-button {
+    --vscode-panel-background: var(--semi-opaque) !important;
+    --vscode-editor-background: var(--semi-opaque-tertiary) !important;
+}
