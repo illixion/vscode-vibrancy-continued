@@ -34,8 +34,7 @@ body {
   background: transparent !important;
 }
 
-.monaco-workbench .monaco-list-row:hover,
-.monaco-workbench .monaco-list-row.selected {
+.monaco-workbench .monaco-list-row:hover {
   background-color: rgba(26, 27, 38, 0.3) !important;
 }
 
