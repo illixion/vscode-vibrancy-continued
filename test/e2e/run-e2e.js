@@ -44,8 +44,9 @@ async function main() {
     console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
 
     // --- Step 1: Download VSCode ---
-    console.log('[1/9] Downloading VSCode...');
-    const vscodeExe = await downloadAndUnzipVSCode('stable');
+    const vscodeVersion = process.env.VSCODE_VERSION || 'stable';
+    console.log(`[1/9] Downloading VSCode (${vscodeVersion})...`);
+    const vscodeExe = await downloadAndUnzipVSCode(vscodeVersion);
     const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExe);
     console.log(`  Executable: ${vscodeExe}`);
     console.log(`  CLI: ${cliPath}`);

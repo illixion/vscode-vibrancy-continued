@@ -4,6 +4,15 @@ on:
     branches: [main, development]
   pull_request:
     branches: [main, development]
+  schedule:
+    # Daily at 08:00 UTC — catches VS Code Insiders updates (released ~daily)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      vscode_version:
+        description: 'VS Code version to test (stable, insiders, or a specific version)'
+        required: false
+        default: 'insiders'
 
 jobs:
   tests:
@@ -23,6 +32,10 @@ jobs:
 
   e2e-tests:
     runs-on: ${{ matrix.os }}
+    env:
+      # Scheduled runs test against Insiders to catch breaking changes early.
+      # Manual dispatch uses the chosen version. Push/PR runs use stable.
+      VSCODE_VERSION: ${{ (github.event_name == 'schedule' && 'insiders') || (github.event_name == 'workflow_dispatch' && inputs.vscode_version) || 'stable' }}
     strategy:
       fail-fast: false
       matrix:
