@@ -164,18 +164,6 @@ body {
     background-color: var(--semi-opaque-dark) !important;
 }
 
-#status\.host {
-    background-color: rgba(127, 180, 126, 0.75) !important;
-}
-
-.monaco-workbench .part.statusbar {
-    background-color: rgba(50, 103, 160, 0.55) !important;
-}
-
-.monaco-workbench .part.statusbar:has(.codicon-debug-stop) {
-    background-color: rgba(203, 84, 88, 0.55) !important;
-}
-
 /* Box Shadow */
 .monaco-workbench .part.editor,
 .monaco-workbench .part.panel.bottom > .content,
@@ -210,24 +198,6 @@ body {
 .monaco-scrollable-element > canvas.decorationsOverviewRuler,
 .xterm .xterm-scrollable-element > .scrollbar > .slider {
     border-radius: 100px !important;
-}
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-left-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-bottom-right-radius: var(--corner) !important;
-}
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-right-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-top-right-radius: 0 !important;
 }
 
 /* Fullscreen */

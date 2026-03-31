@@ -186,24 +186,6 @@ body {
     border-radius: 100px !important;
 }
 
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-left-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-bottom-right-radius: var(--corner) !important;
-}
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-right-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-top-right-radius: 0 !important;
-}
-
 /* Fullscreen */
 
 .monaco-workbench.fullscreen {
