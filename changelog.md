@@ -1,3 +1,8 @@
+# 1.1.70
+
+* Themes:
+  * Restores Paradise themes editor background and optimizes Paradise theme performance
+
 # 1.1.69
 
 * Core:
