@@ -230,14 +230,6 @@ body {
     border-top-right-radius: 0 !important;
 }
 
-/* Section Borders */
-
-.monaco-workbench .part.sidebar > .content > div,
-.monaco-workbench .part.sidebar,
-.monaco-workbench .part.sidebar .monaco-list-row {
-    width: calc(100% - var(--border)) !important;
-}
-
 /* Fullscreen */
 
 .monaco-workbench.fullscreen {
