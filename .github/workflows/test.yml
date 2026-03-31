@@ -80,12 +80,14 @@ jobs:
         with:
           name: vitest-report
           path: test-results/
-      - uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+      - uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         if: always()
         with:
-          report_paths: test-results/vitest-report.xml
-          include_passed: true
-          check_name: Vitest Results
+          name: Vitest Results
+          path: test-results/vitest-report.xml
+          reporter: java-junit
+          list-tests: all
+          list-suites: all
       - run: |
           if [[ "${{ needs.tests.result }}" != "success" || "${{ needs.e2e-tests.result }}" != "success" ]]; then
             echo "One or more jobs failed"
