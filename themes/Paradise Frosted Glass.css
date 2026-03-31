@@ -89,6 +89,10 @@ body {
     background-color: var(--primary-bg) !important;
 }
 
+.monaco-editor .sticky-line-content {
+    background-color: var(--primary-bg) !important;
+}
+
 /* .monaco-workbench
     .activitybar
     > .content
