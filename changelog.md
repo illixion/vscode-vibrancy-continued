@@ -1,3 +1,9 @@
+# 1.1.71
+
+* Themes:
+  * Refine Paradise theme for VSCode and Cursor (PR [#238](https://github.com/illixion/vscode-vibrancy-continued/pull/238))
+  * Fix inline chat appearing transparent in all themes
+
 # 1.1.70
 
 * Themes:
