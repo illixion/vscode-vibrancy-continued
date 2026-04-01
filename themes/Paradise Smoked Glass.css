@@ -93,8 +93,14 @@ body {
     background: transparent !important;
 }
 
-.monaco-workbench .part.editor .editor-widget {
-    background: var(--semi-opaque) !important;
+.monaco-workbench .part.editor .editor-widget,
+.monaco-workbench .simple-find-part {
+    background: var(--semi-opaque-tertiary) !important;
+    border: none !important;
+    backdrop-filter: blur(10px) !important;
+    .monaco-inputbox {
+        background: var(--editor-bg) !important;
+    }
 }
 
 .monaco-workbench .part.editor .scroll-decoration {
@@ -173,7 +179,8 @@ body {
 .monaco-workbench .sidebar,
 .monaco-workbench .monaco-inputbox,
 .monaco-workbench .monaco-tree-type-filter,
-.monaco-editor .find-widget,
+.monaco-workbench .part.editor .editor-widget,
+.monaco-workbench .simple-find-part,
 .monaco-workbench .part.panel.bottom > .content,
 .statusbar-item-label {
     border-radius: var(--corner) !important;
