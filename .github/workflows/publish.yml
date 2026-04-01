@@ -2,25 +2,12 @@ name: Publish Extension
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Enter version or major/minor/patch/none'
-        required: true
-        default: 'patch'
-      registry:
-        description: 'Enter registry to publish to: vsce, openvsx or both'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-          - vsce
-          - openvsx
-          - both
       prerelease:
         description: "Mark this version as a pre-release"
         type: boolean
         default: false
       package_only:
-        description: "Only build and package (skip publish and version bump)"
+        description: "Only build and package (skip publish)"
         type: boolean
         default: false
 
@@ -64,6 +51,8 @@ jobs:
   publish:
     needs: build-native
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -82,40 +71,26 @@ jobs:
           path: native/prebuilt/
       - name: Install dependencies
         run: npm install --omit=dev
-      - name: Configure git and clean repo
-        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
-        run: |
-          git reset --hard HEAD
-          git config --global user.name "GitHubActions"
-          git config --global user.email "ghactions@illixion.com"
-      - name: Bump version and create git tag
-        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
-        run: npm version ${{ github.event.inputs.version }}
+      - name: Read version from package.json
+        id: version
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
       - name: Package extension
-        run: npx @vscode/vsce package ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
+        run: npx @vscode/vsce package ${{ inputs.prerelease && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vscode-vibrancy-continued-${{ github.event.inputs.version }}
+          name: vscode-vibrancy-continued-v${{ steps.version.outputs.version }}
           path: "*.vsix"
       - name: Publish extension to VSCE
-        if: ${{ github.event.inputs.package_only != 'true' && (github.event.inputs.registry == 'vsce' || github.event.inputs.registry == 'both') }}
-        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
+        if: ${{ !inputs.package_only }}
+        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ inputs.prerelease && '--pre-release' || '' }}
       - name: Publish extension to Open VSX
-        if: ${{ github.event.inputs.package_only != 'true' && (github.event.inputs.registry == 'openvsx' || github.event.inputs.registry == 'both') }}
+        if: ${{ !inputs.package_only }}
         env:
           OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
-        run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix ${{ github.event.inputs.prerelease == 'true' && '--pre-release' || '' }}
-      - name: Configure SSH key
-        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-      - name: Push changes
-        if: ${{ github.event.inputs.version != 'none' && github.event.inputs.package_only != 'true' }}
-        run: |
-          # Extract the branch name from the GITHUB_REF
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          git push --tags origin $BRANCH_NAME
+        run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix ${{ inputs.prerelease && '--pre-release' || '' }}
+      - name: Create GitHub Release
+        if: ${{ !inputs.package_only }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.version.outputs.version }}" *.vsix --title "v${{ steps.version.outputs.version }}" ${{ inputs.prerelease && '--prerelease' || '' }}
