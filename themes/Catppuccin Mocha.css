@@ -17,7 +17,8 @@
 }
 
 .modal-editor-part > .content,
-.modal-editor-part .editor-container {
+.modal-editor-part .editor-container,
+.inline-chat-gutter-menu {
   background-color: var(--vscode-quickInput-background) !important;
 }
 
