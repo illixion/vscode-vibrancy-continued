@@ -243,10 +243,10 @@ const SEMITRANSPARENT_BG_KEYS = [
   "editorStickyScrollGutter.background",
   "tab.inactiveBackground",
   "tab.unfocusedInactiveBackground",
-  "inlineChat.background",
 ];
 
 const OPAQUE_BG_KEYS = [
+  "inlineChat.background",
   "editorWidget.background",
   "editorHoverWidget.background",
   "editorSuggestWidget.background",
