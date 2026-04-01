@@ -9,6 +9,20 @@
     border: none !important;
 }
 
+.monaco-workbench .part.auxiliarybar .full-input-box {
+    background-color: var(--semi-opaque) !important;
+    transition:
+        background-color 0.15s ease-out,
+        border-color 0.15s ease-out,
+        box-shadow 0.3s ease-out !important;
+}
+
+.monaco-workbench .part.auxiliarybar .full-input-box:focus-within {
+    background-color: var(--semi-opaque-secondary) !important;
+    border-color: rgba(105, 182, 237, 0.45) !important;
+    box-shadow: 0 0 5px 3px rgba(105, 182, 237, 0.3) !important;
+}
+
 .monaco-workbench .part.auxiliarybar .composer-bar .ui-tool-call-card {
     background-color: var(--semi-opaque-tertiary) !important;
 }
