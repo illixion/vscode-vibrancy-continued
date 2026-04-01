@@ -25,6 +25,14 @@
     --primary-bg: #1e1e1e;
     --secondary-bg: #111111;
     --editor-bg: #141414cc;
+
+    --selectable-transition: background-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+.monaco-workbench .part.editor .editor-group-container > .tabs *,
+.monaco-workbench .monaco-action-bar *,
+.monaco-workbench .part.statusbar * {
+    transition: var(--selectable-transition);
 }
 
 /* Transparent Background */
@@ -71,6 +79,10 @@ body {
     background: var(--semi-opaque-tertiary) !important;
 }
 
+.monaco-workbench .part.editor .editor-group-container > .tabs .tab:not(.active):not(.selected):hover {
+    background: var(--semi-opaque) !important;
+}
+
 .monaco-workbench
     .part.editor
     .editor-group-container
@@ -81,8 +93,14 @@ body {
     background: transparent !important;
 }
 
-.monaco-workbench .part.editor .editor-widget {
-    background: var(--semi-opaque) !important;
+.monaco-workbench .part.editor .editor-widget,
+.monaco-workbench .simple-find-part {
+    background: var(--semi-opaque-tertiary) !important;
+    border: none !important;
+    backdrop-filter: blur(10px) !important;
+    .monaco-inputbox {
+        background: var(--editor-bg) !important;
+    }
 }
 
 .monaco-workbench .part.editor .scroll-decoration {
@@ -142,18 +160,6 @@ body {
     background-color: var(--semi-opaque-dark) !important;
 }
 
-#status\.host {
-    background-color: rgba(178, 197, 152, 0.65) !important;
-}
-
-.monaco-workbench .part.statusbar {
-    background-color: rgba(155, 205, 255, 0.5) !important;
-}
-
-.monaco-workbench .part.statusbar:has(.codicon-debug-stop) {
-    background-color: rgba(255, 136, 140, 0.5) !important;
-}
-
 /* Box Shadow */
 .monaco-workbench .part.editor,
 .monaco-workbench .part.panel.bottom > .content,
@@ -173,7 +179,8 @@ body {
 .monaco-workbench .sidebar,
 .monaco-workbench .monaco-inputbox,
 .monaco-workbench .monaco-tree-type-filter,
-.monaco-editor .find-widget,
+.monaco-workbench .part.editor .editor-widget,
+.monaco-workbench .simple-find-part,
 .monaco-workbench .part.panel.bottom > .content,
 .statusbar-item-label {
     border-radius: var(--corner) !important;
@@ -188,31 +195,6 @@ body {
 .monaco-scrollable-element > canvas.decorationsOverviewRuler,
 .xterm .xterm-scrollable-element > .scrollbar > .slider {
     border-radius: 100px !important;
-}
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-left-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-bottom-right-radius: var(--corner) !important;
-}
-
-.monaco-workbench .part.panel.bottom,
-.monaco-workbench .part.panel.bottom > .content {
-    border-bottom-right-radius: 0 !important;
-}
-
-.monaco-workbench .part.statusbar {
-    border-top-right-radius: 0 !important;
-}
-
-/* Section Borders */
-
-.monaco-workbench .part.sidebar > .content > div,
-.monaco-workbench .part.sidebar {
-    width: calc(100% - var(--border)) !important;
 }
 
 /* Fullscreen */
