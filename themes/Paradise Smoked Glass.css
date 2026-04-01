@@ -26,7 +26,7 @@
     --secondary-bg: #111111;
     --editor-bg: #141414cc;
 
-    --selectable-transition: background-color 0.25s ease-out, color 0.25s ease-out;
+    --selectable-transition: background-color 0.15s ease-out, color 0.15s ease-out;
 }
 
 .monaco-workbench .part.editor .editor-group-container > .tabs *,
@@ -77,6 +77,10 @@ body {
 
 .monaco-workbench .part.editor .editor-group-container > .tabs .tab {
     background: var(--semi-opaque-tertiary) !important;
+}
+
+.monaco-workbench .part.editor .editor-group-container > .tabs .tab:not(.active):not(.selected):hover {
+    background: var(--semi-opaque) !important;
 }
 
 .monaco-workbench
