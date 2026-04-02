@@ -63,7 +63,7 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
     // Single pass: for each vibrancy bg key, either restore the user's original value or strip it
     for (const key of vibrancyBgKeys) {
         const escapedKey = key.replace(/\./g, '\\.');
-        const regex = new RegExp(`"${escapedKey}"\\s*:\\s*".*?",?\\s*`, 'g');
+        const regex = new RegExp(`"${escapedKey}"\\s*:\\s*"#[0-9a-fA-F]{8}",?\\s*`, 'g');
         const originalValue = savedBgs?.[key];
         if (originalValue != null) {
             settingsContent = settingsContent.replace(regex, `"${key}": "${originalValue}",\n            `);
@@ -76,7 +76,7 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
     const savedTermBg = previousCustomizations?.saved ? previousCustomizations.terminalBackground : null;
     if (savedTermBg != null && savedTermBg !== '#00000000') {
         settingsContent = settingsContent.replace(
-            /"terminal\.background"\s*:\s*".*?",?\s*/g,
+            /"terminal\.background"\s*:\s*"#[0-9a-fA-F]{8}",?\s*/g,
             `"terminal.background": "${savedTermBg}",\n            `
         );
     } else {
@@ -165,7 +165,7 @@ function deferSettingsRestoreWindows(settingsPath, cliCommand) {
     ];
 
     const colorReplaces = colorKeys.map(k =>
-        `$c = $c -replace '(?m)"${k}"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`
+        `$c = $c -replace '(?m)"${k}"\\s*:\\s*"#[0-9a-fA-F]{8}",?[ \\t]*\\r?\\n?', ''`
     ).join('\r\n');
 
     const cli = (cliCommand || 'code').replace(/'/g, "''");
