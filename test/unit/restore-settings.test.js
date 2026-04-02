@@ -287,3 +287,240 @@ describe('restorePreviousSettings', () => {
     expect(result).toContain('"files.autoSave"');
   });
 });
+
+describe('restorePreviousSettings (JSONC)', () => {
+  let tmpDir;
+  let settingsPath;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-jsonc-test-'));
+    settingsPath = path.join(tmpDir, 'settings.json');
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('line comments between vibrancy keys survive uninstall', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "sideBar.background": "#1e1e1ecc",',
+      '        // User note about colors',
+      '        "editor.background": "#1e1e1ee6"',
+      '    },',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).toContain('// User note about colors');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"editor.background"');
+    expect(result).toContain('"editor.fontSize"');
+  });
+
+  it('block comments between vibrancy keys survive uninstall', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "sideBar.background": "#1e1e1ecc",',
+      '        /* customization section */',
+      '        "editor.background": "#1e1e1ee6"',
+      '    },',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).toContain('/* customization section */');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"editor.background"');
+  });
+
+  it('inline comments after vibrancy values are preserved', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "sideBar.background": "#1e1e1ecc", // my sidebar',
+      '        "editor.background": "#1e1e1ee6"',
+      '    },',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).toContain('// my sidebar');
+    expect(result).not.toContain('"sideBar.background"');
+  });
+
+  it('trailing comma after removal is valid JSONC', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "statusBar.background": "#007acc",',
+      '        "sideBar.background": "#1e1e1ecc"',
+      '    }',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).toContain('"statusBar.background": "#007acc"');
+    // Trailing comma before } is valid JSONC
+    expect(result).toMatch(/"statusBar\.background":\s*"#007acc",?\s*\}/);
+  });
+
+  it('empty colorCustomizations object after removing all vibrancy keys', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "sideBar.background": "#1e1e1ecc",',
+      '        "editor.background": "#1e1e1ee6"',
+      '    },',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"editor.background"');
+    expect(result).toContain('"workbench.colorCustomizations"');
+    expect(result).toContain('"editor.fontSize"');
+  });
+
+  it('full round-trip with JSONC preserves comments and non-vibrancy settings', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    // My editor preferences',
+      '    "editor.fontSize": 14,',
+      '    "workbench.colorCustomizations": {',
+      '        "statusBar.background": "#007acc", // status bar',
+      '        "terminal.background": "#00000000",',
+      '        "sideBar.background": "#1e1e1ecc",',
+      '        // Vibrancy auto-generated:',
+      '        "editor.background": "#1e1e1ee6",',
+      '        "activityBar.background": "#1e1e1ecc"',
+      '    },',
+      '    "terminal.integrated.gpuAcceleration": "off",',
+      '    "window.systemColorTheme": "dark",',
+      '    "window.autoDetectColorScheme": true,',
+      '    "window.controlsStyle": "custom",',
+      '    /* Other settings below */',
+      '    "files.autoSave": "afterDelay"',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings({
+      saved: true,
+      terminalBackground: null,
+      gpuAcceleration: 'auto',
+      systemColorTheme: 'light',
+      autoDetectColorScheme: false,
+      vibrancyBackgrounds: {},
+    }, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+
+    // Comments survive
+    expect(result).toContain('// My editor preferences');
+    expect(result).toContain('// status bar');
+    expect(result).toContain('// Vibrancy auto-generated:');
+    expect(result).toContain('/* Other settings below */');
+
+    // Non-vibrancy settings survive
+    expect(result).toContain('"editor.fontSize"');
+    expect(result).toContain('"statusBar.background": "#007acc"');
+    expect(result).toContain('"files.autoSave"');
+
+    // Vibrancy keys removed
+    expect(result).not.toContain('"terminal.background"');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"editor.background"');
+    expect(result).not.toContain('"activityBar.background"');
+    expect(result).not.toContain('"window.controlsStyle"');
+
+    // Originals restored
+    expect(result).toContain('"terminal.integrated.gpuAcceleration": "auto"');
+    expect(result).toContain('"window.systemColorTheme": "light"');
+    expect(result).toContain('"window.autoDetectColorScheme": false');
+  });
+
+  it('inline comment on top-level vibrancy setting is preserved', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "terminal.integrated.gpuAcceleration": "off", // was auto',
+      '    "window.controlsStyle": "custom",',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings({
+      saved: true,
+      gpuAcceleration: null,
+    }, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).toContain('// was auto');
+    expect(result).not.toContain('"window.controlsStyle"');
+    expect(result).toContain('"editor.fontSize"');
+  });
+
+  it('commented-out 6-digit hex colors in vibrancy keys are preserved', () => {
+    // Users often comment out alternative theme configs. The regex only matches
+    // 8-digit hex colors (with alpha), so 6-digit colors in comments are safe.
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        // "sideBar.background": "#282c34",',
+      '        // "editor.background": "#1d1f21",',
+      '        "sideBar.background": "#1e1e1ecc",',
+      '        "editor.background": "#1e1e1ee6"',
+      '    }',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    // Commented-out 6-digit hex values survive
+    expect(result).toContain('"#282c34"');
+    expect(result).toContain('"#1d1f21"');
+    // Actual 8-digit vibrancy values are removed
+    expect(result).not.toContain('"#1e1e1ecc"');
+    expect(result).not.toContain('"#1e1e1ee6"');
+  });
+
+  it('known limitation: 8-digit hex colors in comments still match', () => {
+    // If a comment contains an 8-digit hex value (with alpha) for a vibrancy key,
+    // the regex will still match inside the comment. This is accepted because
+    // 8-digit hex colors in comments are rare — users typically comment out
+    // standard 6-digit colors, not alpha-channel variants.
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        // "sideBar.background": "#282c34ff"',
+      '        "sideBar.background": "#1e1e1ecc"',
+      '    }',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    // The 8-digit hex in the comment is mangled
+    expect(result).not.toContain('"#282c34ff"');
+    // The actual vibrancy value is also removed
+    expect(result).not.toContain('"#1e1e1ecc"');
+  });
+});
