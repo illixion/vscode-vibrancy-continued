@@ -138,6 +138,12 @@ Disable frameless window, which is a mitigation that fixes a GPU-related render 
 
 Disable fixes to Default Dark and Default Light themes for non-VSCode editors like Cursor.
 
+#### Disable Color Customizations (`vscode_vibrancy.disableColorCustomizations`)
+
+Prevent Vibrancy from modifying `workbench.colorCustomizations` which is used to make some elements like the terminal vibrant. Enable this if you want to manage color customizations yourself. When enabled mid-session, any previously written vibrancy colors will be restored to their original values.
+
+*boolean, default is false*
+
 #### Refresh interval (`vscode_vibrancy.refreshInterval`)
 
 Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. **Ignored when using "Prevent Flash" method.**
