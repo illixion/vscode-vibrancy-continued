@@ -1,3 +1,12 @@
+# 1.1.73
+
+* Core:
+  * Fix multi-window conflicts by scoping per-window state in runtime modules (PR [#241](https://github.com/illixion/vscode-vibrancy-continued/pull/241))
+  * Make overwrite install() idempotent to prevent nested wrappers (PR [#241](https://github.com/illixion/vscode-vibrancy-continued/pull/241))
+  * Guard against corrupt config.json in uninstall hook (PR [#240](https://github.com/illixion/vscode-vibrancy-continued/pull/240))
+* Contributors:
+  * @lawrence3699
+
 # 1.1.72
 
 * Core:
