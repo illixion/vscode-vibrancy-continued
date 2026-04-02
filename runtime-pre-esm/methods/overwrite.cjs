@@ -3,6 +3,7 @@ module.exports = window => {
 
 	return {
 		install() {
+			if (overwritten) return
 			overwritten = window.setBackgroundColor
 			const original = window.setBackgroundColor.bind(window)
 			window.setBackgroundColor = (bg) => original('#00000000')
