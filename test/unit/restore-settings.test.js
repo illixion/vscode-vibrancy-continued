@@ -476,15 +476,14 @@ describe('restorePreviousSettings (JSONC)', () => {
     expect(result).toContain('"editor.fontSize"');
   });
 
-  it('known limitation: regex matches key patterns inside comments', () => {
-    // If a user writes a comment that contains a vibrancy key-value pattern,
-    // the regex will match inside the comment and mangle it. This is accepted
-    // because it requires an extremely specific comment format that is
-    // unrealistic in practice (exact key name, colon, quoted value).
+  it('commented-out 6-digit hex colors in vibrancy keys are preserved', () => {
+    // Users often comment out alternative theme configs. The regex only matches
+    // 8-digit hex colors (with alpha), so 6-digit colors in comments are safe.
     fs.writeFileSync(settingsPath, [
       '{',
       '    "workbench.colorCustomizations": {',
-      '        // Old: "sideBar.background": "#my-old-color"',
+      '        // "sideBar.background": "#282c34",',
+      '        // "editor.background": "#1d1f21",',
       '        "sideBar.background": "#1e1e1ecc",',
       '        "editor.background": "#1e1e1ee6"',
       '    }',
@@ -494,9 +493,34 @@ describe('restorePreviousSettings (JSONC)', () => {
     restorePreviousSettings(null, settingsPath);
 
     const result = fs.readFileSync(settingsPath, 'utf-8');
-    // The comment gets mangled because the regex matches the key pattern inside it
-    expect(result).not.toContain('"#my-old-color"');
-    // The actual key is still removed correctly
+    // Commented-out 6-digit hex values survive
+    expect(result).toContain('"#282c34"');
+    expect(result).toContain('"#1d1f21"');
+    // Actual 8-digit vibrancy values are removed
+    expect(result).not.toContain('"#1e1e1ecc"');
+    expect(result).not.toContain('"#1e1e1ee6"');
+  });
+
+  it('known limitation: 8-digit hex colors in comments still match', () => {
+    // If a comment contains an 8-digit hex value (with alpha) for a vibrancy key,
+    // the regex will still match inside the comment. This is accepted because
+    // 8-digit hex colors in comments are rare — users typically comment out
+    // standard 6-digit colors, not alpha-channel variants.
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        // "sideBar.background": "#282c34ff"',
+      '        "sideBar.background": "#1e1e1ecc"',
+      '    }',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    // The 8-digit hex in the comment is mangled
+    expect(result).not.toContain('"#282c34ff"');
+    // The actual vibrancy value is also removed
     expect(result).not.toContain('"#1e1e1ecc"');
   });
 });
