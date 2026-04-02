@@ -89,8 +89,10 @@ jobs:
         env:
           OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
         run: npx ovsx publish -p $OPEN_VSX_TOKEN --packagePath *.vsix ${{ inputs.prerelease && '--pre-release' || '' }}
-      - name: Create GitHub Release
+      - name: Upload VSIX to GitHub Release and publish
         if: ${{ !inputs.package_only }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v${{ steps.version.outputs.version }}" *.vsix --title "v${{ steps.version.outputs.version }}" ${{ inputs.prerelease && '--prerelease' || '' }}
+        run: |
+          gh release upload "v${{ steps.version.outputs.version }}" *.vsix --clobber
+          gh release edit "v${{ steps.version.outputs.version }}" --draft=false
