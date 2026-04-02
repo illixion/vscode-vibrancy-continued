@@ -237,7 +237,15 @@ if (require.main === module) (async () => {
 
     function loadConfig() {
         if (fsSync.existsSync(configFilePath)) {
-            return JSON.parse(fsSync.readFileSync(configFilePath, 'utf-8'));
+            try {
+                return JSON.parse(fsSync.readFileSync(configFilePath, 'utf-8'));
+            } catch (err) {
+                console.error(
+                    'Vibrancy: config.json is corrupt or unreadable, treating as absent:',
+                    err.message
+                );
+                return null;
+            }
         }
         return null;
     }
