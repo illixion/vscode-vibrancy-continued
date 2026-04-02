@@ -1,3 +1,12 @@
+# 1.1.72
+
+* Core:
+  * Add `disableColorCustomizations` setting to prevent Vibrancy from modifying `workbench.colorCustomizations`, for users who manage color customizations independently
+* Tests:
+  * Extract VSCode settings logic into a separate module with dependency injection for testability
+  * Add settings verification to E2E test pipeline (checks settings.json after install and uninstall)
+  * Add 23 unit tests for settings apply/restore logic, including full round-trip and mid-session toggle scenarios
+
 # 1.1.71
 
 * Themes:

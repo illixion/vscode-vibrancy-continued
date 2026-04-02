@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.71",
+  "version": "1.1.72",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -235,7 +235,8 @@
     "test": "vitest run",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
-    "test:e2e": "node test/e2e/run-e2e.js"
+    "test:e2e": "node test/e2e/run-e2e.js",
+    "bump": "npm version --no-git-tag-version --no-commit"
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
