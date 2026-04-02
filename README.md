@@ -140,7 +140,7 @@ Disable fixes to Default Dark and Default Light themes for non-VSCode editors li
 
 #### Disable Color Customizations (`vscode_vibrancy.disableColorCustomizations`)
 
-Prevent Vibrancy from modifying `workbench.colorCustomizations` which is used to make some elements like the terminal vibrant. Enable this if you want to manage color customizations yourself. When enabled mid-session, any previously written vibrancy colors will be restored to their original values.
+Prevent Vibrancy from modifying `workbench.colorCustomizations` which is used to make some elements like the terminal vibrant. Enable this if you want to manage color customizations yourself, or if you use a custom CSS theme that handles its own background colors and transparency. When enabled mid-session, any previously written vibrancy colors will be restored to their original values.
 
 *boolean, default is false*
 

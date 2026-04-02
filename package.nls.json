@@ -16,7 +16,7 @@
   "configuration.forceFramelessWindow.description": "Always set VSCode window to use `frame: false`, which can sometimes solve visual rendering issues on Windows/macOS.",
   "configuration.disableFramelessWindow.description": "Disable frameless window, which is a mitigation that fixes a GPU-related render bug on Windows with VSCode 1.86 and newer. You may see distorted and blurry graphics if you disable this mitigation with an affected GPU. Running VSCode with a --disable-gpu-compositing argument, such as via a shortcut, will allow for this mitigation to be safely disabled.",
   "configuration.disableThemeFixes.description": "Disable fixes for non-standard VSCode editors like Cursor.",
-  "configuration.disableColorCustomizations.description": "Prevent Vibrancy from modifying `workbench.colorCustomizations`. Enable this if you manage color customizations yourself.",
+  "configuration.disableColorCustomizations.description": "Prevent Vibrancy from modifying `workbench.colorCustomizations`. Enable this if you manage color customizations yourself or use a custom CSS theme that handles its own backgrounds.",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
   "extension.updateVibrancy.title": "Reload Vibrancy",
