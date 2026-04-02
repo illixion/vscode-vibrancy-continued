@@ -220,6 +220,11 @@
           "description": "%configuration.disableThemeFixes.description%",
           "type": "boolean",
           "default": false
+        },
+        "vscode_vibrancy.disableColorCustomizations": {
+          "description": "%configuration.disableColorCustomizations.description%",
+          "type": "boolean",
+          "default": false
         }
       }
     }

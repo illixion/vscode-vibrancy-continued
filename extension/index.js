@@ -687,6 +687,7 @@ function activate(context) {
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[vibrancyTheme]);
     const themeConfig = require(themeConfigPath);
     const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
+    const disableColorCustomizations = vibrancyConfig.get("disableColorCustomizations");
 
     // Resolve opacity for the current platform
     let opacity = vibrancyConfig.get("opacity");
@@ -700,68 +701,122 @@ function activate(context) {
       : themeConfig.background;
 
     // Get the current settings
-    const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
     const gpuAccelerationConfig = vscode.workspace.getConfiguration().inspect("terminal.integrated.gpuAcceleration");
-    const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
     const systemColorTheme = vscode.workspace.getConfiguration().inspect("window.systemColorTheme");
     const autoDetectColorScheme = vscode.workspace.getConfiguration().inspect("window.autoDetectColorScheme");
     // Fetch previous values from global state
     let previousCustomizations = context.globalState.get('customizations') || {};
 
     // Get current values
-    const currentColorCustomizations = terminalColorConfig?.globalValue || {};
-    const currentBackground = currentColorCustomizations?.["terminal.background"];
     const currentGpuAcceleration = gpuAccelerationConfig?.globalValue;
-    const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
     const currentSystemColorTheme = systemColorTheme?.globalValue;
     const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
 
-    // Store original values if not already saved
-    if (!previousCustomizations.saved) {
-      // Backup original values for all vibrancy background keys
-      const vibrancyBackgrounds = {};
-      for (const key of ALL_VIBRANCY_BG_KEYS) {
-        vibrancyBackgrounds[key] = currentColorCustomizations[key] ?? null;
+    if (!disableColorCustomizations) {
+      const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+      const applyToAllProfilesConfig = vscode.workspace.getConfiguration().inspect("workbench.settings.applyToAllProfiles");
+      const currentColorCustomizations = terminalColorConfig?.globalValue || {};
+      const currentBackground = currentColorCustomizations?.["terminal.background"];
+      const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
+
+      // Store original values if not already saved
+      if (!previousCustomizations.saved) {
+        // Backup original values for all vibrancy background keys
+        const vibrancyBackgrounds = {};
+        for (const key of ALL_VIBRANCY_BG_KEYS) {
+          vibrancyBackgrounds[key] = currentColorCustomizations[key] ?? null;
+        }
+
+        previousCustomizations = {
+          saved: true,
+          terminalBackground: currentBackground,
+          vibrancyBackgrounds: vibrancyBackgrounds,
+          gpuAcceleration: currentGpuAcceleration,
+          removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
+          systemColorTheme: currentSystemColorTheme,
+          autoDetectColorScheme: currentAutoDetectColorScheme,
+        };
       }
 
-      previousCustomizations = {
-        saved: true,
-        terminalBackground: currentBackground,
-        vibrancyBackgrounds: vibrancyBackgrounds,
-        gpuAcceleration: currentGpuAcceleration,
-        removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
-        systemColorTheme: currentSystemColorTheme,
-        autoDetectColorScheme: currentAutoDetectColorScheme,
-      };
+      try {
+        // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there
+        if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles?.includes("workbench.colorCustomizations")) {
+          const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
+          await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
+
+          // Notify user of the change
+          vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
+        }
+        // Ensure this fix is only applied once
+        previousCustomizations.removedFromApplyToAllProfiles = true;
+
+        // Compute per-key vibrancy colors, preserving user's original colors
+        const vibrancyColors = computeVibrancyColors({
+          themeBackground,
+          opacity,
+          originalColors: previousCustomizations.vibrancyBackgrounds || {},
+        });
+
+        // Build the full set of color customizations
+        const newColorCustomization = {
+          ...currentColorCustomizations,
+          "terminal.background": "#00000000",
+          ...vibrancyColors,
+        };
+
+        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
+      } catch (error) {
+        console.error("Error updating color customizations:", error);
+      }
+    } else {
+      // Setting was enabled — restore any previously saved color customizations
+      if (previousCustomizations.saved && previousCustomizations.vibrancyBackgrounds) {
+        try {
+          const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+          const restoredColorCustomizations = { ...(terminalColorConfig?.globalValue || {}) };
+
+          // Remove terminal.background if it's our value
+          if (restoredColorCustomizations["terminal.background"] === "#00000000") {
+            if (previousCustomizations.terminalBackground && previousCustomizations.terminalBackground !== "#00000000") {
+              restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
+            } else {
+              delete restoredColorCustomizations["terminal.background"];
+            }
+          }
+
+          // Remove all vibrancy background keys, restoring originals where available
+          for (const key of ALL_VIBRANCY_BG_KEYS) {
+            const originalValue = previousCustomizations.vibrancyBackgrounds[key];
+            if (originalValue != null) {
+              restoredColorCustomizations[key] = originalValue;
+            } else {
+              delete restoredColorCustomizations[key];
+            }
+          }
+
+          await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+        } catch (error) {
+          console.error("Error restoring color customizations:", error);
+        }
+
+        // Clear color-related backup since we've restored them
+        delete previousCustomizations.vibrancyBackgrounds;
+        delete previousCustomizations.terminalBackground;
+      }
+
+      // Still store non-color settings for backup/restore
+      if (!previousCustomizations.saved) {
+        previousCustomizations = {
+          saved: true,
+          gpuAcceleration: currentGpuAcceleration,
+          removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
+          systemColorTheme: currentSystemColorTheme,
+          autoDetectColorScheme: currentAutoDetectColorScheme,
+        };
+      }
     }
 
     try {
-      // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there
-      if (!previousCustomizations.removedFromApplyToAllProfiles && currentApplyToAllProfiles?.includes("workbench.colorCustomizations")) {
-        const updatedApplyToAllProfiles = currentApplyToAllProfiles.filter(setting => setting !== "workbench.colorCustomizations");
-        await vscode.workspace.getConfiguration().update("workbench.settings.applyToAllProfiles", updatedApplyToAllProfiles, vscode.ConfigurationTarget.Global);
-
-        // Notify user of the change
-        vscode.window.showInformationMessage(localize('messages.applyToAllProfiles'));
-      }
-      // Ensure this fix is only applied once
-      previousCustomizations.removedFromApplyToAllProfiles = true;
-
-      // Compute per-key vibrancy colors, preserving user's original colors
-      const vibrancyColors = computeVibrancyColors({
-        themeBackground,
-        opacity,
-        originalColors: previousCustomizations.vibrancyBackgrounds || {},
-      });
-
-      // Build the full set of color customizations
-      const newColorCustomization = {
-        ...currentColorCustomizations,
-        "terminal.background": "#00000000",
-        ...vibrancyColors,
-      };
-
-      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", newColorCustomization, vscode.ConfigurationTarget.Global);
       await vscode.workspace.getConfiguration().update("terminal.integrated.gpuAcceleration", "off", vscode.ConfigurationTarget.Global);
 
       // Handle auto theme settings
@@ -801,46 +856,49 @@ function activate(context) {
   // Function to restore previous settings on uninstall
   async function restorePreviousSettings() {
     const previousCustomizations = context.globalState.get('customizations');
+    const disableColorCustomizations = vscode.workspace.getConfiguration("vscode_vibrancy").get("disableColorCustomizations");
 
     try {
-      // Read colorCustomizations once, apply all removals and restorations, write once
-      const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
-      const restoredColorCustomizations = { ...(terminalColorConfig?.globalValue || {}) };
+      if (!disableColorCustomizations) {
+        // Read colorCustomizations once, apply all removals and restorations, write once
+        const terminalColorConfig = vscode.workspace.getConfiguration().inspect("workbench.colorCustomizations");
+        const restoredColorCustomizations = { ...(terminalColorConfig?.globalValue || {}) };
 
-      // Remove terminal.background if it's our value
-      if (restoredColorCustomizations["terminal.background"] === "#00000000") {
-        delete restoredColorCustomizations["terminal.background"];
-      }
-
-      // Remove all vibrancy background keys
-      for (const key of ALL_VIBRANCY_BG_KEYS) {
-        delete restoredColorCustomizations[key];
-      }
-
-      if (previousCustomizations?.saved) {
-        // Restore terminal.background to its original value
-        if (previousCustomizations.terminalBackground !== undefined) {
-          if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
-            delete restoredColorCustomizations["terminal.background"];
-          } else {
-            restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
-          }
+        // Remove terminal.background if it's our value
+        if (restoredColorCustomizations["terminal.background"] === "#00000000") {
+          delete restoredColorCustomizations["terminal.background"];
         }
 
-        // Restore vibrancy background keys to their original values
-        if (previousCustomizations.vibrancyBackgrounds) {
-          for (const [key, originalValue] of Object.entries(previousCustomizations.vibrancyBackgrounds)) {
-            if (originalValue === null || originalValue === undefined) {
-              delete restoredColorCustomizations[key];
+        // Remove all vibrancy background keys
+        for (const key of ALL_VIBRANCY_BG_KEYS) {
+          delete restoredColorCustomizations[key];
+        }
+
+        if (previousCustomizations?.saved) {
+          // Restore terminal.background to its original value
+          if (previousCustomizations.terminalBackground !== undefined) {
+            if (previousCustomizations.terminalBackground === null || previousCustomizations.terminalBackground === "#00000000") {
+              delete restoredColorCustomizations["terminal.background"];
             } else {
-              restoredColorCustomizations[key] = originalValue;
+              restoredColorCustomizations["terminal.background"] = previousCustomizations.terminalBackground;
+            }
+          }
+
+          // Restore vibrancy background keys to their original values
+          if (previousCustomizations.vibrancyBackgrounds) {
+            for (const [key, originalValue] of Object.entries(previousCustomizations.vibrancyBackgrounds)) {
+              if (originalValue === null || originalValue === undefined) {
+                delete restoredColorCustomizations[key];
+              } else {
+                restoredColorCustomizations[key] = originalValue;
+              }
             }
           }
         }
-      }
 
-      // Single write for all colorCustomizations changes
-      await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+        // Single write for all colorCustomizations changes
+        await vscode.workspace.getConfiguration().update("workbench.colorCustomizations", restoredColorCustomizations, vscode.ConfigurationTarget.Global);
+      }
 
       if (previousCustomizations?.saved) {
         try {
