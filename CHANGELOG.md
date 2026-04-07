@@ -1,3 +1,14 @@
+# 1.1.74
+
+* Core:
+  * Fix Simplified Chinese i18n loading on case-sensitive file systems
+* Build & Release:
+  * Add /release slash command for automated release workflow
+  * Update publish workflow to use draft release pattern
+  * Rename changelog.md to CHANGELOG.md
+* Contributors:
+  * [@AkimioJR](https://github.com/AkimioJR)
+
 # 1.1.73
 
 * Core:
