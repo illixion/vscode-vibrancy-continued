@@ -72,17 +72,28 @@ Do NOT include a Co-Authored-By trailer.
 
 Run `gh auth status` and check that the authenticated account is **illixion**. If not, stop and tell the user to authenticate as illixion first (`gh auth login`).
 
-## 9. Create git tag and push
+## 9. Sync development with main
+
+Merge main back into development so both branches share the same history and avoid divergence on future releases:
+
+```
+git checkout development
+git merge main
+git push origin development
+```
+
+## 10. Create git tag and push
 
 Create an annotated tag for the release, then push everything:
 
 ```
 git tag -a "v<new_version>" -m "v<new_version>"
+git checkout main
 git push origin main --tags
 git push origin development
 ```
 
-## 10. Create draft GitHub release
+## 11. Create draft GitHub release
 
 Ask the user whether this should be a pre-release (if not already established).
 
@@ -94,7 +105,7 @@ gh release create "v<new_version>" --draft --title "v<new_version>" --notes "<ch
 
 If the user indicated this is a pre-release, add the `--prerelease` flag.
 
-## 11. Trigger the publish workflow
+## 12. Trigger the publish workflow
 
 Run:
 
