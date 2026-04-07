@@ -1,3 +1,10 @@
+# 1.1.75
+
+* Themes:
+  * Fix invisible text in Git Graph labels across all themes (issue [#246](https://github.com/illixion/vscode-vibrancy-continued/issues/246))
+* Build & Release:
+  * Fix branch divergence in release workflow by syncing development after squash merge
+
 # 1.1.74
 
 * Core:
