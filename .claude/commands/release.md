@@ -32,9 +32,9 @@ npm version <bump_type> --no-git-tag-version
 
 Read the new version from package.json after bumping.
 
-## 5. Update CHANGELOG.md
+## 5. Update changelog
 
-Read the current CHANGELOG.md. Prepend a new section at the very top of the file with the format:
+Read the current `CHANGELOG.md`. Prepend a new section at the very top of the file with the format:
 
 ```
 # <new_version>
@@ -72,19 +72,36 @@ Do NOT include a Co-Authored-By trailer.
 
 Run `gh auth status` and check that the authenticated account is **illixion**. If not, stop and tell the user to authenticate as illixion first (`gh auth login`).
 
-## 9. Push both branches
+## 9. Create git tag and push
+
+Create an annotated tag for the release, then push everything:
 
 ```
-git push origin main
+git tag -a "v<new_version>" -m "v<new_version>"
+git push origin main --tags
 git push origin development
 ```
 
-## 10. Trigger the publish workflow
+## 10. Create draft GitHub release
 
-Ask the user whether this should be a pre-release. Then run:
+Ask the user whether this should be a pre-release (if not already established).
+
+Create a **draft** GitHub release using the changelog entry as release notes. Use the changelog section you wrote in step 5 (without the `# <version>` heading) as the body:
+
+```
+gh release create "v<new_version>" --draft --title "v<new_version>" --notes "<changelog body from step 5>"
+```
+
+If the user indicated this is a pre-release, add the `--prerelease` flag.
+
+## 11. Trigger the publish workflow
+
+Run:
 
 ```
 gh workflow run publish.yml --ref main -f prerelease=<true|false> -f package_only=false
 ```
 
-Confirm to the user that the workflow has been triggered and provide a link: `https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/publish.yml`
+Confirm to the user that the workflow has been triggered. The workflow will build the VSIX, publish to VSCE/Open VSX, upload the VSIX to the draft release, and then publish (undraft) it — so subscribers receive one notification with both release notes and files.
+
+Provide the Actions link: `https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/publish.yml`
