@@ -220,3 +220,7 @@ body {
 
     background-color: var(--secondary-bg) !important;
 }
+
+.label-container .label {
+  color: white !important;
+}
