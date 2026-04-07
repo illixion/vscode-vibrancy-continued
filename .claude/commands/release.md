@@ -3,7 +3,7 @@ description: Automate a release from development to main with changelog, version
 allowed-tools: Bash, Read, Edit, Write, AskUserQuestion
 ---
 
-You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide a version bump type as an argument: $ARGUMENTS (defaults to "minor" if empty or not one of: major, minor, patch).
+You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide a version bump type as an argument: $ARGUMENTS (defaults to "patch" if empty or not one of: major, minor, patch).
 
 Follow these steps exactly, stopping on any error:
 
@@ -24,7 +24,7 @@ Run `git log main..development --oneline --no-merges` to get the list of commits
 
 ## 4. Bump version
 
-Determine the bump type from $ARGUMENTS (default: minor). Run:
+Determine the bump type from $ARGUMENTS (default: patch). Run:
 
 ```
 npm version <bump_type> --no-git-tag-version
