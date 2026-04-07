@@ -147,3 +147,7 @@ body {
   > div {
   background-color: var(--base-background) !important;
 }
+
+.label-container .label {
+  color: white !important;
+}

@@ -112,3 +112,7 @@ body {
 .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: transparent !important;
 }
+
+.label-container .label {
+  color: white !important;
+}
