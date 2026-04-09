@@ -42,6 +42,7 @@ var themeStylePaths = {
   'GitHub Dark Default': '../themes/GitHub Dark Default.css',
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.css',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.css',
+  'Atom One Dark': '../themes/Atom One Dark.css',
   'Custom theme (use imports)': '../themes/Custom Theme.css',
 }
 
@@ -59,6 +60,7 @@ const themeConfigPaths = {
   'GitHub Dark Default': '../themes/GitHub Dark Default.json',
   'Paradise Smoked Glass': '../themes/Paradise Smoked Glass.json',
   'Paradise Frosted Glass': '../themes/Paradise Frosted Glass.json',
+  'Atom One Dark': '../themes/Atom One Dark.json',
   'Custom theme (use imports)': '../themes/Custom Theme.json',
 }
 
