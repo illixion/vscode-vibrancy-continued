@@ -19,6 +19,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
+const { ALL_VIBRANCY_BG_KEYS } = require('../../extension/file-transforms');
 
 function getConfigDir() {
   const homedir = os.homedir();
@@ -80,6 +81,10 @@ async function main() {
     }, null, 2));
     console.log(`  User data dir: ${userDataDir}`);
 
+    // Snapshot original settings before any vibrancy changes
+    const settingsJsonPath = path.join(userSettingsDir, 'settings.json');
+    const originalSettings = JSON.parse(fs.readFileSync(settingsJsonPath, 'utf-8'));
+
     // --- Step 4: Package and install extension ---
     console.log('\n[4/9] Packaging and installing extension...');
     const extensionDir = path.resolve(__dirname, '..', '..');
@@ -124,11 +129,12 @@ async function main() {
       console.log('  Signal: NOT RECEIVED (extension may not have activated)');
     }
 
-    // Check settings.json for changes by the extension
-    const settingsAfter = fs.readFileSync(path.join(userSettingsDir, 'settings.json'), 'utf-8');
-    const settingsChanged = !settingsAfter.includes('"workbench.startupEditor": "none"') ||
-                            settingsAfter.includes('colorCustomizations');
-    console.log(`  Settings modified by extension: ${settingsChanged}`);
+    // Verify settings.json after install (read after VSCode exits to avoid flush race)
+    const installSettingsCheck = verifySettingsAfterInstall(settingsJsonPath);
+    console.log(`  Settings after install: ${installSettingsCheck.ok ? 'PASS' : 'FAIL'}`);
+    if (!installSettingsCheck.ok) {
+      for (const err of installSettingsCheck.errors) console.log(`    - ${err}`);
+    }
 
     // --- Step 6: Second launch (post-restart, vibrancy active) ---
     console.log('\n[6/9] Second launch (post-restart, screenshot)...');
@@ -166,6 +172,13 @@ async function main() {
       console.log('  Signal: NOT RECEIVED');
     }
 
+    // Verify settings.json after uninstall (read after VSCode exits to avoid flush race)
+    const uninstallSettingsCheck = verifySettingsAfterUninstall(settingsJsonPath, originalSettings);
+    console.log(`  Settings after uninstall: ${uninstallSettingsCheck.ok ? 'PASS' : 'FAIL'}`);
+    if (!uninstallSettingsCheck.ok) {
+      for (const err of uninstallSettingsCheck.errors) console.log(`    - ${err}`);
+    }
+
     // --- Step 8: Fourth launch (post-uninstall, verify clean) ---
     console.log('\n[8/9] Fourth launch (post-uninstall, verify clean)...');
     const screenshot4 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-3-post-uninstall.png`);
@@ -187,21 +200,25 @@ async function main() {
     console.log('\n[9/9] Results:');
     const installOk = firstResult.signal && firstResult.signal.status === 'success';
     const nocrash = secondResult.exitCode === 0 || secondResult.exitCode === null;
+    const installSettingsOk = installSettingsCheck.ok;
     const uninstallOk = thirdResult.signal && thirdResult.signal.status === 'uninstalled';
+    const uninstallSettingsOk = uninstallSettingsCheck.ok;
     const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
-    const success = installOk && nocrash && greenOk && uninstallOk && postUninstallNocrash && uninstallClean;
+    const success = installOk && nocrash && greenOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
 
     console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-install crash: ${nocrash ? 'PASS' : 'FAIL'}`);
     console.log(`  Green visible: ${greenOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Settings after install: ${installSettingsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Uninstall signal: ${uninstallOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Settings after uninstall: ${uninstallSettingsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-uninstall crash: ${postUninstallNocrash ? 'PASS' : 'FAIL'}`);
     console.log(`  Green removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
     console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
 
     writeGitHubSummary(success, screenshot2, {
-      installOk, nocrash, greenOk, greenPct,
-      uninstallOk, postUninstallNocrash, uninstallClean, postUninstallGreen,
+      installOk, nocrash, greenOk, greenPct, installSettingsOk,
+      uninstallOk, uninstallSettingsOk, postUninstallNocrash, uninstallClean, postUninstallGreen,
     });
 
     process.exit(success ? 0 : 1);
@@ -425,6 +442,108 @@ function checkGreenPixels(screenshotPath) {
   }
 }
 
+// --- Settings verification ---
+
+/**
+ * Read and parse the VSCode settings.json from the user-data-dir.
+ * Returns the parsed object, or null if the file doesn't exist or is invalid.
+ */
+function readSettings(settingsPath) {
+  try {
+    return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify that vibrancy color customizations were applied to settings.json.
+ * Checks that workbench.colorCustomizations contains the expected vibrancy keys
+ * and that terminal.background is set to transparent.
+ *
+ * @param {string} settingsPath - Path to settings.json
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
+function verifySettingsAfterInstall(settingsPath) {
+  const errors = [];
+  const settings = readSettings(settingsPath);
+  if (!settings) {
+    return { ok: false, errors: ['settings.json not found or unparseable'] };
+  }
+
+  const colors = settings['workbench.colorCustomizations'];
+  if (!colors || typeof colors !== 'object') {
+    errors.push('workbench.colorCustomizations missing or not an object');
+    return { ok: false, errors };
+  }
+
+  if (colors['terminal.background'] !== '#00000000') {
+    errors.push(`terminal.background: expected "#00000000", got "${colors['terminal.background']}"`);
+  }
+
+  // Check that vibrancy bg keys are present (they should all be set to hex+alpha values)
+  const missingKeys = ALL_VIBRANCY_BG_KEYS.filter(key => !colors[key]);
+  if (missingKeys.length > 0) {
+    errors.push(`missing ${missingKeys.length}/${ALL_VIBRANCY_BG_KEYS.length} vibrancy bg keys: ${missingKeys.slice(0, 5).join(', ')}${missingKeys.length > 5 ? '...' : ''}`);
+  }
+
+  if (settings['terminal.integrated.gpuAcceleration'] !== 'off') {
+    errors.push(`gpuAcceleration: expected "off", got "${settings['terminal.integrated.gpuAcceleration']}"`);
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+/**
+ * Verify that vibrancy color customizations were removed from settings.json after uninstall,
+ * and that pre-install values were restored.
+ *
+ * @param {string} settingsPath - Path to settings.json
+ * @param {Object} originalSettings - The settings.json content before any vibrancy changes
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
+function verifySettingsAfterUninstall(settingsPath, originalSettings) {
+  const errors = [];
+  const settings = readSettings(settingsPath);
+  if (!settings) {
+    return { ok: false, errors: ['settings.json not found or unparseable'] };
+  }
+
+  const colors = settings['workbench.colorCustomizations'] || {};
+
+  // Vibrancy bg keys should all be gone
+  const leftoverKeys = ALL_VIBRANCY_BG_KEYS.filter(key => colors[key] !== undefined);
+  if (leftoverKeys.length > 0) {
+    errors.push(`${leftoverKeys.length} vibrancy bg keys still present: ${leftoverKeys.slice(0, 5).join(', ')}${leftoverKeys.length > 5 ? '...' : ''}`);
+  }
+
+  // terminal.background should not be the vibrancy transparent value
+  if (colors['terminal.background'] === '#00000000') {
+    errors.push('terminal.background still "#00000000" after uninstall');
+  }
+
+  // Original settings should be restored
+  const origGpu = originalSettings['terminal.integrated.gpuAcceleration'];
+  const currentGpu = settings['terminal.integrated.gpuAcceleration'];
+  if (origGpu !== undefined && currentGpu !== origGpu) {
+    errors.push(`gpuAcceleration: expected "${origGpu}" (original), got "${currentGpu}"`);
+  } else if (origGpu === undefined && currentGpu !== undefined) {
+    errors.push(`gpuAcceleration: expected removed (was not set originally), got "${currentGpu}"`);
+  }
+
+  const origSystemTheme = originalSettings['window.systemColorTheme'];
+  if (origSystemTheme !== undefined && settings['window.systemColorTheme'] !== origSystemTheme) {
+    errors.push(`systemColorTheme: expected "${origSystemTheme}" (original), got "${settings['window.systemColorTheme']}"`);
+  }
+
+  const origAutoDetect = originalSettings['window.autoDetectColorScheme'];
+  if (origAutoDetect !== undefined && settings['window.autoDetectColorScheme'] !== origAutoDetect) {
+    errors.push(`autoDetectColorScheme: expected ${origAutoDetect} (original), got ${settings['window.autoDetectColorScheme']}`);
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
 // --- GitHub summary ---
 
 function writeGitHubSummary(success, screenshotPath, checks) {
@@ -441,7 +560,9 @@ function writeGitHubSummary(success, screenshotPath, checks) {
   md += `| Install signal | ${chk(checks.installOk)} |\n`;
   md += `| Post-install crash | ${chk(checks.nocrash)} |\n`;
   md += `| Green visible (${checks.greenPct !== null ? checks.greenPct.toFixed(1) + '%' : '?'}) | ${chk(checks.greenOk)} |\n`;
+  md += `| Settings after install | ${chk(checks.installSettingsOk)} |\n`;
   md += `| Uninstall signal | ${chk(checks.uninstallOk)} |\n`;
+  md += `| Settings after uninstall | ${chk(checks.uninstallSettingsOk)} |\n`;
   md += `| Post-uninstall crash | ${chk(checks.postUninstallNocrash)} |\n`;
   md += `| Green removed (${checks.postUninstallGreen !== null ? checks.postUninstallGreen.toFixed(1) + '%' : '?'}) | ${chk(checks.uninstallClean)} |\n`;
   md += `\n`;

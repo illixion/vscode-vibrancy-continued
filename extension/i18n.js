@@ -4,7 +4,7 @@ var path = require('path');
 
 const i18nMessages = {
 	'en': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.json'))),
-	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.zh-CN.json'))),
+	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.zh-cn.json'))),
 	'ja': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.ja.json')))
 };
 const defaultLocale = 'en';

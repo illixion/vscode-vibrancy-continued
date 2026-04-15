@@ -16,6 +16,7 @@
   "configuration.forceFramelessWindow.description": "VSCodeウィンドウが常に`frame: false`を使用するように設定することで、Windows/macOSでのビジュアルレンダリングの問題を解決できることがある。",
   "configuration.disableFramelessWindow.description": "これは、VSCode 1.86以降のWindowsにおけるGPU関連のレンダリングバグを修正する緩和策です。影響を受けるGPUでこの緩和策を無効にすると、グラフィックスが歪んだりぼやけたりすることがあります。ショートカットなどで--disable-gpu-compositing引数を指定してVSCodeを実行すると、この緩和策を安全に無効にすることができます。",
   "configuration.disableThemeFixes.description": "カーソルのような非標準のVSCodeエディタの修正を無効にする。",
+  "configuration.disableColorCustomizations.description": "Vibrancy による `workbench.colorCustomizations` の変更を無効にします。カラーカスタマイズを自分で管理したい場合や、独自の背景を処理するカスタムCSSテーマを使用している場合に有効にしてください。",
   "extension.installVibrancy.title": "Vibrancy を有効化",
   "extension.uninstallVibrancy.title": "Vibrancy を無効化",
   "extension.updateVibrancy.title": "Vibrancy を再読み込み",

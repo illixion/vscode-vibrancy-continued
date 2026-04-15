@@ -44,6 +44,9 @@
     "configuration.disableThemeFixes.description": {
       "type": "string"
     },
+    "configuration.disableColorCustomizations.description": {
+      "type": "string"
+    },
     "extension.installVibrancy.title": {
       "type": "string"
     },
@@ -151,6 +154,7 @@
     "messages.importError",
     "messages.htmlError",
     "messages.electronDeprecatedType",
-    "messages.applyToAllProfiles"
+    "messages.applyToAllProfiles",
+    "configuration.disableColorCustomizations.description"
   ]
 }

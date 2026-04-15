@@ -1,5 +1,3 @@
-# CLAUDE.md
-
 ## Project Overview
 
 VSCode extension that applies vibrancy/transparency effects to the Visual Studio Code UI. Works by modifying VSCode's internal files (workbench HTML, main JS, Electron JS) and injecting runtime modules.
@@ -41,6 +39,17 @@ Windows hard-locks `.node` native modules while VSCode is running. The elevated 
 ## Build & Test
 
 This is a VSCode extension — no build step required. Load it via F5 (Run Extension) in VSCode for testing or ask the user for manual testing. The extension modifies VSCode's own installation files, so test with care.
+
+### Running tests locally
+
+After making changes, run the unit/integration tests (same as CI minus E2E):
+
+```sh
+npm install   # ensure deps are up to date
+npm test      # runs `vitest run`
+```
+
+Do **not** run E2E tests (`npm run test:e2e`) locally — they require platform-specific setup (xvfb, native module builds, etc.) and are handled by CI.
 
 ## Branches
 

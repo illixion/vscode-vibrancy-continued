@@ -1,7 +1,53 @@
+# 1.1.75
+
+* Themes:
+  * Fix invisible text in Git Graph labels across all themes (issue [#246](https://github.com/illixion/vscode-vibrancy-continued/issues/246))
+* Build & Release:
+  * Fix branch divergence in release workflow by syncing development after squash merge
+
+# 1.1.74
+
+* Core:
+  * Fix Simplified Chinese i18n loading on case-sensitive file systems
+* Build & Release:
+  * Add /release slash command for automated release workflow
+  * Update publish workflow to use draft release pattern
+  * Rename changelog.md to CHANGELOG.md
+* Contributors:
+  * [@AkimioJR](https://github.com/AkimioJR)
+
+# 1.1.73
+
+* Core:
+  * Fix multi-window conflicts by scoping per-window state in runtime modules (PR [#241](https://github.com/illixion/vscode-vibrancy-continued/pull/241))
+  * Make overwrite install() idempotent to prevent nested wrappers (PR [#241](https://github.com/illixion/vscode-vibrancy-continued/pull/241))
+  * Guard against corrupt config.json in uninstall hook (PR [#240](https://github.com/illixion/vscode-vibrancy-continued/pull/240))
+* Contributors:
+  * @lawrence3699
+
+# 1.1.72
+
+* Core:
+  * Add `disableColorCustomizations` setting to prevent Vibrancy from modifying `workbench.colorCustomizations`, for users who manage color customizations independently
+* Tests:
+  * Extract VSCode settings logic into a separate module with dependency injection for testability
+  * Add settings verification to E2E test pipeline (checks settings.json after install and uninstall)
+  * Add 23 unit tests for settings apply/restore logic, including full round-trip and mid-session toggle scenarios
+
+# 1.1.71
+
+* Themes:
+  * Refine Paradise theme for VSCode and Cursor (PR [#238](https://github.com/illixion/vscode-vibrancy-continued/pull/238))
+  * Fix inline chat appearing transparent in all themes
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
+
 # 1.1.70
 
 * Themes:
   * Restores Paradise themes editor background and optimizes Paradise theme performance
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.69
 
@@ -58,6 +104,7 @@
   * Improve Paradise for Cursor theme with fixes for tab colors, bottom panel, and agents view
 * Contributors:
   * Thanks to [@DreamOneX](https://github.com/DreamOneX) for Linux support and Antigravity support
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.62
 
@@ -70,11 +117,15 @@
 
 * Themes:
   * Fix opaque terminal background in Paradise Cursor theme
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.60
 
 * Themes:
   * Add Paradise theme Cursor support
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.59
 
@@ -87,6 +138,8 @@
 
 * Themes:
   * Fix for Paradise Smoked Glass aux-bar tabs and status-bar color
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.57
 
@@ -99,6 +152,8 @@
   * Fixed startup crash when used on Trae.ai IDE (resolves [#201](https://github.com/illixion/vscode-vibrancy-continued/issues/201))
 * Themes:
   * Added Paradise dark and light themes by [@nickesc](https://github.com/nickesc)
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
 
 # 1.1.55
 

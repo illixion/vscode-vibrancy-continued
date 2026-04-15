@@ -263,7 +263,7 @@ describe('computeTransparentHex', () => {
 
 describe('ALL_VIBRANCY_BG_KEYS', () => {
   it('contains expected number of keys', () => {
-    // 9 transparent + 10 semi-transparent + 7 opaque = 26
+    // 9 transparent + 9 semi-transparent + 8 opaque = 26
     expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(26);
   });
 

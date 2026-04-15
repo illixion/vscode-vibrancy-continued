@@ -11,7 +11,8 @@
 }
 
 .modal-editor-part > .content,
-.modal-editor-part .editor-container {
+.modal-editor-part .editor-container,
+.inline-chat-gutter-menu {
   background-color: var(--vscode-quickInput-background) !important;
 }
 
@@ -110,4 +111,8 @@ body {
 .margin-view-overlays,
 .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: transparent !important;
+}
+
+.label-container .label {
+  color: white !important;
 }
