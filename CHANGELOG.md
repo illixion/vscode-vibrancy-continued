@@ -1,3 +1,12 @@
+# 1.1.76
+
+* Themes:
+  * Add Atom One Dark theme (PR [#248](https://github.com/illixion/vscode-vibrancy-continued/pull/248))
+  * Make floating menus and tooltips semi-opaque (PR [#249](https://github.com/illixion/vscode-vibrancy-continued/pull/249))
+* Contributors:
+  * [@Zushah](https://github.com/Zushah)
+  * [@nickesc](https://github.com/nickesc)
+
 # 1.1.75
 
 * Themes:
