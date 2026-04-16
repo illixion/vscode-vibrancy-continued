@@ -1,0 +1,202 @@
+:root {
+  --atom-one-dark-base: rgba(27, 32, 39, 0.01) !important;
+  --atom-one-dark-surface: rgba(27, 32, 39, 0.10) !important;
+  --atom-one-dark-surface-strong: rgba(27, 32, 39, 0.08) !important;
+  --atom-one-dark-sticky: rgba(35, 41, 50, 0.10) !important;
+  --atom-one-dark-border: rgba(171, 178, 191, 0.18) !important;
+  --atom-one-dark-selection: rgba(97, 175, 239, 0.24) !important;
+  --atom-one-dark-selection-strong: rgba(198, 120, 221, 0.24) !important;
+}
+
+.monaco-workbench {
+  --vscode-editorGutter-background: var(--atom-one-dark-base) !important;
+}
+
+.scroll-decoration {
+  box-shadow: none !important;
+}
+
+.minimap,
+.editor-scrollable > .decorationsOverviewRuler,
+.monaco-scrollable-element > canvas.decorationsOverviewRuler {
+  opacity: 0.42 !important;
+  background: transparent !important;
+}
+
+.monaco-scrollable-element > .scrollbar {
+  background: transparent !important;
+}
+
+.monaco-editor .monaco-scrollable-element > .scrollbar.horizontal,
+.monaco-editor .monaco-scrollable-element > .scrollbar.horizontal .slider,
+.monaco-editor .monaco-scrollable-element > .scrollbar-corner {
+  background: transparent !important;
+}
+
+.monaco-scrollable-element > .scrollbar > .slider,
+.xterm .xterm-scrollable-element > .scrollbar > .slider {
+  background: rgba(171, 178, 191, 0.22) !important;
+}
+
+.monaco-workbench,
+.monaco-workbench .part,
+.monaco-workbench .part > .title,
+.monaco-workbench .part:not(.modal-editor-part) > .content,
+.monaco-workbench .editor > .content > .one-editor-silo.editor-one,
+.monaco-workbench .part.editor > .content,
+.monaco-editor,
+.monaco-editor .overflow-guard,
+.monaco-editor .inputarea.ime-input,
+.monaco-editor-background,
+.monaco-editor .margin,
+.monaco-list .monaco-list-rows,
+.terminal-outer-container,
+.xterm-viewport,
+.xterm-rows,
+body {
+  background: transparent !important;
+}
+
+.modal-editor-part > .content,
+.modal-editor-part .editor-container {
+  background-color: var(--vscode-quickInput-background) !important;
+}
+
+.editor-group-container > .tabs,
+.editor-group-container > .tabs .tab,
+.monaco-workbench .part.editor > .content > .one-editor-silo > .container > .title,
+.monaco-workbench .part.sidebar,
+.monaco-workbench .part.auxiliarybar,
+.monaco-workbench .part.panel.bottom > .content,
+.monaco-workbench .part.statusbar,
+.monaco-workbench .pane-header,
+.monaco-workbench .part.sidebar > .title,
+.monaco-workbench .part.auxiliarybar > .title,
+.monaco-inputbox,
+.search-view .search-widget .input-box,
+.search-view .search-widget .input-box .monaco-inputbox,
+.extension-editor,
+.preferences-editor > .preferences-header,
+.preferences-editor > .preferences-editors-container.side-by-side-preferences-editor .preferences-header-container {
+  background-color: var(--atom-one-dark-surface) !important;
+}
+
+.monaco-workbench .part.editor > .content,
+.monaco-editor,
+.monaco-editor .inputarea.ime-input,
+.monaco-editor-background {
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.monaco-editor .margin,
+.monaco-editor .margin-view-overlays,
+.monaco-editor .margin-view-zones,
+.monaco-editor .glyph-margin {
+  background: var(--atom-one-dark-base) !important;
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.monaco-editor .margin .line-numbers,
+.monaco-editor .margin .line-numbers.active-line-number,
+.monaco-editor .margin .current-line-margin,
+.monaco-editor .margin .margin-view-overlays > div {
+  background: var(--atom-one-dark-base) !important;
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.monaco-editor .margin .margin-view-overlays,
+.monaco-editor .margin .glyph-margin {
+  background: var(--atom-one-dark-base) !important;
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.monaco-workbench .part.editor .margin-view-overlays,
+.monaco-workbench .part.editor .margin-view-overlays > div,
+.monaco-workbench .part.editor .margin-view-zones,
+.monaco-workbench .part.editor .margin-view-zones > div,
+.monaco-workbench .part.editor .glyph-margin,
+.monaco-workbench .part.editor .glyph-margin > div {
+  background: var(--atom-one-dark-base) !important;
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.editor-group-container > .tabs .tab.active,
+.monaco-workbench .part.editor > .content > .one-editor-silo > .container > .title .tabs-container > .tab.active {
+  background:
+    linear-gradient(135deg, rgba(97, 175, 239, 0.08), rgba(198, 120, 221, 0.05)),
+    var(--atom-one-dark-surface-strong) !important;
+}
+
+.editor-group-container > .tabs .monaco-breadcrumbs,
+.monaco-breadcrumbs,
+.monaco-breadcrumbs .breadcrumbs-control {
+  background: var(--atom-one-dark-surface) !important;
+}
+
+.editor-container:not(.modal-editor-part .editor-container),
+.monaco-workbench .part.editor > .content .editor-instance,
+.monaco-workbench .part.editor > .content .monaco-scrollable-element {
+  background-color: var(--atom-one-dark-base) !important;
+}
+
+.editor-group-container > .tabs .tab {
+  border: none !important;
+}
+
+.monaco-list.settings-toc-tree .monaco-list-row.selected,
+.monaco-list.settings-toc-tree .monaco-list-row.focused {
+  background-color: var(--atom-one-dark-selection) !important;
+}
+
+.monaco-list-row:hover:not(.selected):not(.focused),
+.monaco-list.settings-toc-tree:not(.drop-target) .monaco-list-row:hover:not(.selected):not(.focused) {
+  background-color: rgba(47, 54, 64, 0.28) !important;
+}
+
+.monaco-editor .view-overlays .current-line {
+  border-color: var(--atom-one-dark-border) !important;
+}
+
+.monaco-workbench .part.statusbar,
+.monaco-workbench .part.panel.bottom .composite.title,
+.monaco-inputbox {
+  border-color: var(--atom-one-dark-border) !important;
+}
+
+.monaco-workbench .part.statusbar .statusbar-item,
+.monaco-workbench .part.statusbar .statusbar-item > a,
+.monaco-workbench .part.statusbar .statusbar-item .statusbar-item-label {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.monaco-workbench .part.statusbar .statusbar-item:hover,
+.monaco-workbench .part.statusbar .statusbar-item:hover > a,
+.monaco-workbench .part.statusbar .statusbar-item:hover .statusbar-item-label,
+.monaco-workbench .part.statusbar .statusbar-item:focus-within,
+.monaco-workbench .part.statusbar .statusbar-item:focus-within > a,
+.monaco-workbench .part.statusbar .statusbar-item:focus-within .statusbar-item-label {
+  background-color: var(--atom-one-dark-selection) !important;
+  background-image: none !important;
+}
+
+.monaco-workbench.fullscreen {
+  background-color: rgb(27, 32, 39) !important;
+}
+
+.notebookOverlay.notebook-editor,
+.cell-statusbar-container {
+  background: transparent !important;
+}
+
+.monaco-editor .selectionHighlight,
+.monaco-editor .wordHighlight {
+  background-color: var(--atom-one-dark-selection-strong) !important;
+}
+
+.monaco-editor .sticky-widget,
+.monaco-editor .sticky-widget .monaco-editor-background,
+.monaco-editor .sticky-widget .sticky-line-content,
+.monaco-editor .sticky-widget .sticky-line-number {
+  background: var(--atom-one-dark-sticky) !important;
+}

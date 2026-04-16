@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.75",
+  "version": "1.1.76",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -141,6 +141,7 @@
             "GitHub Dark Default",
             "Paradise Smoked Glass",
             "Paradise Frosted Glass",
+            "Atom One Dark",
             "Custom theme (use imports)"
           ]
         },
@@ -166,6 +167,7 @@
             "GitHub Dark Default",
             "Paradise Smoked Glass",
             "Paradise Frosted Glass",
+            "Atom One Dark",
             "Custom theme (use imports)"
           ]
         },
@@ -186,6 +188,7 @@
             "GitHub Dark Default",
             "Paradise Smoked Glass",
             "Paradise Frosted Glass",
+            "Atom One Dark",
             "Custom theme (use imports)"
           ]
         },
