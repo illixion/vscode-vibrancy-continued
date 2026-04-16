@@ -1,3 +1,12 @@
+.monaco-workbench {
+    --cursor-bg-elevated: var(--semi-opaque) !important;
+}
+
+.ui-menu,
+.ui-tooltip {
+    backdrop-filter: blur(10px) !important;
+}
+
 .monaco-workbench .part.auxiliarybar .composer-bar.editor,
 .monaco-workbench .part.auxiliarybar .composer-bar .conversations,
 .monaco-workbench .part.auxiliarybar .composer-bar .composer-rendered-message,
