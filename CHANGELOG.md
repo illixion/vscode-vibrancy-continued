@@ -1,3 +1,10 @@
+# 1.1.77
+
+* Core:
+  * Stop poisoning the user-color backup when reinstalling vibrancy (PR [#247](https://github.com/illixion/vscode-vibrancy-continued/pull/247))
+* Docs:
+  * Add nightly CI results badge to readme
+
 # 1.1.76
 
 * Themes:
