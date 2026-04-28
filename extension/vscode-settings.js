@@ -1,5 +1,16 @@
 const { computeVibrancyColors, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
 
+// A value is treated as "vibrancy-applied, not user-set" when it is an
+// 8-char `#RRGGBBAA` hex whose RGB matches the current theme background.
+// This protects the initial backup from being poisoned when settings.json
+// still contains vibrancy values from a previous install (issue #247).
+function looksLikeVibrancyValue(value, themeBackground) {
+  if (typeof value !== 'string') return false;
+  const m = /^#([0-9a-f]{6})([0-9a-f]{2})$/i.exec(value);
+  if (!m) return false;
+  return !!themeBackground && m[1].toLowerCase() === themeBackground.toLowerCase();
+}
+
 /**
  * Apply vibrancy-related VSCode settings (color customizations, gpu acceleration, auto theme).
  *
@@ -49,16 +60,27 @@ async function applySettings(deps) {
     const currentBackground = currentColorCustomizations?.["terminal.background"];
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
 
-    // Store original values if not already saved
+    // Store original values if not already saved.
+    // Sanitise against vibrancy's own output: when settings.json still holds
+    // vibrancy values from a previous install (e.g. user removed the extension
+    // without disabling first, then reinstalled — issue #247), treating those
+    // values as "user originals" would poison the backup so disable later
+    // re-applies them. Drop them to null so disable cleanly removes the keys.
     if (!previousCustomizations.saved) {
       const vibrancyBackgrounds = {};
       for (const key of ALL_VIBRANCY_BG_KEYS) {
-        vibrancyBackgrounds[key] = currentColorCustomizations[key] ?? null;
+        const v = currentColorCustomizations[key];
+        vibrancyBackgrounds[key] = looksLikeVibrancyValue(v, themeBackground) ? null : (v ?? null);
       }
+
+      const cleanTerminalBg =
+        currentBackground === "#00000000" || looksLikeVibrancyValue(currentBackground, themeBackground)
+          ? null
+          : currentBackground;
 
       previousCustomizations = {
         saved: true,
-        terminalBackground: currentBackground,
+        terminalBackground: cleanTerminalBg,
         vibrancyBackgrounds: vibrancyBackgrounds,
         gpuAcceleration: currentGpuAcceleration,
         removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,

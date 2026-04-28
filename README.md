@@ -1,17 +1,19 @@
 # Visual Studio Code Extension - Vibrancy Continued
 
+Enable Acrylic/Glass effect in VS Code.
+
+> [!TIP]
 > Solutions for common issues can be found in the [FAQ](#FAQs) and [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)
 
-> ❗️ Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
-
-Enable Acrylic/Glass effect in VS Code.
+> [!IMPORTANT]
+> Windows 10/11 users: see [important notice](#️-important-notice-for-windows-1011-users) at the top of the description regarding a known issue with VSCode on Windows.
 
 ![screenshot](./images/screenshot.png)
 
+[![VS Code Insiders (nightly)](https://img.shields.io/github/actions/workflow/status/illixion/vscode-vibrancy-continued/test.yml?event=schedule&label=VS%20Code%20Insiders%20%28nightly%29)](https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/test.yml?query=event%3Aschedule)
 [![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
-[![VS Code Insiders (nightly)](https://img.shields.io/github/actions/workflow/status/illixion/vscode-vibrancy-continued/test.yml?event=schedule&label=VS%20Code%20Insiders%20%28nightly%29)](https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/test.yml?query=event%3Aschedule)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
