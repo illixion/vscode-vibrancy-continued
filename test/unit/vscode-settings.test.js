@@ -189,6 +189,95 @@ describe('applySettings', () => {
   });
 });
 
+// --- applySettings reinstall poisoning protection (issue #247) ---
+
+/** Build a settings.json snapshot that looks like vibrancy was already applied. */
+function buildPoisonedColorCustomizations(themeBackground = '1e1e1e') {
+  const colors = { 'terminal.background': '#00000000' };
+  for (const key of ALL_VIBRANCY_BG_KEYS) {
+    // Mix of vibrancy alphas: 00 (transparent), bf (semi), e6 (opaque-ish)
+    colors[key] = `#${themeBackground}bf`;
+  }
+  return colors;
+}
+
+describe('applySettings reinstall poisoning protection (issue #247)', () => {
+  it('drops vibrancy-shape values to null when taking the initial backup', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': buildPoisonedColorCustomizations('1e1e1e'),
+    });
+    const globalState = createGlobalState();
+    const deps = buildApplyDeps({ settingsStore: store, globalState });
+
+    const result = await applySettings(deps);
+
+    expect(result.saved).toBe(true);
+    expect(result.terminalBackground).toBeNull();
+    for (const key of ALL_VIBRANCY_BG_KEYS) {
+      expect(result.vibrancyBackgrounds[key]).toBeNull();
+    }
+  });
+
+  it('preserves genuine 6-char user values in the initial backup', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': {
+        'terminal.background': '#1a1b26',
+        'sideBar.background': '#282c34',
+        'editor.background': '#1d1f21',
+      },
+    });
+    const globalState = createGlobalState();
+    const deps = buildApplyDeps({ settingsStore: store, globalState });
+
+    const result = await applySettings(deps);
+
+    expect(result.terminalBackground).toBe('#1a1b26');
+    expect(result.vibrancyBackgrounds['sideBar.background']).toBe('#282c34');
+    expect(result.vibrancyBackgrounds['editor.background']).toBe('#1d1f21');
+  });
+
+  it('disable after reinstall removes all vibrancy keys (no resurrection)', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': buildPoisonedColorCustomizations('1e1e1e'),
+    });
+    const globalState = createGlobalState();
+
+    // Step 1: reinstall path — applySettings runs against poisoned settings
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    // Step 2: user runs Disable — restoreSettings should leave settings clean
+    await restoreSettings({
+      settingsStore: store,
+      globalState,
+      disableColorCustomizations: false,
+    });
+
+    const colors = store.data['workbench.colorCustomizations'] || {};
+    expect(colors['terminal.background']).toBeUndefined();
+    for (const key of ALL_VIBRANCY_BG_KEYS) {
+      expect(colors[key]).toBeUndefined();
+    }
+  });
+
+  it('with mixed user-set and poisoned values, only the user value is preserved', async () => {
+    const poisoned = buildPoisonedColorCustomizations('1e1e1e');
+    poisoned['sideBar.background'] = '#282c34'; // legitimate user value
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': poisoned,
+    });
+    const globalState = createGlobalState();
+    const deps = buildApplyDeps({ settingsStore: store, globalState });
+
+    const result = await applySettings(deps);
+
+    expect(result.vibrancyBackgrounds['sideBar.background']).toBe('#282c34');
+    for (const key of ALL_VIBRANCY_BG_KEYS) {
+      if (key === 'sideBar.background') continue;
+      expect(result.vibrancyBackgrounds[key]).toBeNull();
+    }
+  });
+});
+
 // --- applySettings with disableColorCustomizations ---
 
 describe('applySettings with disableColorCustomizations', () => {
