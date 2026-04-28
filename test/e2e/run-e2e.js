@@ -52,6 +52,11 @@ async function main() {
     console.log(`  Executable: ${vscodeExe}`);
     console.log(`  CLI: ${cliPath}`);
 
+    const versionInfo = getVSCodeVersionInfo(cliPath);
+    console.log(`  VSCode version: ${versionInfo.version}`);
+    console.log(`  VSCode commit:  ${versionInfo.commit}`);
+    console.log(`  VSCode arch:    ${versionInfo.arch}`);
+
     // --- Step 2: Enable test mode BEFORE extension ever runs ---
     console.log('\n[2/9] Enabling test mode...');
     fs.mkdirSync(configDir, { recursive: true });
@@ -219,7 +224,7 @@ async function main() {
     writeGitHubSummary(success, screenshot2, {
       installOk, nocrash, greenOk, greenPct, installSettingsOk,
       uninstallOk, uninstallSettingsOk, postUninstallNocrash, uninstallClean, postUninstallGreen,
-    });
+    }, { vscodeVersion, versionInfo });
 
     process.exit(success ? 0 : 1);
 
@@ -320,6 +325,27 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
       }
     }, killTimeout);
   });
+}
+
+// --- VSCode version probe ---
+
+/**
+ * Run the resolved VSCode CLI with --version. Output is three lines:
+ * version, commit hash, architecture.
+ */
+function getVSCodeVersionInfo(cliPath) {
+  try {
+    const out = execSync(`"${cliPath}" --version`, { encoding: 'utf-8', timeout: 15000 });
+    const lines = out.trim().split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    return {
+      version: lines[0] || 'unknown',
+      commit: lines[1] || 'unknown',
+      arch: lines[2] || 'unknown',
+    };
+  } catch (err) {
+    console.log(`  Failed to probe VSCode version: ${(err.message || '').split('\n')[0]}`);
+    return { version: 'unknown', commit: 'unknown', arch: 'unknown' };
+  }
 }
 
 // --- Screenshot capture ---
@@ -546,7 +572,7 @@ function verifySettingsAfterUninstall(settingsPath, originalSettings) {
 
 // --- GitHub summary ---
 
-function writeGitHubSummary(success, screenshotPath, checks) {
+function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
   if (!summaryFile) return;
 
@@ -554,6 +580,11 @@ function writeGitHubSummary(success, screenshotPath, checks) {
   const chk = (v) => v ? '✅' : '❌';
 
   let md = `## E2E Test — ${platform}\n\n`;
+  if (meta.versionInfo) {
+    const channel = meta.vscodeVersion ? ` (\`${meta.vscodeVersion}\` channel)` : '';
+    const shortCommit = (meta.versionInfo.commit || '').slice(0, 8) || 'unknown';
+    md += `**Tested against VS Code ${meta.versionInfo.version || 'unknown'}** (commit \`${shortCommit}\`, ${meta.versionInfo.arch || 'unknown'})${channel}\n\n`;
+  }
   md += `| Check | Status |\n`;
   md += `|-------|--------|\n`;
   md += `| Overall | ${chk(success)} ${success ? 'PASS' : 'FAIL'} |\n`;

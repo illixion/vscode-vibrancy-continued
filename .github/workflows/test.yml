@@ -102,6 +102,29 @@ jobs:
           reporter: java-junit
           list-tests: all
           list-suites: all
+      - name: Notify Telegram on failure
+        if: needs.tests.result != 'success' || needs.e2e-tests.result != 'success'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          BRANCH: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+          E2E_RESULT: ${{ needs.e2e-tests.result }}
+        run: |
+          if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
+            echo "Telegram secrets not configured; skipping notification."
+            exit 0
+          fi
+          MESSAGE=$'\xE2\x9D\x8C Tests failed in '"$REPO"$'\nBranch: '"$BRANCH"$'\nEvent: '"$EVENT"$'\nUnit: '"$TESTS_RESULT"$'\nE2E: '"$E2E_RESULT"$'\nRun: '"$SERVER_URL/$REPO/actions/runs/$RUN_ID"
+          curl -sS --fail-with-body -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}" \
+            --data-urlencode "disable_web_page_preview=true"
       - run: |
           if [[ "${{ needs.tests.result }}" != "success" || "${{ needs.e2e-tests.result }}" != "success" ]]; then
             echo "One or more jobs failed"
