@@ -6,7 +6,7 @@ Enable Acrylic/Glass effect in VS Code.
 > Solutions for common issues can be found in the [FAQ](#FAQs) and [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)
 
 > [!IMPORTANT]
-> Windows 10/11 users: **scroll down** to see an important warning regarding Windows support
+> Windows 10/11 users: see [important notice](#️-important-notice-for-windows-1011-users) at the top of the description regarding a known issue with VSCode on Windows.
 
 ![screenshot](./images/screenshot.png)
 
