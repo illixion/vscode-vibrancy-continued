@@ -107,6 +107,23 @@
     background-color: var(--vibrancy-soft-background) !important;
 }
 
+/* Edit-previous-message overlay: the inline editor is rendered inside the
+   bubble being edited, with the rest of the chat scrolling behind it.
+   Force it opaque so message text doesn't bleed through. Scoped to bubbles
+   only, so the main composer at the bottom keeps its translucent look. */
+.monaco-workbench .part.auxiliarybar [id^='bubble-'] .full-input-box {
+    background-color: var(--vibrancy-opaque-background) !important;
+}
+
+/* Cursor floating popovers (slash-command menu, agent-history menu, etc.)
+   are rendered via a floating-ui portal outside .part.auxiliarybar, so the
+   sidebar-scoped rules above don't reach them. They inherit the workbench
+   transparency and become unreadable over the editor/chat. Make them opaque. */
+.ui-slash-menu__content,
+.composer-history-hover-menu {
+    background-color: var(--vibrancy-opaque-background) !important;
+}
+
 .monaco-workbench .part.auxiliarybar .empty-pane-message-area {
     background-color: transparent !important;
 }
