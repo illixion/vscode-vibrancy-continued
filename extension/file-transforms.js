@@ -79,6 +79,100 @@ function removeJSMarkers(js) {
 // --- Electron BrowserWindow Options ---
 
 /**
+ * Inject options before the `experimentalDarkMode` anchor used by bundled
+ * VSCode BrowserWindow object literals.
+ * @param {string} electronJS - Electron main.js content
+ * @param {string} injectedOptions - Comma-delimited options to prepend
+ * @returns {string} Patched content, or the original string if no anchor exists
+ */
+function injectObjectLiteralWindowOptions(electronJS, injectedOptions) {
+  return electronJS.replace(
+    /experimentalDarkMode/g,
+    `${injectedOptions},experimentalDarkMode`
+  );
+}
+
+/**
+ * Inject options before the `titleBarStyle="hidden"` assignment used by newer
+ * Cursor window builders.
+ * @param {string} electronJS - Electron main.js content
+ * @param {(target: string, quote: string) => string} createInjectedOptions
+ * @returns {string} Patched content, or the original string if no anchor exists
+ */
+function injectCursorWindowOptions(electronJS, createInjectedOptions) {
+  return electronJS.replace(
+    /([A-Za-z_$][\w$]*)\.titleBarStyle=(["'])hidden\2,/g,
+    (_, target, quote) =>
+      `${createInjectedOptions(target, quote)}${target}.titleBarStyle=${quote}hidden${quote},`
+  );
+}
+
+/**
+ * Remove assignment-style window options injected into newer Cursor bundles.
+ * @param {string} electronJS - Electron main.js content
+ * @returns {string} Cleaned content
+ */
+function removeCursorWindowOptions(electronJS) {
+  return electronJS
+    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/g, '')
+    .replace(/[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/g, '');
+}
+
+/**
+ * Inject macOS-only visual effect state into Electron window builders.
+ * @param {string} electronJS - Electron main.js content
+ * @returns {string} Patched content
+ */
+function injectVisualEffectState(electronJS) {
+  if (
+    electronJS.includes('visualEffectState:"active"') ||
+    /[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/.test(electronJS)
+  ) {
+    return electronJS;
+  }
+
+  const objectLiteralPatched = injectObjectLiteralWindowOptions(
+    electronJS,
+    'visualEffectState:"active"'
+  );
+  if (objectLiteralPatched !== electronJS) {
+    return objectLiteralPatched;
+  }
+
+  return injectCursorWindowOptions(
+    electronJS,
+    (target, quote) => `${target}.visualEffectState=${quote}active${quote},`
+  );
+}
+
+/**
+ * Inject frameless-window options into Electron window builders.
+ * @param {string} electronJS - Electron main.js content
+ * @returns {string} Patched content
+ */
+function injectFramelessWindow(electronJS) {
+  if (
+    electronJS.includes('frame:false,transparent:true') ||
+    /([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/.test(electronJS)
+  ) {
+    return electronJS;
+  }
+
+  const objectLiteralPatched = injectObjectLiteralWindowOptions(
+    electronJS,
+    'frame:false,transparent:true'
+  );
+  if (objectLiteralPatched !== electronJS) {
+    return objectLiteralPatched;
+  }
+
+  return injectCursorWindowOptions(
+    electronJS,
+    (target) => `${target}.frame=false,${target}.transparent=true,`
+  );
+}
+
+/**
  * Inject Electron BrowserWindow options (frame, transparent, visualEffectState).
  * @param {string} electronJS - Electron main.js content
  * @param {{ useFrame: boolean, isMacos: boolean }} opts
@@ -87,14 +181,14 @@ function removeJSMarkers(js) {
 function injectElectronOptions(electronJS, { useFrame, isMacos }) {
   let result = electronJS;
 
-  // Add visualEffectState to keep vibrancy active when unfocused (macOS only)
-  if (!result.includes('visualEffectState') && isMacos) {
-    result = result.replace(/experimentalDarkMode/g, 'visualEffectState:"active",experimentalDarkMode');
+  // visualEffectState is a macOS-only Electron option.
+  if (isMacos) {
+    result = injectVisualEffectState(result);
   }
 
   // Add frameless + transparent window options
-  if (useFrame && !result.includes('frame:false,')) {
-    result = result.replace(/experimentalDarkMode/g, 'frame:false,transparent:true,experimentalDarkMode');
+  if (useFrame) {
+    result = injectFramelessWindow(result);
   }
 
   return result;
@@ -106,9 +200,13 @@ function injectElectronOptions(electronJS, { useFrame, isMacos }) {
  * @returns {string} Cleaned content
  */
 function removeElectronOptions(electronJS) {
-  return electronJS
+  const withoutObjectLiteralOptions = electronJS
+    .replace(/visualEffectState:"active",frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/frame:false,transparent:true,visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode')
     .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
     .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
+
+  return removeCursorWindowOptions(withoutObjectLiteralOptions);
 }
 
 // --- CSP / HTML ---
