@@ -44,7 +44,7 @@ jobs:
         #   os: [self-hosted-linux, self-hosted-macos, self-hosted-windows]
         # Self-hosted runners need: Node.js 20+, git, and a desktop session.
         # On Linux self-hosted: also install imagemagick.
-        os: [ubuntu-latest, macos-latest, windows-11-arm]
+        os: [ubuntu-latest, macos-26, windows-11-arm]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

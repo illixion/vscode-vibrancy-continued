@@ -20,6 +20,7 @@ const {
 
 const FIXTURES = path.join(__dirname, '..', 'fixtures');
 const loadFixture = (name) => fs.readFileSync(path.join(FIXTURES, name), 'utf-8');
+const cursorWindowBuilder = loadFixture('cursor-window-builder.js');
 
 // --- generateNewJS ---
 
@@ -111,9 +112,25 @@ describe('injectElectronOptions', () => {
     expect(result).toContain('frame:false,transparent:true');
   });
 
+  it('injects visualEffectState into assignment-based Cursor window builders', () => {
+    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: false, isMacos: true });
+    expect(result).toContain('u.visualEffectState="active",u.titleBarStyle="hidden"');
+  });
+
+  it('injects frameless options into assignment-based Cursor window builders', () => {
+    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: false });
+    expect(result).toContain('u.frame=false,u.transparent=true,u.titleBarStyle="hidden"');
+  });
+
   it('does not double-inject if already present', () => {
     const original = loadFixture('main-merged.js');
     const first = injectElectronOptions(original, { useFrame: true, isMacos: true });
+    const second = injectElectronOptions(first, { useFrame: true, isMacos: true });
+    expect(second).toBe(first);
+  });
+
+  it('does not double-inject assignment-based window builders', () => {
+    const first = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
     const second = injectElectronOptions(first, { useFrame: true, isMacos: true });
     expect(second).toBe(first);
   });
@@ -130,6 +147,11 @@ describe('removeElectronOptions', () => {
   it('removes visualEffectState', () => {
     const injected = 'visualEffectState:"active",experimentalDarkMode';
     expect(removeElectronOptions(injected)).toBe('experimentalDarkMode');
+  });
+
+  it('removes assignment-based Cursor injections', () => {
+    const injected = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
+    expect(removeElectronOptions(injected)).toBe(cursorWindowBuilder);
   });
 
   it('round-trips: inject then remove produces original', () => {

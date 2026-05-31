@@ -11,9 +11,11 @@ const {
 } = require('../../extension/file-transforms');
 
 const FIXTURES = path.join(__dirname, '..', 'fixtures');
+const loadFixture = (name) => fs.readFileSync(path.join(FIXTURES, name), 'utf-8');
 
 describe('install/uninstall round-trip', () => {
   let tmpDir;
+  const cursorWindowBuilder = loadFixture('cursor-window-builder.js');
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-integration-'));
@@ -156,6 +158,12 @@ describe('install/uninstall round-trip', () => {
       const { result, noMetaTag } = patchCSP(original);
       expect(noMetaTag).toBe(true);
       expect(result).toBe(original);
+    });
+
+    it('round-trips assignment-based Cursor window builders', () => {
+      const injected = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
+      const cleaned = removeElectronOptions(injected);
+      expect(cleaned).toBe(cursorWindowBuilder);
     });
   });
 });
