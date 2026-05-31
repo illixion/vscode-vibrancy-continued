@@ -1,3 +1,8 @@
+# 1.1.78
+
+* Core:
+  * Fix macOS inactive-window vibrancy not applying in Cursor (issue [#253](https://github.com/illixion/vscode-vibrancy-continued/issues/253), PR [#254](https://github.com/illixion/vscode-vibrancy-continued/pull/254))
+
 # 1.1.77
 
 * Core:
