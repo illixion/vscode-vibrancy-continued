@@ -2,20 +2,6 @@
 
 Please check this list for a solution if you're encountering an error when installing Vibrancy Continued.
 
-### Nothing happens first time Reload/Enable Vibrancy is used
-
-There is a known issue with Vibrancy sometimes not working on the first try after VSCode updates, perform the same action again to resolve.
-
-### `EACCES: permission denied` when enabling Vibrancy on macOS
-
-Your installation of VSCode is owned by another user. Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
-```shell
-sudo chown -R $(whoami):staff "/Applications/Visual Studio Code.app/"
-sudo chmod -R 755 "/Applications/Visual Studio Code.app/"
-```
-
-A reinstallation will also fix this issue without any loss of settings.
-
 ### `EROFS: read-only file system` when enabling Vibrancy on macOS
 
 Your installation of VSCode is affected by [App Translocation](https://developer.apple.com/forums/thread/724969).
@@ -37,10 +23,6 @@ If you're using an unsupported code editor and you're on Windows, you must perfo
 Check your settings. You should change the renderer type of the terminal to `dom`.
 
 `"terminal.integrated.gpuAcceleration": "off"`
-
-### Prompt "Run Visual Studio Code with administrator privileges"
-
-It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
 
 ### I'm on Windows 10 and I'm experiencing lag when dragging the window
 

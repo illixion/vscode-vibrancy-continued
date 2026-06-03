@@ -90,7 +90,7 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 
 #### Type (`vscode_vibrancy.type`)
 
-Native method of Vibrancy Effect. You can see this page for screenshots of all available options: [Vibrancy Types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md)
+Native method of Vibrancy effect. See here for screenshots of all available options: [Vibrancy Types](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/vibrancy-types.md)
 
 * auto : Automatically switch with system version.
 * transparent: Make VSCode transparent only, without blur. (Linux default)
@@ -99,7 +99,7 @@ Native method of Vibrancy Effect. You can see this page for screenshots of all a
 
 #### Opacity (`vscode_vibrancy.opacity`)
 
-Opacity of Vibrancy Effect. -1 is theme default, 0 is maximum transparency, and 1 will remove all transparency.
+Opacity of Vibrancy effect. -1 is theme default, 0 is maximum transparency, and 1 will remove all transparency.
 
 *value: -1.0 ~ 1.0*
 
@@ -111,15 +111,15 @@ Override the theme's background color for the vibrancy opacity effect. Uses VSCo
 
 #### Custom imports (`vscode_vibrancy.imports`)
 
-Import any custom CSS/JS files into the VSCode editor, as file paths. The files will be imported in the order they are listed. On Windows, forward slashes must be used.
+Import any custom CSS/JS files into the VSCode editor directly without requiring custom CSS extensions. The files will be imported in the order they are listed. On Windows, forward slashes must be used.
 
 Use this feature to add a custom Vibrancy Continued theme or modify an existing one.
 
 EXAMPLES:
 
-- Windows: `C:/Users/MyUserName/Documents/custom.css`
-- macOS: `/Users/MyUserName/Documents/custom.css`
-- Linux: `/home/MyUserName/Documents/custom.css`
+- Windows: `[ C:/Users/MyUserName/Documents/custom.css ]`
+- macOS: `[ /Users/MyUserName/Documents/custom.css ]`
+- Linux: `[ /home/MyUserName/Documents/custom.css ]`
 
 *value: array[]*
 
@@ -201,31 +201,11 @@ Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restar
 
 You can also just uninstall the extension and restart VSCode, which will automatically remove Vibrancy.
 
-### Nothing happens first time Reload/Enable Vibrancy is used?
-
-There is a known issue with Vibrancy sometimes not working on the first try after VSCode updates, perform the same action again to resolve.
-
 ### Effect doesn't work correctly in VSCode terminal?
 
 Check your settings. You should change the renderer type of the terminal to `dom`.
 
 `"terminal.integrated.gpuAcceleration": "off"`
-
-### Prompt "Run Visual Studio Code with administrator privileges"?
-
-It usually appears on Windows when you are using the VSCode System Installer. You should close VSCode completely, then run VSCode as administrator and retry what you did before (Enable/Reload/Disable Vibrancy).
-
-### `EACCES: permission denied` when enabling Vibrancy on macOS?
-
-Your installation of VSCode is owned by another user.
-
-Run the following commands exactly as-is in the Terminal app to take ownership of the files, and enter your password when prompted:
-```shell
-sudo chown -R $(whoami):staff "/Applications/Visual Studio Code.app/"
-sudo chmod -R 755 "/Applications/Visual Studio Code.app/"
-```
-
-A reinstallation will also fix this issue without any loss of settings.
 
 ### `EROFS: read-only file system` when enabling Vibrancy on macOS?
 
