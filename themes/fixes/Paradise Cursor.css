@@ -26,6 +26,16 @@
         box-shadow 0.3s ease-out !important;
 }
 
+.open-agents-window-button {
+    background-color: rgba(105, 182, 237, 0.3) !important;
+    font-size: 10.5px !important;
+    border-radius: var(--corner) !important;
+}
+
+.open-agents-window-button:hover {
+    background-color: rgba(105, 182, 237, 0.5) !important;
+}
+
 .monaco-workbench .part.auxiliarybar .full-input-box:focus-within {
     background-color: var(--semi-opaque-secondary) !important;
     border-color: rgba(105, 182, 237, 0.45) !important;
