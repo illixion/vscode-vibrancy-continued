@@ -2,11 +2,13 @@
 
 * Core:
   * Fix macOS inactive-window vibrancy not applying in Cursor (issue [#253](https://github.com/illixion/vscode-vibrancy-continued/issues/253), PR [#254](https://github.com/illixion/vscode-vibrancy-continued/pull/254))
+* Contributors:
+  * [@alexcarv318](https://github.com/alexcarv318)
 
 # 1.1.77
 
 * Core:
-  * Stop poisoning the user-color backup when reinstalling vibrancy (PR [#247](https://github.com/illixion/vscode-vibrancy-continued/pull/247))
+  * Stop poisoning the user-color backup when reinstalling vibrancy (issue [#247](https://github.com/illixion/vscode-vibrancy-continued/issues/247))
 * Docs:
   * Add nightly CI results badge to readme
 
