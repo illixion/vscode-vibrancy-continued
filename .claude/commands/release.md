@@ -3,9 +3,13 @@ description: Automate a release from development to main with changelog, version
 allowed-tools: Bash, Read, Edit, Write, AskUserQuestion
 ---
 
-You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide a version bump type as an argument: $ARGUMENTS (defaults to "patch" if empty or not one of: major, minor, patch).
+You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide a version bump type as an argument: $ARGUMENTS (defaults to "patch" if empty or not one of: prerelease, major, minor, patch). `prerelease` counts as a release candidate as per SemVer, and the publish workflow will be triggered with `prerelease=true` to mark the GitHub release as a pre-release. The other bump types are standard SemVer bumps.
 
 Follow these steps exactly, stopping on any error:
+
+## 0. Verify GitHub CLI auth
+
+Run `gh auth status` and check that the authenticated account is **illixion**. If not, stop and use `gh auth switch --account illixion` to switch to the correct account before proceeding.
 
 ## 1. Ensure clean working tree
 
@@ -43,7 +47,9 @@ Read the current `CHANGELOG.md`. Prepend a new section at the very top of the fi
   * Change summary
 ```
 
-Categorize changes using the same categories seen in the existing changelog (Core, Themes, Tests, Contributors, etc.). Summarize each commit concisely — do not just paste the raw commit message. Group related commits under one bullet where appropriate. Reference PR numbers with markdown links in the format `(PR [#NNN](https://github.com/illixion/vscode-vibrancy-continued/pull/NNN))` when the commit message contains a PR reference.
+Categorize changes using the same categories seen in the existing changelog (Core, Themes, Tests, Contributors, etc.). Summarize each commit concisely — do not just paste the raw commit message. Group related commits under one bullet where appropriate. Reference PR numbers and any mentioned issues associated with them with markdown links in the format `(PR [#NNN](https://github.com/illixion/vscode-vibrancy-continued/pull/NNN))` when the commit message contains a PR reference. Make sure to include a Contributors section if there are any commits authored by contributors (anyone other than illixion).
+
+Omit documentation and CI changes from the changelog unless they are relevant to users. Focus on changes that affect users, such as bug fixes, new features, and improvements.
 
 Show the user the draft changelog entry and ask them to confirm or request edits before proceeding.
 
@@ -68,11 +74,7 @@ git commit -m "<new_version>"
 
 Do NOT include a Co-Authored-By trailer.
 
-## 8. Verify GitHub CLI auth
-
-Run `gh auth status` and check that the authenticated account is **illixion**. If not, stop and tell the user to authenticate as illixion first (`gh auth login`).
-
-## 9. Sync development with main
+## 8. Sync development with main
 
 Merge main back into development so both branches share the same history and avoid divergence on future releases:
 
@@ -82,7 +84,7 @@ git merge main
 git push origin development
 ```
 
-## 10. Create git tag and push
+## 9. Create git tag and push
 
 Create an annotated tag for the release, then push everything:
 
@@ -95,7 +97,7 @@ git push origin development
 
 ## 11. Create draft GitHub release
 
-Ask the user whether this should be a pre-release (if not already established).
+Ask the user whether this should be a pre-release if not already established.
 
 Create a **draft** GitHub release using the changelog entry as release notes. Use the changelog section you wrote in step 5 (without the `# <version>` heading) as the body:
 
