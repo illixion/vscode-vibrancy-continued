@@ -1,3 +1,10 @@
+# 1.1.79
+
+* Themes:
+  * Make Cursor's "Agents Window" button less prominent in Paradise themes (PR [#256](https://github.com/illixion/vscode-vibrancy-continued/pull/256))
+* Contributors:
+  * [@nickesc](https://github.com/nickesc)
+
 # 1.1.78
 
 * Core:
