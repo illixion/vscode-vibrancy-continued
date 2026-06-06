@@ -13,12 +13,14 @@ Enable Acrylic/Glass effect in VS Code.
 [![VS Code Insiders (nightly)](https://img.shields.io/github/actions/workflow/status/illixion/vscode-vibrancy-continued/test.yml?event=schedule&label=VS%20Code%20Insiders%20%28nightly%29)](https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/test.yml?query=event%3Aschedule)
 [![](https://vsmarketplacebadges.dev/version/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
 [![](https://vsmarketplacebadges.dev/rating-star/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
-[![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)
+[![](https://vsmarketplacebadges.dev/installs-short/illixion.vscode-vibrancy-continued.png)](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued)&nbsp;
+[![Open VSX Version](https://img.shields.io/open-vsx/v/illixion/vscode-vibrancy-continued?label=Open%20VSX)](https://open-vsx.org/extension/illixion/vscode-vibrancy-continued)&nbsp;
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/illixion/vscode-vibrancy-continued?label=Open%20VSX%20downloads)](https://open-vsx.org/extension/illixion/vscode-vibrancy-continued)
 
 [![](https://img.shields.io/github/stars/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)&nbsp;
 [![](https://img.shields.io/github/watchers/illixion/vscode-vibrancy-continued.svg?style=social)](https://github.com/illixion/vscode-vibrancy-continued)
 
-Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
+Links: [GitHub](https://github.com/illixion/vscode-vibrancy-continued) | [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=illixion.vscode-vibrancy-continued) | [Open VSX Registry](https://open-vsx.org/extension/illixion/vscode-vibrancy-continued) | [issues](https://github.com/illixion/vscode-vibrancy-continued/issues)
 
 Maintenance of this project is made possible by all the <a href="https://github.com/illixion/vscode-vibrancy-continued/graphs/contributors">contributors</a> and <a href="https://github.com/sponsors/illixion">sponsors</a>. If you'd like to sponsor this project and have your avatar or company logo appear below, <a href="https://github.com/sponsors/illixion">click here</a>. Any support is greatly appreciated 💖
 
