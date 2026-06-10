@@ -15,9 +15,13 @@ jobs:
   build-native:
     runs-on: ${{ matrix.os }}
     strategy:
+      # Don't cancel the other arch when one fails — we want to see both results.
+      fail-fast: false
       matrix:
         include:
-          - os: windows-2025
+          # Pin to windows-2022 (Visual Studio 2022): the windows-2025 image now
+          # redirects to VS 2026 (v18), which the bundled node-gyp can't detect.
+          - os: windows-2022
             arch: x64
           - os: windows-11-arm
             arch: arm64
