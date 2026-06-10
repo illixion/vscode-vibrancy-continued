@@ -1,4 +1,4 @@
-# 1.1.80-0
+# 1.1.80 (prerelease)
 
 * Core:
   * Fix Windows 10 window drag lag when acrylic is enabled — the blur is now dropped while moving/resizing the window and restored once it goes idle (issue [#52](https://github.com/illixion/vscode-vibrancy-continued/issues/52))
