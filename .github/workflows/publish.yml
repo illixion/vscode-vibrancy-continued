@@ -19,34 +19,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Pin to windows-2022 (Visual Studio 2022): the windows-2025 image now
-          # redirects to VS 2026 (v18), which the bundled node-gyp can't detect.
-          - os: windows-2022
+          - os: windows-2025
             arch: x64
           - os: windows-11-arm
             arch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
-      - name: Install node-gyp and node-addon-api
-        run: |
-          npm install -g node-gyp
-          npm install node-addon-api
+      - name: Install node-addon-api
+        run: npm install node-addon-api
       - name: Rename binding.gyp.dist to binding.gyp
         run: mv binding.gyp.dist binding.gyp
         shell: bash
+      # The windows-2025 image ships Visual Studio 2026, which only node-gyp
+      # >=12.1.0 can detect (nodejs/node-gyp#3282). Run it via npx to guarantee
+      # that version regardless of the node-gyp bundled with the runner's npm.
       - name: Build native modules
-        run: npm run build-win10
+        run: npx -y node-gyp@latest rebuild
       - name: Copy build output to native/prebuilt
         run: |
           mkdir -p native/prebuilt
           cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ matrix.arch }}.node
         shell: bash
       - name: Upload native modules
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.arch }}
           path: native/prebuilt/
@@ -57,18 +56,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Download native modules (x64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: native-x64
           path: native/prebuilt/
       - name: Download native modules (arm64)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: native-arm64
           path: native/prebuilt/
@@ -80,7 +79,7 @@ jobs:
       - name: Package extension
         run: npx @vscode/vsce package ${{ inputs.prerelease && '--pre-release' || '' }}
       - name: Upload VSIX package as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vscode-vibrancy-continued-v${{ steps.version.outputs.version }}
           path: "*.vsix"

@@ -18,8 +18,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       # Use `npm ci`, not `npm install`: the latter re-resolves the dependency
@@ -28,7 +28,7 @@ jobs:
       # makes vitest fail to start. `npm ci` installs strictly from the lockfile.
       - run: npm ci
       - run: npm test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: vitest-report
@@ -50,8 +50,8 @@ jobs:
         # On Linux self-hosted: also install imagemagick.
         os: [ubuntu-latest, macos-26, windows-11-arm]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - run: npm install
@@ -59,10 +59,9 @@ jobs:
       - name: Build native modules (Windows)
         if: runner.os == 'Windows'
         run: |
-          npm install -g node-gyp
           npm install node-addon-api
           mv binding.gyp.dist binding.gyp
-          npm run build-win10
+          npx -y node-gyp@latest rebuild
           mkdir -p native/prebuilt
           cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
           mv binding.gyp binding.gyp.dist
@@ -79,7 +78,7 @@ jobs:
       - name: Run E2E tests (Windows)
         if: runner.os == 'Windows'
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: screenshots-${{ matrix.os }}
@@ -91,8 +90,8 @@ jobs:
     needs: [tests, e2e-tests]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         if: always()
         with:
           name: vitest-report
