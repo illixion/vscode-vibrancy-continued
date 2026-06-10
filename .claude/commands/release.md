@@ -3,7 +3,15 @@ description: Automate a release from development to main with changelog, version
 allowed-tools: Bash, Read, Edit, Write, AskUserQuestion
 ---
 
-You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide a version bump type as an argument: $ARGUMENTS (defaults to "patch" if empty or not one of: prerelease, major, minor, patch). `prerelease` counts as a release candidate as per SemVer, and the publish workflow will be triggered with `prerelease=true` to mark the GitHub release as a pre-release. The other bump types are standard SemVer bumps.
+You are performing a release for the vscode-vibrancy-continued extension. The user may optionally provide an argument: $ARGUMENTS (defaults to "patch" if empty or not one of: prerelease, major, minor, patch).
+
+**Versioning note:** the VS Marketplace does **not** support SemVer pre-release tags (e.g. `1.2.3-0` is rejected). Extension versions must always be plain `major.minor.patch`. A pre-release is therefore published as a normal version bump, distinguished only by the `--pre-release` publish flag (workflow input `prerelease=true`) and a `(prerelease)` label in the changelog — never by a `-0`/`-rc` version suffix. Pre-release and stable releases must use distinct versions, so each release just takes the next bump.
+
+Interpreting $ARGUMENTS:
+
+- `prerelease` → bump type **patch**, and this release **is a pre-release** (`--pre-release` flag, `(prerelease)` changelog label).
+- `major` / `minor` / `patch` → that bump type, published as a **stable** release.
+- empty or unrecognized → **patch**, stable.
 
 Follow these steps exactly, stopping on any error:
 
@@ -28,13 +36,13 @@ Run `git log main..development --oneline --no-merges` to get the list of commits
 
 ## 4. Bump version
 
-Determine the bump type from $ARGUMENTS (default: patch). Run:
+Using the bump type resolved from $ARGUMENTS above, bump to a plain SemVer version. **Never** run `npm version prerelease` — it produces a `-0` tag the VS Marketplace rejects.
 
 ```
 npm version <bump_type> --no-git-tag-version
 ```
 
-Read the new version from package.json after bumping.
+Read the new version from package.json after bumping. Note whether this is a pre-release (from $ARGUMENTS) for use in the changelog and publish steps below.
 
 ## 5. Update changelog
 
@@ -46,6 +54,8 @@ Read the current `CHANGELOG.md`. Prepend a new section at the very top of the fi
 * Category:
   * Change summary
 ```
+
+If this is a pre-release, append ` (prerelease)` to the version heading, e.g. `# 1.2.3 (prerelease)`.
 
 Categorize changes using the same categories seen in the existing changelog (Core, Themes, Tests, Contributors, etc.). Summarize each commit concisely — do not just paste the raw commit message. Group related commits under one bullet where appropriate. Reference PR numbers and any mentioned issues associated with them with markdown links in the format `(PR [#NNN](https://github.com/illixion/vscode-vibrancy-continued/pull/NNN))` when the commit message contains a PR reference. Make sure to include a Contributors section if there are any commits authored by contributors (anyone other than illixion).
 
@@ -64,12 +74,13 @@ git commit -m "<new_version>"
 
 Do NOT include a Co-Authored-By trailer.
 
-## 7. Switch to main and squash merge
+## 7. Switch to main and merge
+
+Use a regular merge (NOT a squash) so main retains development's commit history:
 
 ```
 git checkout main
-git merge --squash development
-git commit -m "<new_version>"
+git merge development -m "<new_version>"
 ```
 
 Do NOT include a Co-Authored-By trailer.
