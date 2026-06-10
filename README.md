@@ -5,9 +5,6 @@ Enable Acrylic/Glass effect in VS Code.
 > [!TIP]
 > Solutions for common issues can be found in the [FAQ](#FAQs) and [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)
 
-> [!IMPORTANT]
-> Windows 10/11 users: see [important notice](#️-important-notice-for-windows-1011-users) at the top of the description regarding a known issue with VSCode on Windows.
-
 ![screenshot](./images/screenshot.png)
 
 [![VS Code Insiders (nightly)](https://img.shields.io/github/actions/workflow/status/illixion/vscode-vibrancy-continued/test.yml?event=schedule&label=VS%20Code%20Insiders%20%28nightly%29)](https://github.com/illixion/vscode-vibrancy-continued/actions/workflows/test.yml?query=event%3Aschedule)
@@ -96,8 +93,12 @@ Native method of Vibrancy effect. See here for screenshots of all available opti
 
 * auto : Automatically switch with system version.
 * transparent: Make VSCode transparent only, without blur. (Linux default)
-* acrylic : (Windows 10 only) Fluent Design blur.
+* acrylic : Acrylic Fluent Design blur. (Windows)
+* mica : Mica background material — tints with the desktop wallpaper. (Windows 11 only)
+* tabbed : Mica Alt (Tabbed) background material — a stronger Mica variant. (Windows 11 only)
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
+
+> On Windows 10, `mica` and `tabbed` aren't available and fall back to `acrylic`. The Mica/Tabbed materials use the modern DWM backdrop API, which only exists on Windows 11.
 
 #### Opacity (`vscode_vibrancy.opacity`)
 
