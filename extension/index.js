@@ -6,6 +6,7 @@ var { spawn } = require('child_process');
 var {
   generateNewJS: _generateNewJS,
   removeJSMarkers,
+  resolveUseFrame,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -563,38 +564,14 @@ function activate(context) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    let useFrame = false;
-
-    // On Cursor, always use frame
-    if (vscode.env.appName === 'Cursor') {
-      useFrame = true;
-    }
-
-    // On Windows with Electron >=27, always use frame (issue 122)
-    if (process.platform === 'win32' && electronMajorVersion >= 27) {
-      useFrame = true;
-    }
-
-    // Linux doesn't have a universal native API for transparent frames,
-    // so we need to handle transparency and window frames manually.
-    if (process.platform === 'linux') {
-      useFrame = true;
-    }
-
-    // macOS is frameless by default: without it there are UI rendering glitches
-    // on Apple Silicon (observed on M2 / macOS Tahoe). Opt out via
-    // disableFramelessWindow, which is evaluated below.
-    if (osType === 'macos') {
-      useFrame = true;
-    }
-
-    if (config.disableFramelessWindow) {
-      useFrame = false;
-    }
-
-    if (config.forceFramelessWindow) {
-      useFrame = true;
-    }
+    const useFrame = resolveUseFrame({
+      osType,
+      platform: process.platform,
+      electronMajorVersion,
+      appName: vscode.env.appName,
+      disableFramelessWindow: config.disableFramelessWindow,
+      forceFramelessWindow: config.forceFramelessWindow,
+    });
 
     // On non-VSCode editors, this is risky, check against a list of known working editors
     if (!knownEditors.includes(vscode.env.appName)) {

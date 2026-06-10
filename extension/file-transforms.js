@@ -174,6 +174,68 @@ function injectFramelessWindow(electronJS, transparent = true) {
 }
 
 /**
+ * Decide whether to inject frameless + transparent window options.
+ *
+ * Precedence (later rules win): platform/editor defaults are applied first,
+ * then disableFramelessWindow can turn it off, then forceFramelessWindow can
+ * force it back on. macOS is frameless by default to avoid UI rendering
+ * glitches on Apple Silicon; disableFramelessWindow lets macOS users opt out.
+ *
+ * @param {{
+ *   osType: string,
+ *   platform: NodeJS.Platform,
+ *   electronMajorVersion: number,
+ *   appName: string,
+ *   disableFramelessWindow?: boolean,
+ *   forceFramelessWindow?: boolean,
+ * }} opts
+ * @returns {boolean} true if frameless+transparent options should be injected
+ */
+function resolveUseFrame({
+  osType,
+  platform,
+  electronMajorVersion,
+  appName,
+  disableFramelessWindow = false,
+  forceFramelessWindow = false,
+}) {
+  let useFrame = false;
+
+  // On Cursor, always use frame
+  if (appName === 'Cursor') {
+    useFrame = true;
+  }
+
+  // On Windows with Electron >=27, always use frame (issue 122)
+  if (platform === 'win32' && electronMajorVersion >= 27) {
+    useFrame = true;
+  }
+
+  // Linux doesn't have a universal native API for transparent frames,
+  // so we need to handle transparency and window frames manually.
+  if (platform === 'linux') {
+    useFrame = true;
+  }
+
+  // macOS is frameless by default: without it there are UI rendering glitches
+  // on Apple Silicon (observed on M2 / macOS Tahoe). Opt out via
+  // disableFramelessWindow, which is evaluated below.
+  if (osType === 'macos') {
+    useFrame = true;
+  }
+
+  if (disableFramelessWindow) {
+    useFrame = false;
+  }
+
+  if (forceFramelessWindow) {
+    useFrame = true;
+  }
+
+  return useFrame;
+}
+
+/**
  * Inject Electron BrowserWindow options (frame, transparent, visualEffectState).
  * @param {string} electronJS - Electron main.js content
  * @param {{ useFrame: boolean, isMacos: boolean }} opts
@@ -365,6 +427,7 @@ module.exports = {
   MARKER_REGEX,
   generateNewJS,
   removeJSMarkers,
+  resolveUseFrame,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,
