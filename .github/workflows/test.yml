@@ -22,7 +22,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install
+      # Use `npm ci`, not `npm install`: the latter re-resolves the dependency
+      # tree and intermittently prunes platform-specific optional deps (npm bug
+      # npm/cli#4828), which on Linux drops @rolldown/binding-linux-x64-gnu and
+      # makes vitest fail to start. `npm ci` installs strictly from the lockfile.
+      - run: npm ci
       - run: npm test
       - uses: actions/upload-artifact@v4
         if: always()
