@@ -52,13 +52,27 @@ const macosType = [
   'medium-light'
 ];
 
-const windowsType = ['acrylic'];
+// 'mica' and 'tabbed' (Mica Alt) are Windows 11 DWM backdrop materials. On
+// Windows 10 they have no legacy equivalent and fall back to acrylic blur.
+const windowsType = ['acrylic', 'mica', 'tabbed'];
 
 const universalType = ['transparent'];
 
 // Windows AccentState values (must match enum in native/vibrancy.cc)
 const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
 const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
+
+// Map a vibrancy type to an Electron BrowserWindow backgroundMaterial value
+// (Windows 11 only). https://www.electronjs.org/docs/latest/api/browser-window
+function backgroundMaterialForType(type) {
+  switch (type) {
+    case 'mica': return 'mica';
+    case 'tabbed': return 'tabbed';
+    case 'transparent': return 'none';
+    case 'acrylic':
+    default: return 'acrylic';
+  }
+}
 
 /**
  * @param {string} hex
@@ -104,40 +118,55 @@ electron.app.on('browser-window-created', (_, window) => {
     || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
-    // TODO: fallback to ACCENT_ENABLE_BLURBEHIND (3) on pre-RS4 systems that don't support acrylic
-    const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
-    const require = createRequire(import.meta.url);
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);    
-    const arch = process.arch; // 'x64', 'arm64', etc.
+    if (app.win11) {
+      // Windows 11: use the modern DWM backdrop material (Mica / Acrylic / Tabbed)
+      // via Electron's BrowserWindow.setBackgroundMaterial. This composites on the
+      // GPU and has no per-frame blur cost, so it doesn't lag while dragging the
+      // way the legacy acrylic accent does on Win10 (issue #52). It also gives us
+      // Mica and Mica Alt support (issue #19).
+      const material = backgroundMaterialForType(type);
+      if (typeof window.setBackgroundMaterial === 'function') {
+        try {
+          window.setBackgroundMaterial(material);
+        } catch (err) {
+          console.error('setBackgroundMaterial failed:', err);
+        }
+      }
+    } else {
+      // Windows 10: legacy SetWindowCompositionAttribute accent.
+      const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
+      const require = createRequire(import.meta.url);
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      const arch = process.arch; // 'x64', 'arm64', etc.
 
-    try {
-      const addonPath = path.resolve(
-          __dirname,
-          `./vibrancy-${arch}.node`
-      );
-      const addon = require(addonPath);
-      addon.setVibrancy(
-        window.getNativeWindowHandle().readInt32LE(0),
-          effect,
-          backgroundRGB.r,
-          backgroundRGB.g,
-          backgroundRGB.b,
-          0
-        );
-    } catch (err) {
-        throw new Error(
-            `Failed to load displayconfig for arch ${arch}. Error: ${err.message}`
-        );
+      try {
+        const addonPath = path.resolve(__dirname, `./vibrancy-${arch}.node`);
+        const addon = require(addonPath);
+        const applyAccent = () => {
+          if (window.isDestroyed()) return;
+          addon.setVibrancy(
+            window.getNativeWindowHandle().readInt32LE(0),
+            effect,
+            backgroundRGB.r,
+            backgroundRGB.g,
+            backgroundRGB.b,
+            0
+          );
+        };
+        applyAccent();
+
+        // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Win10, so
+        // drop it during move/resize and restore it once the window goes idle.
+        if (effect === ACCENT_ACRYLIC) {
+          import('./win-acrylic-drag.mjs')
+            .then((module) => module.default(window, addon, applyAccent))
+            .catch((error) => console.error('Error loading win-acrylic-drag:', error));
+        }
+      } catch (err) {
+        throw new Error(`Failed to load vibrancy addon for arch ${arch}. Error: ${err.message}`);
+      }
     }
-    
-    import('./win10refresh.mjs')
-      .then((module) => {
-        module.default(window, 60);
-      })
-      .catch((error) => {
-        console.error('Error loading module:', error);
-      });
 
     window.webContents.once('dom-ready', () => {
       const currentURL = window.webContents.getURL();

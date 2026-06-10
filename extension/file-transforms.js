@@ -114,7 +114,7 @@ function injectCursorWindowOptions(electronJS, createInjectedOptions) {
  */
 function removeCursorWindowOptions(electronJS) {
   return electronJS
-    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/g, '')
+    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=(?:true|false),/g, '')
     .replace(/[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/g, '');
 }
 
@@ -150,17 +150,18 @@ function injectVisualEffectState(electronJS) {
  * @param {string} electronJS - Electron main.js content
  * @returns {string} Patched content
  */
-function injectFramelessWindow(electronJS) {
+function injectFramelessWindow(electronJS, transparent = true) {
+  const t = transparent ? 'true' : 'false';
   if (
-    electronJS.includes('frame:false,transparent:true') ||
-    /([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/.test(electronJS)
+    electronJS.includes(`frame:false,transparent:${t}`) ||
+    new RegExp(`([A-Za-z_$][\\w$]*)\\.frame=false,\\1\\.transparent=${t},`).test(electronJS)
   ) {
     return electronJS;
   }
 
   const objectLiteralPatched = injectObjectLiteralWindowOptions(
     electronJS,
-    'frame:false,transparent:true'
+    `frame:false,transparent:${t}`
   );
   if (objectLiteralPatched !== electronJS) {
     return objectLiteralPatched;
@@ -168,8 +169,70 @@ function injectFramelessWindow(electronJS) {
 
   return injectCursorWindowOptions(
     electronJS,
-    (target) => `${target}.frame=false,${target}.transparent=true,`
+    (target) => `${target}.frame=false,${target}.transparent=${t},`
   );
+}
+
+/**
+ * Decide whether to inject frameless + transparent window options.
+ *
+ * Precedence (later rules win): platform/editor defaults are applied first,
+ * then disableFramelessWindow can turn it off, then forceFramelessWindow can
+ * force it back on. macOS is frameless by default to avoid UI rendering
+ * glitches on Apple Silicon; disableFramelessWindow lets macOS users opt out.
+ *
+ * @param {{
+ *   osType: string,
+ *   platform: NodeJS.Platform,
+ *   electronMajorVersion: number,
+ *   appName: string,
+ *   disableFramelessWindow?: boolean,
+ *   forceFramelessWindow?: boolean,
+ * }} opts
+ * @returns {boolean} true if frameless+transparent options should be injected
+ */
+function resolveUseFrame({
+  osType,
+  platform,
+  electronMajorVersion,
+  appName,
+  disableFramelessWindow = false,
+  forceFramelessWindow = false,
+}) {
+  let useFrame = false;
+
+  // On Cursor, always use frame
+  if (appName === 'Cursor') {
+    useFrame = true;
+  }
+
+  // On Windows with Electron >=27, always use frame (issue 122)
+  if (platform === 'win32' && electronMajorVersion >= 27) {
+    useFrame = true;
+  }
+
+  // Linux doesn't have a universal native API for transparent frames,
+  // so we need to handle transparency and window frames manually.
+  if (platform === 'linux') {
+    useFrame = true;
+  }
+
+  // macOS is frameless by default: without it there are UI rendering glitches
+  // on Apple Silicon (observed on M2 / macOS Tahoe). Opt out via
+  // disableFramelessWindow, which is evaluated below.
+  if (osType === 'macos') {
+    useFrame = true;
+  }
+
+  if (disableFramelessWindow) {
+    useFrame = false;
+  }
+
+  if (forceFramelessWindow) {
+    useFrame = true;
+  }
+
+  return useFrame;
 }
 
 /**
@@ -178,7 +241,7 @@ function injectFramelessWindow(electronJS) {
  * @param {{ useFrame: boolean, isMacos: boolean }} opts
  * @returns {string} Modified content
  */
-function injectElectronOptions(electronJS, { useFrame, isMacos }) {
+function injectElectronOptions(electronJS, { useFrame, isMacos, transparent = true }) {
   let result = electronJS;
 
   // visualEffectState is a macOS-only Electron option.
@@ -186,9 +249,11 @@ function injectElectronOptions(electronJS, { useFrame, isMacos }) {
     result = injectVisualEffectState(result);
   }
 
-  // Add frameless + transparent window options
+  // Add frameless + (optionally) transparent window options.
+  // Win11 DWM backdrop materials (Mica/Acrylic) require an opaque window, so
+  // the caller passes transparent:false in that case.
   if (useFrame) {
-    result = injectFramelessWindow(result);
+    result = injectFramelessWindow(result, transparent);
   }
 
   return result;
@@ -201,9 +266,9 @@ function injectElectronOptions(electronJS, { useFrame, isMacos }) {
  */
 function removeElectronOptions(electronJS) {
   const withoutObjectLiteralOptions = electronJS
-    .replace(/visualEffectState:"active",frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-    .replace(/frame:false,transparent:true,visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode')
-    .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/visualEffectState:"active",frame:false,transparent:(?:true|false),experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/frame:false,transparent:(?:true|false),visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/frame:false,transparent:(?:true|false),experimentalDarkMode/g, 'experimentalDarkMode')
     .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
 
   return removeCursorWindowOptions(withoutObjectLiteralOptions);
@@ -362,6 +427,7 @@ module.exports = {
   MARKER_REGEX,
   generateNewJS,
   removeJSMarkers,
+  resolveUseFrame,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,

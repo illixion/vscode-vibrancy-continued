@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.79",
+  "version": "1.1.80-0",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -64,6 +64,8 @@
           "enum": [
             "auto",
             "acrylic",
+            "mica",
+            "tabbed",
             "transparent",
             "under-window",
             "fullscreen-ui",
@@ -88,6 +90,8 @@
           "enumDescriptions": [
             "%configuration.type.auto.description%",
             "%configuration.type.acrylic.description%",
+            "%configuration.type.mica.description%",
+            "%configuration.type.tabbed.description%",
             "%configuration.type.transparent.description%",
             "%configuration.type.macos-only.description%",
             "%configuration.type.macos-only.description%",

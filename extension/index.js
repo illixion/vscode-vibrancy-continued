@@ -6,6 +6,7 @@ var { spawn } = require('child_process');
 var {
   generateNewJS: _generateNewJS,
   removeJSMarkers,
+  resolveUseFrame,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -25,6 +26,13 @@ const localize = require('./i18n');
  * @type {'unknown' | 'win10' | 'macos'}
  */
 const osType = require('./platform');
+
+// Windows 11 is build 22000+. os.release() reports e.g. "10.0.22631" on Win11
+// and "10.0.19045" on Win10 — both have major 10, so we must check the build.
+// Used to pick the modern DWM backdrop path (Mica/Acrylic, no drag lag) on
+// Win11 vs the legacy SetWindowCompositionAttribute accent on Win10.
+const isWindows11 = osType === 'win10'
+  && Number(require('os').release().split('.')[2]) >= 22000;
 
 const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
 
@@ -487,6 +495,7 @@ function activate(context) {
 
     const injectData = {
       os: osType,
+      win11: isWindows11,
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
@@ -555,31 +564,14 @@ function activate(context) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    let useFrame = false;
-
-    // On Cursor, always use frame
-    if (vscode.env.appName === 'Cursor') {
-      useFrame = true;
-    }
-
-    // On Windows with Electron >=27, always use frame (issue 122)
-    if (process.platform === 'win32' && electronMajorVersion >= 27) {
-      useFrame = true;
-    }
-
-    // Linux doesn't have a universal native API for transparent frames, 
-    // so we need to handle transparency and window frames manually.
-    if (process.platform === 'linux') {
-      useFrame = true;
-    }
-
-    if (config.disableFramelessWindow) {
-      useFrame = false;
-    }
-
-    if (config.forceFramelessWindow) {
-      useFrame = true;
-    }
+    const useFrame = resolveUseFrame({
+      osType,
+      platform: process.platform,
+      electronMajorVersion,
+      appName: vscode.env.appName,
+      disableFramelessWindow: config.disableFramelessWindow,
+      forceFramelessWindow: config.forceFramelessWindow,
+    });
 
     // On non-VSCode editors, this is risky, check against a list of known working editors
     if (!knownEditors.includes(vscode.env.appName)) {
@@ -590,7 +582,19 @@ function activate(context) {
       return;
     }
 
-    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos' });
+    // On Windows 11, DWM backdrop materials (Mica/Acrylic/Tabbed) only render on
+    // an opaque window — a transparent window suppresses the material entirely.
+    // The 'transparent' type is the exception: it needs a see-through window and
+    // uses no material. Resolve 'auto' against the theme's Windows default.
+    let transparent = true;
+    if (isWindows11) {
+      const resolvedType = config.type === 'auto'
+        ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
+        : config.type;
+      transparent = resolvedType === 'transparent';
+    }
+
+    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos', transparent });
 
     await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }

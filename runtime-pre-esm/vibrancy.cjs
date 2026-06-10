@@ -10,6 +10,6 @@ try {
     module.exports = addon;
 } catch (err) {
     throw new Error(
-        `Failed to load displayconfig for arch ${arch}. Error: ${err.message}`
+        `Failed to load vibrancy addon for arch ${arch}. Error: ${err.message}`
     );
 }

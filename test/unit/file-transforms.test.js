@@ -3,6 +3,7 @@ const path = require('path');
 const {
   generateNewJS,
   removeJSMarkers,
+  resolveUseFrame,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,
@@ -83,6 +84,63 @@ describe('removeJSMarkers', () => {
   });
 });
 
+// --- resolveUseFrame ---
+
+describe('resolveUseFrame', () => {
+  const base = {
+    osType: 'win10',
+    platform: 'win32',
+    electronMajorVersion: 27,
+    appName: 'Visual Studio Code',
+    disableFramelessWindow: false,
+    forceFramelessWindow: false,
+  };
+
+  it('uses frameless on Windows with Electron >=27', () => {
+    expect(resolveUseFrame({ ...base, electronMajorVersion: 27 })).toBe(true);
+  });
+
+  it('does not use frameless on Windows with Electron <27', () => {
+    expect(resolveUseFrame({ ...base, electronMajorVersion: 26 })).toBe(false);
+  });
+
+  it('uses frameless on Linux', () => {
+    expect(resolveUseFrame({ ...base, osType: 'unknown', platform: 'linux', electronMajorVersion: 0 })).toBe(true);
+  });
+
+  it('uses frameless on Cursor regardless of platform', () => {
+    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0, appName: 'Cursor' })).toBe(true);
+  });
+
+  // macOS is frameless by default (fixes Apple Silicon UI glitches), and the
+  // disableFramelessWindow setting must let users opt back out.
+  it('uses frameless on macOS by default', () => {
+    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 })).toBe(true);
+  });
+
+  it('disableFramelessWindow opts macOS back out to a framed window', () => {
+    expect(resolveUseFrame({
+      ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0,
+      disableFramelessWindow: true,
+    })).toBe(false);
+  });
+
+  it('disableFramelessWindow opts out on Windows too', () => {
+    expect(resolveUseFrame({ ...base, disableFramelessWindow: true })).toBe(false);
+  });
+
+  it('forceFramelessWindow wins over disableFramelessWindow', () => {
+    expect(resolveUseFrame({
+      ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0,
+      disableFramelessWindow: true, forceFramelessWindow: true,
+    })).toBe(true);
+  });
+
+  it('forceFramelessWindow enables frameless on an otherwise-framed config', () => {
+    expect(resolveUseFrame({ ...base, electronMajorVersion: 26, forceFramelessWindow: true })).toBe(true);
+  });
+});
+
 // --- injectElectronOptions ---
 
 describe('injectElectronOptions', () => {
@@ -122,6 +180,18 @@ describe('injectElectronOptions', () => {
     expect(result).toContain('u.frame=false,u.transparent=true,u.titleBarStyle="hidden"');
   });
 
+  it('injects frame:false,transparent:false when transparent is false (Win11 Mica)', () => {
+    const original = loadFixture('main-merged.js');
+    const result = injectElectronOptions(original, { useFrame: true, isMacos: false, transparent: false });
+    expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
+    expect(result).not.toContain('transparent:true');
+  });
+
+  it('injects opaque frameless options into Cursor window builders when transparent is false', () => {
+    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: false, transparent: false });
+    expect(result).toContain('u.frame=false,u.transparent=false,u.titleBarStyle="hidden"');
+  });
+
   it('does not double-inject if already present', () => {
     const original = loadFixture('main-merged.js');
     const first = injectElectronOptions(original, { useFrame: true, isMacos: true });
@@ -142,6 +212,17 @@ describe('removeElectronOptions', () => {
   it('removes frame:false,transparent:true', () => {
     const injected = 'frame:false,transparent:true,experimentalDarkMode';
     expect(removeElectronOptions(injected)).toBe('experimentalDarkMode');
+  });
+
+  it('removes frame:false,transparent:false (Win11 Mica)', () => {
+    const injected = 'frame:false,transparent:false,experimentalDarkMode';
+    expect(removeElectronOptions(injected)).toBe('experimentalDarkMode');
+  });
+
+  it('round-trips opaque (transparent:false) inject then remove', () => {
+    const original = loadFixture('main-merged.js');
+    const injected = injectElectronOptions(original, { useFrame: true, isMacos: true, transparent: false });
+    expect(removeElectronOptions(injected)).toBe(original);
   });
 
   it('removes visualEffectState', () => {

@@ -48,13 +48,27 @@ const macosType = [
   'medium-light'
 ];
 
-const windowsType = ['acrylic'];
+// 'mica' and 'tabbed' (Mica Alt) are Windows 11 DWM backdrop materials. On
+// Windows 10 they have no legacy equivalent and fall back to acrylic blur.
+const windowsType = ['acrylic', 'mica', 'tabbed'];
 
 const universalType = ['transparent'];
 
 // Windows AccentState values (must match enum in native/vibrancy.cc)
 const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
 const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
+
+// Map a vibrancy type to an Electron BrowserWindow backgroundMaterial value
+// (Windows 11 only). https://www.electronjs.org/docs/latest/api/browser-window
+function backgroundMaterialForType(type) {
+  switch (type) {
+    case 'mica': return 'mica';
+    case 'tabbed': return 'tabbed';
+    case 'transparent': return 'none';
+    case 'acrylic':
+    default: return 'acrylic';
+  }
+}
 
 /**
  * @param {string} hex
@@ -100,19 +114,40 @@ electron.app.on('browser-window-created', (_, window) => {
     || { r: 0, g: 0, b: 0 };
 
   if (app.os === 'win10') {
-    // TODO: fallback to ACCENT_ENABLE_BLURBEHIND (3) on pre-RS4 systems that don't support acrylic
-    const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
-    const bindings = require('./vibrancy.cjs');
-    bindings.setVibrancy(
-      window.getNativeWindowHandle().readInt32LE(0),
-      effect,
-      backgroundRGB.r,
-      backgroundRGB.g,
-      backgroundRGB.b,
-      0
-    );
-    const win10refresh = require('./win10refresh.cjs');
-    win10refresh(window, 60);
+    // Windows 11 with a recent enough Electron: use the modern DWM backdrop
+    // material (Mica / Acrylic / Tabbed). No per-frame blur cost, so no drag lag
+    // (issue #52), and it enables Mica/Mica Alt (issue #19).
+    if (app.win11 && typeof window.setBackgroundMaterial === 'function') {
+      try {
+        window.setBackgroundMaterial(backgroundMaterialForType(type));
+      } catch (err) {
+        console.error('setBackgroundMaterial failed:', err);
+      }
+    } else {
+      // Windows 10 (or older Electron without setBackgroundMaterial): legacy
+      // SetWindowCompositionAttribute accent.
+      const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
+      const bindings = require('./vibrancy.cjs');
+      const applyAccent = () => {
+        if (window.isDestroyed()) return;
+        bindings.setVibrancy(
+          window.getNativeWindowHandle().readInt32LE(0),
+          effect,
+          backgroundRGB.r,
+          backgroundRGB.g,
+          backgroundRGB.b,
+          0
+        );
+      };
+      applyAccent();
+
+      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Win10, so
+      // drop it during move/resize and restore it once the window goes idle.
+      if (effect === ACCENT_ACRYLIC) {
+        const suppressAcrylicWhileDragging = require('./win-acrylic-drag.cjs');
+        suppressAcrylicWhileDragging(window, bindings, applyAccent);
+      }
+    }
 
     window.webContents.once('dom-ready', () => {
       const currentURL = window.webContents.getURL();
