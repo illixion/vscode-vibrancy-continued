@@ -581,6 +581,13 @@ function activate(context) {
       useFrame = true;
     }
 
+    // macOS is frameless by default: without it there are UI rendering glitches
+    // on Apple Silicon (observed on M2 / macOS Tahoe). Opt out via
+    // disableFramelessWindow, which is evaluated below.
+    if (osType === 'macos') {
+      useFrame = true;
+    }
+
     if (config.disableFramelessWindow) {
       useFrame = false;
     }
