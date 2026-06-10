@@ -61,7 +61,6 @@ jobs:
           npm run build-win10
           mkdir -p native/prebuilt
           cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
-          cp build/Release/displayconfig.node native/prebuilt/displayconfig-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
           mv binding.gyp binding.gyp.dist
         shell: bash
       - name: Install screenshot tools (Linux)

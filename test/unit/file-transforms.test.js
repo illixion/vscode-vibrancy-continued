@@ -122,6 +122,18 @@ describe('injectElectronOptions', () => {
     expect(result).toContain('u.frame=false,u.transparent=true,u.titleBarStyle="hidden"');
   });
 
+  it('injects frame:false,transparent:false when transparent is false (Win11 Mica)', () => {
+    const original = loadFixture('main-merged.js');
+    const result = injectElectronOptions(original, { useFrame: true, isMacos: false, transparent: false });
+    expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
+    expect(result).not.toContain('transparent:true');
+  });
+
+  it('injects opaque frameless options into Cursor window builders when transparent is false', () => {
+    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: false, transparent: false });
+    expect(result).toContain('u.frame=false,u.transparent=false,u.titleBarStyle="hidden"');
+  });
+
   it('does not double-inject if already present', () => {
     const original = loadFixture('main-merged.js');
     const first = injectElectronOptions(original, { useFrame: true, isMacos: true });
@@ -142,6 +154,17 @@ describe('removeElectronOptions', () => {
   it('removes frame:false,transparent:true', () => {
     const injected = 'frame:false,transparent:true,experimentalDarkMode';
     expect(removeElectronOptions(injected)).toBe('experimentalDarkMode');
+  });
+
+  it('removes frame:false,transparent:false (Win11 Mica)', () => {
+    const injected = 'frame:false,transparent:false,experimentalDarkMode';
+    expect(removeElectronOptions(injected)).toBe('experimentalDarkMode');
+  });
+
+  it('round-trips opaque (transparent:false) inject then remove', () => {
+    const original = loadFixture('main-merged.js');
+    const injected = injectElectronOptions(original, { useFrame: true, isMacos: true, transparent: false });
+    expect(removeElectronOptions(injected)).toBe(original);
   });
 
   it('removes visualEffectState', () => {

@@ -114,7 +114,7 @@ function injectCursorWindowOptions(electronJS, createInjectedOptions) {
  */
 function removeCursorWindowOptions(electronJS) {
   return electronJS
-    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/g, '')
+    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=(?:true|false),/g, '')
     .replace(/[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/g, '');
 }
 
@@ -150,17 +150,18 @@ function injectVisualEffectState(electronJS) {
  * @param {string} electronJS - Electron main.js content
  * @returns {string} Patched content
  */
-function injectFramelessWindow(electronJS) {
+function injectFramelessWindow(electronJS, transparent = true) {
+  const t = transparent ? 'true' : 'false';
   if (
-    electronJS.includes('frame:false,transparent:true') ||
-    /([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=true,/.test(electronJS)
+    electronJS.includes(`frame:false,transparent:${t}`) ||
+    new RegExp(`([A-Za-z_$][\\w$]*)\\.frame=false,\\1\\.transparent=${t},`).test(electronJS)
   ) {
     return electronJS;
   }
 
   const objectLiteralPatched = injectObjectLiteralWindowOptions(
     electronJS,
-    'frame:false,transparent:true'
+    `frame:false,transparent:${t}`
   );
   if (objectLiteralPatched !== electronJS) {
     return objectLiteralPatched;
@@ -168,7 +169,7 @@ function injectFramelessWindow(electronJS) {
 
   return injectCursorWindowOptions(
     electronJS,
-    (target) => `${target}.frame=false,${target}.transparent=true,`
+    (target) => `${target}.frame=false,${target}.transparent=${t},`
   );
 }
 
@@ -178,7 +179,7 @@ function injectFramelessWindow(electronJS) {
  * @param {{ useFrame: boolean, isMacos: boolean }} opts
  * @returns {string} Modified content
  */
-function injectElectronOptions(electronJS, { useFrame, isMacos }) {
+function injectElectronOptions(electronJS, { useFrame, isMacos, transparent = true }) {
   let result = electronJS;
 
   // visualEffectState is a macOS-only Electron option.
@@ -186,9 +187,11 @@ function injectElectronOptions(electronJS, { useFrame, isMacos }) {
     result = injectVisualEffectState(result);
   }
 
-  // Add frameless + transparent window options
+  // Add frameless + (optionally) transparent window options.
+  // Win11 DWM backdrop materials (Mica/Acrylic) require an opaque window, so
+  // the caller passes transparent:false in that case.
   if (useFrame) {
-    result = injectFramelessWindow(result);
+    result = injectFramelessWindow(result, transparent);
   }
 
   return result;
@@ -201,9 +204,9 @@ function injectElectronOptions(electronJS, { useFrame, isMacos }) {
  */
 function removeElectronOptions(electronJS) {
   const withoutObjectLiteralOptions = electronJS
-    .replace(/visualEffectState:"active",frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
-    .replace(/frame:false,transparent:true,visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode')
-    .replace(/frame:false,transparent:true,experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/visualEffectState:"active",frame:false,transparent:(?:true|false),experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/frame:false,transparent:(?:true|false),visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode')
+    .replace(/frame:false,transparent:(?:true|false),experimentalDarkMode/g, 'experimentalDarkMode')
     .replace(/visualEffectState:"active",experimentalDarkMode/g, 'experimentalDarkMode');
 
   return removeCursorWindowOptions(withoutObjectLiteralOptions);

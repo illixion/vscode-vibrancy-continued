@@ -26,6 +26,13 @@ const localize = require('./i18n');
  */
 const osType = require('./platform');
 
+// Windows 11 is build 22000+. os.release() reports e.g. "10.0.22631" on Win11
+// and "10.0.19045" on Win10 — both have major 10, so we must check the build.
+// Used to pick the modern DWM backdrop path (Mica/Acrylic, no drag lag) on
+// Win11 vs the legacy SetWindowCompositionAttribute accent on Win10.
+const isWindows11 = osType === 'win10'
+  && Number(require('os').release().split('.')[2]) >= 22000;
+
 const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
 
 var themeStylePaths = {
@@ -487,6 +494,7 @@ function activate(context) {
 
     const injectData = {
       os: osType,
+      win11: isWindows11,
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
@@ -567,7 +575,7 @@ function activate(context) {
       useFrame = true;
     }
 
-    // Linux doesn't have a universal native API for transparent frames, 
+    // Linux doesn't have a universal native API for transparent frames,
     // so we need to handle transparency and window frames manually.
     if (process.platform === 'linux') {
       useFrame = true;
@@ -590,7 +598,19 @@ function activate(context) {
       return;
     }
 
-    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos' });
+    // On Windows 11, DWM backdrop materials (Mica/Acrylic/Tabbed) only render on
+    // an opaque window — a transparent window suppresses the material entirely.
+    // The 'transparent' type is the exception: it needs a see-through window and
+    // uses no material. Resolve 'auto' against the theme's Windows default.
+    let transparent = true;
+    if (isWindows11) {
+      const resolvedType = config.type === 'auto'
+        ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
+        : config.type;
+      transparent = resolvedType === 'transparent';
+    }
+
+    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos', transparent });
 
     await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }
