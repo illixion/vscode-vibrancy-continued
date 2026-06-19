@@ -1,3 +1,10 @@
+# 1.1.81
+
+* Core:
+  * Fix Windows 10 window drag lag when acrylic is enabled — the blur is now dropped while moving/resizing the window and restored once it goes idle (issue [#52](https://github.com/illixion/vscode-vibrancy-continued/issues/52))
+  * Add Windows 11 Mica and Mica Alt ("Tabbed") support via the modern DWM backdrop API, selectable as new `mica` and `tabbed` types; Windows 11 acrylic now uses this lag-free path too (issue [#19](https://github.com/illixion/vscode-vibrancy-continued/issues/19))
+  * Enable frameless window by default on macOS to fix UI rendering glitches on Apple Silicon (opt out via `vscode_vibrancy.disableFramelessWindow`)
+
 # 1.1.80 (prerelease)
 
 * Core:
