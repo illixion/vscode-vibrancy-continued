@@ -1,3 +1,8 @@
+# 1.1.82
+
+* Core:
+  * Fix misleading "unsupported editor" error on editors outside the known list: when `forceFramelessWindow` is the only reason a frameless window was attempted, installation now shows an actionable message telling you which setting to disable instead of failing with no recovery path
+
 # 1.1.81
 
 * Core:
