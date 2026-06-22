@@ -564,19 +564,32 @@ function activate(context) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    const useFrame = resolveUseFrame({
+    const frameOpts = {
       osType,
       platform: process.platform,
       electronMajorVersion,
       appName: vscode.env.appName,
       disableFramelessWindow: config.disableFramelessWindow,
       forceFramelessWindow: config.forceFramelessWindow,
-    });
+    };
+    const useFrame = resolveUseFrame(frameOpts);
 
-    // On non-VSCode editors, this is risky, check against a list of known working editors
+    // On non-VSCode editors, injecting frameless+transparent window options is
+    // risky, so we only do it on a list of known working editors.
     if (!knownEditors.includes(vscode.env.appName)) {
-      // If frame was enabled, fail installation
       if (useFrame) {
+        // useFrame being on can mean two different things here, and they have
+        // very different fixes:
+        //   1. The editor's own defaults require frame handling (truly
+        //      unsupported) — nothing the user can do.
+        //   2. forceFramelessWindow flipped it on even though the defaults
+        //      would have left it off — a user misconfiguration that can be
+        //      undone by disabling that setting.
+        // Resolve again without the forced override to tell them apart.
+        const useFrameByDefault = resolveUseFrame({ ...frameOpts, forceFramelessWindow: false });
+        if (config.forceFramelessWindow && !useFrameByDefault) {
+          throw new Error(localize('messages.forceFramelessUnsupportedEditor'));
+        }
         throw new Error(localize('messages.unsupportedEditor'));
       }
       return;

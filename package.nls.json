@@ -32,6 +32,7 @@
   "messages.smthingwrong": "Something went wrong: ",
   "messages.unsupported": "Unsupported operating system. Only macOS, Linux, and Windows 10/11 on x64 or ARM64 are supported.",
   "messages.unsupportedEditor": "Your code editor is not supported, see extension description for the list of supported editors",
+  "messages.forceFramelessUnsupportedEditor": "A frameless window can't be enabled on this unsupported editor. Disable the \"vscode_vibrancy.forceFramelessWindow\" setting to install Vibrancy here.",
   "messages.admin": "Apply changes failed, please run Visual Studio Code with administrator privileges, see description for more details: ",
   "messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
   "messages.restartIde": "Restart Visual Studio Code",

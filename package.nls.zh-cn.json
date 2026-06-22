@@ -32,6 +32,7 @@
   "messages.smthingwrong": "发生了预料之外的错误: ",
   "messages.unsupported": "不支持的操作系统，仅支持 macOS、Linux 和 Windows 10/11（x64 和 ARM64）。",
   "messages.unsupportedEditor": "不支持您的代码编辑器，请参阅扩展说明了解支持的编辑器列表。",
+  "messages.forceFramelessUnsupportedEditor": "无法在此不受支持的编辑器上启用无边框窗口。请禁用 “vscode_vibrancy.forceFramelessWindow” 设置以在此安装 Vibrancy。",
   "messages.admin": "无法应用更改，请使用管理员权限运行 Visual Studio Code，有关详细信息，请参阅自述文件: ",
   "messages.recommendedColorTheme": "你当前的颜色主题是 \"%1\" ，而你的毛玻璃主题是为 \"%2\" 设计的!",
   "messages.restartIde": "重启 Visual Studio Code",

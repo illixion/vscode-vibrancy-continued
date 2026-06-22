@@ -32,6 +32,7 @@
   "messages.smthingwrong": "問題が発生しました: ",
   "messages.unsupported": "サポート対象外のオペレーティングシステムです。macOS、Linux、または Windows 10/11（x64 / ARM64）をご利用ください。",
   "messages.unsupportedEditor": "サポートされているエディタのリストについては、拡張機能の説明を参照してください。",
+  "messages.forceFramelessUnsupportedEditor": "このサポート対象外のエディタではフレームレスウィンドウを有効にできません。ここに Vibrancy をインストールするには、「vscode_vibrancy.forceFramelessWindow」設定を無効にしてください。",
   "messages.admin": "変更の適用に失敗しました，管理者権限でVSCodeを実行してください，詳細については README をご確認ください: ",
   "messages.recommendedColorTheme": "現在の配色テーマは \"%1\" ですが、選択された Vibrancy テーマには \"%2\" を推奨します。",
   "messages.restartIde": "Visual Studio Code を再起動",
