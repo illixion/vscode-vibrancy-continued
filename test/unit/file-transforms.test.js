@@ -112,17 +112,18 @@ describe('resolveUseFrame', () => {
     expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0, appName: 'Cursor' })).toBe(true);
   });
 
-  // macOS is frameless by default (fixes Apple Silicon UI glitches), and the
-  // disableFramelessWindow setting must let users opt back out.
-  it('uses frameless on macOS by default', () => {
-    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 })).toBe(true);
+  // macOS is NOT frameless by default: v1.1.81 enabled it to fix file-browser
+  // hover flashing, but it causes excessive WindowServer GPU usage on macOS
+  // Tahoe 26.5, so v1.1.83 reverted the default. Opt in via forceFramelessWindow.
+  it('does not use frameless on macOS by default', () => {
+    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 })).toBe(false);
   });
 
-  it('disableFramelessWindow opts macOS back out to a framed window', () => {
+  it('forceFramelessWindow opts macOS into a frameless window', () => {
     expect(resolveUseFrame({
       ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0,
-      disableFramelessWindow: true,
-    })).toBe(false);
+      forceFramelessWindow: true,
+    })).toBe(true);
   });
 
   it('disableFramelessWindow opts out on Windows too', () => {

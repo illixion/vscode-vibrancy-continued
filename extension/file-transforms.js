@@ -178,8 +178,8 @@ function injectFramelessWindow(electronJS, transparent = true) {
  *
  * Precedence (later rules win): platform/editor defaults are applied first,
  * then disableFramelessWindow can turn it off, then forceFramelessWindow can
- * force it back on. macOS is frameless by default to avoid UI rendering
- * glitches on Apple Silicon; disableFramelessWindow lets macOS users opt out.
+ * force it back on. macOS is NOT frameless by default (see the macOS note in
+ * the body / issue #207); macOS users can opt in via forceFramelessWindow.
  *
  * @param {{
  *   osType: string,
@@ -217,12 +217,13 @@ function resolveUseFrame({
     useFrame = true;
   }
 
-  // macOS is frameless by default: without it there are UI rendering glitches
-  // on Apple Silicon (observed on M2 / macOS Tahoe). Opt out via
-  // disableFramelessWindow, which is evaluated below.
-  if (osType === 'macos') {
-    useFrame = true;
-  }
+  // macOS is NOT frameless by default. v1.1.81 enabled it by default to fix
+  // occasional flashing on file-browser hover (seen intermittently on an M2 Max
+  // MacBook Pro), but on macOS Tahoe 26.5 the frameless+transparent window
+  // causes excessive WindowServer GPU utilization while a VSCode window is open,
+  // scaling with window size. The default is therefore back off as of v1.1.83.
+  // Users who accept the higher power draw and want the flashing gone can opt in
+  // with forceFramelessWindow (not guaranteed to fix it). See issue #207.
 
   if (disableFramelessWindow) {
     useFrame = false;

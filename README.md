@@ -136,7 +136,9 @@ Use a new method for preventing window flashing during resizing. Eliminates the 
 
 #### Force Frameless Window (`vscode_vibrancy.forceFramelessWindow`)
 
-Always set the VSCode window to use `frame: false`. This is already the default on Windows and macOS, so you normally don't need to enable it — it's mainly an override for editors or platforms where the frameless window isn't applied automatically but is needed to fix visual rendering issues.
+Always set the VSCode window to use `frame: false`. This is already the default on Windows, so you normally don't need to enable it there — it's mainly an override for editors or platforms where the frameless window isn't applied automatically but is needed to fix visual rendering issues.
+
+On macOS it's **off by default**. Enabling it can stop the occasional flashing seen when hovering over the file browser, but on recent macOS (observed on Tahoe 26.5) a frameless + transparent window causes elevated WindowServer GPU and power usage that scales with window size, so it's not guaranteed to be worthwhile (see [#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)).
 
 #### Disable Frameless Window (`vscode_vibrancy.disableFramelessWindow`)
 
