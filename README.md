@@ -71,6 +71,8 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Antigravity
 
+✔ Devin
+
 Some editors may present a [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt) warning about the installation being corrupted, use this extension to fix it: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
 
 # Getting Started

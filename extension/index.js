@@ -91,7 +91,8 @@ const knownEditors = [
   'VSCodium',
   'Cursor',
   'Code - OSS',
-  'Antigravity'
+  'Antigravity',
+  'Devin',
 ];
 
 // Map editor app names to their CLI commands for relaunch
@@ -102,6 +103,7 @@ const editorCliCommands = {
   'Cursor': 'cursor',
   'Code - OSS': 'code-oss',
   'Antigravity': 'antigravity',
+  'Devin': 'devin-desktop',
 };
 
 // Map editor app names to their config directory names (for settings.json path)
@@ -112,6 +114,7 @@ const editorConfigDirNames = {
   'Cursor': 'Cursor',
   'Code - OSS': 'Code - OSS',
   'Antigravity': 'Antigravity',
+  'Devin': 'Devin',
 };
 
 var defaultTheme = 'Default Dark';
