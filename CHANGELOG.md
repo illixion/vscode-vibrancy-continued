@@ -2,6 +2,9 @@
 
 * Core:
   * Revert the macOS frameless-window default introduced in 1.1.81. It fixed occasional file-browser hover flashing, but on recent macOS (observed on Tahoe 26.5) a frameless + transparent window causes elevated WindowServer GPU and power usage that scales with window size. macOS now uses a framed window by default again; opt in with `vscode_vibrancy.forceFramelessWindow` if you want the flashing gone and accept the higher power draw (not guaranteed to fix it) (issue [#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207))
+  * Add support for the Devin editor (the rebranded Windsurf), which broke after the 1.1.80 supported-editor check (PR [#261](https://github.com/illixion/vscode-vibrancy-continued/pull/261))
+* Contributors:
+  * [@asj8000](https://github.com/asj8000)
 
 # 1.1.82
 
