@@ -89,8 +89,10 @@ describe('removeJSMarkers', () => {
 
 describe('resolveEffectiveWindowMode', () => {
   const mac = { osType: 'macos', platform: 'darwin' };
-  const win11 = { osType: 'win10', platform: 'win32', isWindows11: true };
-  const win10 = { osType: 'win10', platform: 'win32', isWindows11: false };
+  // winOpaqueSafe: true models a current VSCode build (opaque vibrancy confirmed
+  // OK); older builds (false) keep a transparent window — covered separately.
+  const win11 = { osType: 'win10', platform: 'win32', isWindows11: true, winOpaqueSafe: true };
+  const win10 = { osType: 'win10', platform: 'win32', isWindows11: false, winOpaqueSafe: true };
   const linux = { osType: 'unknown', platform: 'linux' };
 
   it('defaults to auto when nothing is set', () => {
@@ -118,9 +120,14 @@ describe('resolveEffectiveWindowMode', () => {
       .toBe('frameless');
   });
 
-  it('migrates forceFramelessWindow to opaque frameless on Windows, transparent frameless on Linux', () => {
+  it('migrates forceFramelessWindow to opaque frameless on current Windows, transparent frameless on Linux', () => {
     expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true })).toBe('frameless');
     expect(resolveEffectiveWindowMode({ ...linux, forceFramelessWindow: true })).toBe('frameless-transparent');
+  });
+
+  it('migrates forceFramelessWindow to transparent frameless on older Windows (opaque not yet safe)', () => {
+    expect(resolveEffectiveWindowMode({ ...win10, winOpaqueSafe: false, forceFramelessWindow: true }))
+      .toBe('frameless-transparent');
   });
 
   it('forceFramelessWindow wins over disableFramelessWindow (preserves legacy precedence)', () => {
@@ -147,6 +154,7 @@ describe('resolveWindowMode', () => {
     appName: 'Visual Studio Code',
     isWindows11: false,
     transparentType: false,
+    winOpaqueSafe: true, // current VSCode build (opaque vibrancy confirmed OK)
     windowMode: 'auto',
   };
   const macos = { ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 };
@@ -163,6 +171,13 @@ describe('resolveWindowMode', () => {
 
   it('auto: Windows with the transparent type is frameless + transparent', () => {
     expect(resolveWindowMode({ ...base, electronMajorVersion: 27, transparentType: true }))
+      .toEqual({ frameless: true, transparent: true });
+  });
+
+  // Older VSCode builds (opaque vibrancy not yet confirmed safe) keep the
+  // transparent (no-snap) window to avoid issue #122 text shearing.
+  it('auto: older Windows (opaque not safe) is frameless + transparent', () => {
+    expect(resolveWindowMode({ ...base, electronMajorVersion: 27, winOpaqueSafe: false }))
       .toEqual({ frameless: true, transparent: true });
   });
 

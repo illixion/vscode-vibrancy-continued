@@ -16,7 +16,7 @@
   "configuration.refreshInterval.description": "试验性功能：改变背景颜色刷新率以避免在改变窗口大小后出现的闪屏，更改后需要 [卸载 -> 重启 -> 安装 -> 重启]才会生效",
   "configuration.preventFlash.description": "另一种启用的途径，可以防止在改变窗口大小时闪屏。启用后不需要“刷新率”设置，但在某些情况下兼容性可能会降低。",
   "configuration.windowMode.description": "VSCode 窗口的边框与透明度的应用方式。除非要排查渲染问题，否则请保持 “auto”——“auto” 会自动为你的平台选择合适的组合。",
-  "configuration.windowMode.auto": "适合平台的默认值（推荐）。macOS：无边框 + 不透明（透明效果通过原生效果视图实现，不增加 WindowServer GPU 负载）。Windows：无边框 + 不透明，Aero 贴靠/最大化可正常工作（Windows 10 上会显示一条细边框）——如果想要完全无边框的外观且不需要原生贴靠，请选择 “frameless-transparent”。Linux：无边框 + 透明。",
+  "configuration.windowMode.auto": "适合平台的默认值（推荐）。macOS：无边框 + 不透明（透明效果通过原生效果视图实现，不增加 WindowServer GPU 负载）。Windows（当前版本的 VSCode）：无边框 + 不透明，Aero 贴靠/最大化可正常工作（Windows 10 上会显示一条细边框）；较旧版本的 VSCode 出于兼容性会使用透明（不可贴靠）窗口。Linux：无边框 + 透明。如需在 Windows 上获得完全无边框的外观，请使用 “frameless-transparent”。",
   "configuration.windowMode.framed": "保留原生操作系统标题栏/边框，使用不透明窗口。兼容性最佳的选项——当无边框窗口出现异常时使用。",
   "configuration.windowMode.frameless": "Windows 预设 — 可贴靠：无边框 + 不透明。可保持 Windows Aero 贴靠/最大化/调整大小正常工作，代价是 Windows 10 上会显示一条细边框（Windows 11 没有）。在 macOS 上这是默认值，可在不增加透明窗口 GPU 成本的前提下修复文件浏览器悬停闪烁（issue #207）。",
   "configuration.windowMode.framelessTransparent": "Windows 预设 — 像素级完美：无边框 + 完全透明（可透视）。外观最干净、完全无边框，但 Windows Aero 贴靠/最大化将无法使用——请搭配第三方窗口贴靠工具使用。“transparent” 透明类型也需要此项。在 macOS Tahoe 上，透明窗口会增加 WindowServer 的 GPU/功耗占用。",

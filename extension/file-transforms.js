@@ -183,17 +183,23 @@ function injectFramelessWindow(electronJS, transparent = true) {
  * the default and transparency is opt-in, only for the see-through 'transparent'
  * vibrancy type (which paints no blur material of its own).
  *
- * The lone exception is Linux, which has no native compositor path and relies on
- * an actually-transparent window.
+ * Two exceptions keep a transparent window:
+ *   - Linux has no native compositor path and relies on a transparent window.
+ *   - Older Windows builds: opaque vibrancy renders with sheared/unreadable text
+ *     there (issue #122 needed frame:false + transparent:true). `winOpaqueSafe`
+ *     is true only on a VSCode build where opaque has been confirmed to render
+ *     correctly; below that we keep the transparent (no-snap) behavior so nobody
+ *     regresses. This is a confirmed-good floor, not a claimed #122 fix point.
  *
- * @param {{ osType: string, platform: NodeJS.Platform, isWindows11?: boolean, transparentType?: boolean }} ctx
+ * @param {{ platform: NodeJS.Platform, transparentType?: boolean, winOpaqueSafe?: boolean }} ctx
  * @returns {boolean}
  */
-function framelessWindowTransparency({ osType, platform, isWindows11 = false, transparentType = false }) {
+function framelessWindowTransparency({ platform, transparentType = false, winOpaqueSafe = false }) {
   if (platform === 'linux') return true; // Linux: no native compositor, needs a transparent window.
-  // macOS + Windows (incl. Win10): opaque, so the window keeps snap/maximize and
-  // (on macOS) avoids the WindowServer GPU cost; transparent only for the
-  // see-through 'transparent' type.
+  if (platform === 'win32' && !winOpaqueSafe) return true; // older Windows build: transparent (issue #122).
+  // macOS, and Windows on a confirmed-good build: opaque, so the window keeps
+  // snap/maximize and (on macOS) avoids the WindowServer GPU cost; transparent
+  // only for the see-through 'transparent' type.
   return transparentType;
 }
 
@@ -286,6 +292,7 @@ function resolveWindowMode({
   appName,
   isWindows11 = false,
   transparentType = false,
+  winOpaqueSafe = false,
   windowMode = 'auto',
 }) {
   // Explicit overrides map directly to flags.
@@ -309,7 +316,7 @@ function resolveWindowMode({
   }
 
   const transparent = frameless
-    ? framelessWindowTransparency({ osType, platform, isWindows11, transparentType })
+    ? framelessWindowTransparency({ platform, transparentType, winOpaqueSafe })
     : false;
 
   return { frameless, transparent };

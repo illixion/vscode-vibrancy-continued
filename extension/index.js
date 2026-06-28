@@ -35,6 +35,20 @@ const osType = require('./platform');
 const isWindows11 = osType === 'win10'
   && Number(require('os').release().split('.')[2]) >= 22000;
 
+// VSCode version [major, minor] from which an opaque (Aero-Snap-capable) window
+// is the Windows default. Vibrancy renders correctly opaque here; older builds
+// keep a transparent (no-snap) window to avoid the issue #122 text shearing.
+// This is a "confirmed working from this version" floor, not a claimed fix
+// point — bump it only when a newer build is verified, never assert it in docs.
+const WIN_OPAQUE_MIN_VSCODE = [1, 126];
+
+function vscodeVersionAtLeast([major, minor]) {
+  const m = /^(\d+)\.(\d+)/.exec(vscode.version || '');
+  if (!m) return false;
+  const cur = [Number(m[1]), Number(m[2])];
+  return cur[0] > major || (cur[0] === major && cur[1] >= minor);
+}
+
 const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
 
 var themeStylePaths = {
@@ -660,6 +674,13 @@ function activate(context) {
       appName: vscode.env.appName,
       isWindows11,
       transparentType: resolvedType === 'transparent',
+      // On Windows an opaque window can Aero-Snap, but opaque vibrancy renders
+      // with sheared/unreadable text on older builds (issue #122 needed a
+      // transparent window). Only default to opaque on a VSCode build where it's
+      // been confirmed good; older builds keep the transparent (no-snap)
+      // behavior so nobody regresses. This is a confirmed-good floor, not a
+      // claimed #122 fix point — keep it version-agnostic in user-facing docs.
+      winOpaqueSafe: vscodeVersionAtLeast(WIN_OPAQUE_MIN_VSCODE),
     };
 
     // Resolve the effective window mode, migrating the deprecated boolean

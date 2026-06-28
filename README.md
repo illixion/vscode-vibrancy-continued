@@ -34,7 +34,7 @@ Maintenance of this project is made possible by all the <a href="https://github.
 
 On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
 
-- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping.
+- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
 - **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
 
 > [!TIP]
@@ -163,7 +163,7 @@ Controls how the VSCode window frame and transparency are applied. **Leave this 
 
 | Value | Frame | Window | Notes |
 | --- | --- | --- | --- |
-| `auto` | platform default | platform default | Recommended. macOS → borderless + opaque; Windows → borderless + opaque (Aero Snap works; thin border on Win10); Linux → borderless + transparent. |
+| `auto` | platform default | platform default | Recommended. macOS → borderless + opaque; Windows → borderless + opaque on current VSCode (Aero Snap works; thin border on Win10), borderless + transparent on older VSCode (no snap); Linux → borderless + transparent. |
 | `framed` | OS title bar/frame | opaque | Most compatible. Use if a borderless window misbehaves for you. |
 | `frameless` | borderless | opaque | Keeps Windows Aero Snap / maximize / resize, at the cost of a thin window border on Windows 10 (Windows 11 has none). On macOS this is the default and fixes the file-browser hover flash **without** the GPU cost of a transparent window ([#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)). |
 | `frameless-transparent` | borderless | transparent | Fully borderless, but **Windows Aero Snap / maximize won't work** (see the Windows note below). Also required for the `transparent` vibrancy type. On macOS Tahoe a transparent window raises WindowServer GPU/power usage. |
