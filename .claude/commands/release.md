@@ -1,5 +1,5 @@
 ---
-description: Automate a release from development to main with changelog, version bump, squash merge, and publish
+description: Automate a release from development to main with changelog, version bump, merge, and publish
 allowed-tools: Bash, Read, Edit, Write, AskUserQuestion
 ---
 
