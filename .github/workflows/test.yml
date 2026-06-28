@@ -55,7 +55,10 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
-      - run: npm install @vscode/test-electron @vscode/vsce
+      # --save-dev so these tools land in devDependencies, not dependencies.
+      # `npm install <pkg>` defaults to --save (dependencies), which would make
+      # vsce a production dep and bundle its whole tree into the packaged vsix.
+      - run: npm install --save-dev @vscode/test-electron @vscode/vsce
       - name: Build native modules (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -105,7 +108,6 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: npm install @vscode/vsce
       # Overwrite the committed prebuilt binaries with the ones compiled in this
       # run. download-artifact merges all `prebuilt-*` artifacts into one dir.
       - uses: actions/download-artifact@v8
@@ -113,8 +115,11 @@ jobs:
           pattern: prebuilt-*
           merge-multiple: true
           path: native/prebuilt/
+      # Run vsce via npx (resolved from the npm cache, NOT installed into
+      # node_modules/dependencies) so it doesn't bundle its own dependency tree
+      # into the vsix. vsce prunes devDependencies from the package itself.
       - name: Package vsix
-        run: npx vsce package --out vscode-vibrancy-continued.vsix
+        run: npx @vscode/vsce package --out vscode-vibrancy-continued.vsix
       - uses: actions/upload-artifact@v7
         with:
           name: vsix
