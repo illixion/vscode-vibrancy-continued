@@ -38,9 +38,10 @@ const isWindows11 = osType === 'win10'
 // VSCode version [major, minor] from which an opaque (Aero-Snap-capable) window
 // is the Windows default. Vibrancy renders correctly opaque here; older builds
 // keep a transparent (no-snap) window to avoid the issue #122 text shearing.
-// This is a "confirmed working from this version" floor, not a claimed fix
-// point — bump it only when a newer build is verified, never assert it in docs.
-const WIN_OPAQUE_MIN_VSCODE = [1, 126];
+// Bisected on Win10 22H2: Electron 34 (VSCode 1.100.x) shears text on an opaque
+// vibrancy window; Electron 35.5.1 (VSCode 1.101.0, the first E35 build) renders
+// it cleanly. 1.101.0 is therefore the confirmed-good floor.
+const WIN_OPAQUE_MIN_VSCODE = [1, 101];
 
 function vscodeVersionAtLeast([major, minor]) {
   const m = /^(\d+)\.(\d+)/.exec(vscode.version || '');
@@ -678,8 +679,7 @@ function activate(context) {
       // with sheared/unreadable text on older builds (issue #122 needed a
       // transparent window). Only default to opaque on a VSCode build where it's
       // been confirmed good; older builds keep the transparent (no-snap)
-      // behavior so nobody regresses. This is a confirmed-good floor, not a
-      // claimed #122 fix point — keep it version-agnostic in user-facing docs.
+      // behavior so nobody regresses.
       winOpaqueSafe: vscodeVersionAtLeast(WIN_OPAQUE_MIN_VSCODE),
     };
 

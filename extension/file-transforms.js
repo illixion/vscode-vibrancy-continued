@@ -189,7 +189,7 @@ function injectFramelessWindow(electronJS, transparent = true) {
  *     there (issue #122 needed frame:false + transparent:true). `winOpaqueSafe`
  *     is true only on a VSCode build where opaque has been confirmed to render
  *     correctly; below that we keep the transparent (no-snap) behavior so nobody
- *     regresses. This is a confirmed-good floor, not a claimed #122 fix point.
+ *     regresses.
  *
  * @param {{ platform: NodeJS.Platform, transparentType?: boolean, winOpaqueSafe?: boolean }} ctx
  * @returns {boolean}
