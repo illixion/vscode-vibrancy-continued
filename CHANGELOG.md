@@ -5,6 +5,7 @@
   * New `vscode_vibrancy.windowMode` setting (`auto` / `framed` / `frameless` / `frameless-transparent`) replaces the `forceFramelessWindow` and `disableFramelessWindow` booleans, which are now deprecated. Existing configs are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for the platform (opaque `frameless` on macOS and with Windows 11 Mica/Acrylic, `frameless-transparent` where a see-through window is actually needed). The migration is platform/material-aware so it never produces a broken combination, and `auto` picks the right combination per platform.
   * Fix `opacity` and `refreshInterval` showing a blank value with a "value must be a number" warning on fresh installs or after resetting to default — their schema defaults were quoted strings instead of numbers.
   * Fix the misspelled `preferedDarkTheme` / `preferedLightTheme` settings, renamed to `preferredDarkTheme` / `preferredLightTheme`. Previous settings are migrated automatically.
+  * Activate via `onStartupFinished` instead of `*`, avoiding the startup-performance impact vsce warns about while still showing the first-run notification.
 
 # 1.1.83
 

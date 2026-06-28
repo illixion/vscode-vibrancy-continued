@@ -90,7 +90,7 @@ jobs:
           path: "*.vsix"
       - name: Publish extension to VSCE
         if: ${{ !inputs.package_only }}
-        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --allow-star-activation --packagePath *.vsix ${{ inputs.prerelease && '--pre-release' || '' }}
+        run: npx @vscode/vsce publish -p ${{ secrets.VSCE_TOKEN }} --packagePath *.vsix ${{ inputs.prerelease && '--pre-release' || '' }}
       - name: Publish extension to Open VSX
         if: ${{ !inputs.package_only }}
         env:

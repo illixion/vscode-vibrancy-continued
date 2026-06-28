@@ -96,7 +96,7 @@ async function main() {
     vsixPath = path.join(os.tmpdir(), 'vibrancy-e2e-test.vsix');
     const extensionsInstallDir = path.join(userDataDir, 'extensions');
     execSync(
-      `npx @vscode/vsce package --out "${vsixPath}" --allow-star-activation`,
+      `npx @vscode/vsce package --out "${vsixPath}"`,
       { cwd: extensionDir, stdio: 'inherit', timeout: 300000 }
     );
     console.log(`  Packaged: ${vsixPath}`);
