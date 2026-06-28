@@ -24,6 +24,8 @@
   "configuration.forceFramelessWindow.deprecation": "已由 vscode_vibrancy.windowMode 取代。该项会自动迁移；如需消除此警告，请将 windowMode 设置为 “frameless” 或 “frameless-transparent”。",
   "configuration.disableFramelessWindow.description": "已弃用 — 请改用 `vscode_vibrancy.windowMode`。设置该项时（且 windowMode 为 “auto”），将映射为 windowMode 的 “framed”。",
   "configuration.disableFramelessWindow.deprecation": "已由 vscode_vibrancy.windowMode 取代。请改将 windowMode 设置为 “framed”。",
+  "configuration.preferedDarkTheme.deprecation": "已重命名为 vscode_vibrancy.preferredDarkTheme（拼写修正）。你的值仍然有效；如需消除此警告，请迁移到新设置。",
+  "configuration.preferedLightTheme.deprecation": "已重命名为 vscode_vibrancy.preferredLightTheme（拼写修正）。你的值仍然有效；如需消除此警告，请迁移到新设置。",
   "configuration.disableThemeFixes.description": "禁用对 Cursor 等非标准 VSCode 编辑器的修复。",
   "configuration.disableColorCustomizations.description": "阻止 Vibrancy 修改 `workbench.colorCustomizations`。如果您想自行管理颜色自定义，或使用自定义CSS主题来处理自身背景，请启用此选项。",
   "extension.installVibrancy.title": "安装毛玻璃效果",

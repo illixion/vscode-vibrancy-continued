@@ -24,6 +24,8 @@
   "configuration.forceFramelessWindow.deprecation": "Replaced by vscode_vibrancy.windowMode. It is migrated automatically; set windowMode to 'frameless' or 'frameless-transparent' to silence this warning.",
   "configuration.disableFramelessWindow.description": "Deprecated — use `vscode_vibrancy.windowMode` instead. When set (and windowMode is 'auto') this maps to windowMode 'framed'.",
   "configuration.disableFramelessWindow.deprecation": "Replaced by vscode_vibrancy.windowMode. Set windowMode to 'framed' instead.",
+  "configuration.preferedDarkTheme.deprecation": "Renamed to vscode_vibrancy.preferredDarkTheme (corrected spelling). Your value is still honored, but move it to the new setting to silence this warning.",
+  "configuration.preferedLightTheme.deprecation": "Renamed to vscode_vibrancy.preferredLightTheme (corrected spelling). Your value is still honored, but move it to the new setting to silence this warning.",
   "configuration.disableThemeFixes.description": "Disable fixes for non-standard VSCode editors like Cursor.",
   "configuration.disableColorCustomizations.description": "Prevent Vibrancy from modifying `workbench.colorCustomizations`. Enable this if you manage color customizations yourself or use a custom CSS theme that handles its own backgrounds.",
   "extension.installVibrancy.title": "Enable Vibrancy",

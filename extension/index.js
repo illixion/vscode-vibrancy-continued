@@ -142,14 +142,64 @@ function getCurrentTheme(config) {
   return config.theme in themeStylePaths ? config.theme : defaultTheme;
 }
 
+// Settings that were renamed (e.g. to fix a typo): [oldKey, newKey].
+const renamedSettings = [
+  ['vscode_vibrancy.preferedDarkTheme', 'vscode_vibrancy.preferredDarkTheme'],
+  ['vscode_vibrancy.preferedLightTheme', 'vscode_vibrancy.preferredLightTheme'],
+];
+
+// Read a renamed setting, migrating from the old key transparently: prefer an
+// explicitly-set new key, then an explicitly-set (deprecated) old key, otherwise
+// the new key's default. inspect() is used because both keys carry the same
+// default, so get() alone can't tell whether a value was actually configured.
+function getRenamedSetting(newKey, oldKey) {
+  const config = vscode.workspace.getConfiguration();
+  const explicit = (key) => {
+    const i = config.inspect(key);
+    return i && (i.workspaceFolderValue ?? i.workspaceValue ?? i.globalValue);
+  };
+  return explicit(newKey) ?? explicit(oldKey) ?? config.get(newKey);
+}
+
+// Actively move any explicitly-set deprecated (misspelled) keys to their new
+// names at the same scope, then clear the old key so VSCode stops warning. Runs
+// during install (inside the operation guard), so the resulting config writes
+// don't trigger the onDidChangeConfiguration reload prompt. Best-effort: failures
+// are logged but never block install, and getRenamedSetting() still honors the
+// old key meanwhile.
+async function migrateRenamedSettings() {
+  const config = vscode.workspace.getConfiguration();
+  const scopes = [
+    ['globalValue', vscode.ConfigurationTarget.Global],
+    ['workspaceValue', vscode.ConfigurationTarget.Workspace],
+  ];
+  for (const [oldKey, newKey] of renamedSettings) {
+    const oldInspect = config.inspect(oldKey);
+    const newInspect = config.inspect(newKey);
+    if (!oldInspect) continue;
+    for (const [prop, target] of scopes) {
+      if (oldInspect[prop] === undefined) continue;
+      try {
+        // Don't clobber a value the user already set under the new key.
+        if (newInspect && newInspect[prop] === undefined) {
+          await config.update(newKey, oldInspect[prop], target);
+        }
+        await config.update(oldKey, undefined, target);
+      } catch (err) {
+        console.error(`Failed to migrate ${oldKey} -> ${newKey}:`, err);
+      }
+    }
+  }
+}
+
 function checkDarkLightMode(theme) {
   const currentTheme = theme.kind;
 
   // Sync Vibrancy theme with VSCode color theme
   const currentColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.theme");
   const enableAutoTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.enableAutoTheme");
-  const preferredDarkColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedDarkTheme");
-  const preferredLightColorTheme = vscode.workspace.getConfiguration().get("vscode_vibrancy.preferedLightTheme");
+  const preferredDarkColorTheme = getRenamedSetting("vscode_vibrancy.preferredDarkTheme", "vscode_vibrancy.preferedDarkTheme");
+  const preferredLightColorTheme = getRenamedSetting("vscode_vibrancy.preferredLightTheme", "vscode_vibrancy.preferedLightTheme");
 
   let targetVibrancyTheme;
   if (currentTheme === vscode.ColorThemeKind.Dark) {
@@ -859,6 +909,7 @@ function activate(context) {
   }
 
   async function applyPostInstallSettings() {
+    await migrateRenamedSettings();
     await checkColorTheme(testMode);
     await checkElectronDeprecatedType();
     await setLocalConfig(true, {
@@ -866,6 +917,14 @@ function activate(context) {
       jsPath: JSFile,
       electronJsPath: ElectronJSFile,
     }, await changeVSCodeSettings());
+
+    // We just mutated vscode_vibrancy settings (migration + theme sync). Those
+    // writes emit onDidChangeConfiguration events that can be delivered AFTER
+    // the operation guard (operationInProgress) clears, so refresh the change
+    // -detection baseline now — while we're still in the operation — to stop
+    // them being mistaken for a user edit and popping the "config changed,
+    // reload?" prompt.
+    lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
   }
 
   async function Install(sharedWriter) {

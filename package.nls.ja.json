@@ -24,6 +24,8 @@
   "configuration.forceFramelessWindow.deprecation": "vscode_vibrancy.windowMode に置き換えられました。自動的に移行されます。この警告を消すには windowMode を 'frameless' または 'frameless-transparent' に設定してください。",
   "configuration.disableFramelessWindow.description": "非推奨 — 代わりに `vscode_vibrancy.windowMode` を使用してください。設定されている場合（かつ windowMode が 'auto' のとき）、windowMode の 'framed' にマッピングされます。",
   "configuration.disableFramelessWindow.deprecation": "vscode_vibrancy.windowMode に置き換えられました。代わりに windowMode を 'framed' に設定してください。",
+  "configuration.preferedDarkTheme.deprecation": "vscode_vibrancy.preferredDarkTheme に名称変更されました（スペル修正）。現在の値は引き続き有効ですが、この警告を消すには新しい設定に移してください。",
+  "configuration.preferedLightTheme.deprecation": "vscode_vibrancy.preferredLightTheme に名称変更されました（スペル修正）。現在の値は引き続き有効ですが、この警告を消すには新しい設定に移してください。",
   "configuration.disableThemeFixes.description": "カーソルのような非標準のVSCodeエディタの修正を無効にする。",
   "configuration.disableColorCustomizations.description": "Vibrancy による `workbench.colorCustomizations` の変更を無効にします。カラーカスタマイズを自分で管理したい場合や、独自の背景を処理するカスタムCSSテーマを使用している場合に有効にしてください。",
   "extension.installVibrancy.title": "Vibrancy を有効化",

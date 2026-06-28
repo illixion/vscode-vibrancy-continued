@@ -173,9 +173,11 @@ Enable automatic dark/light mode switching based on OS mode. Requires `window.au
 
 *boolean, default is false*
 
-#### Preferred dark/light theme (`vscode_vibrancy.preferedDarkTheme / vscode_vibrancy.preferedLightTheme`)
+#### Preferred dark/light theme (`vscode_vibrancy.preferredDarkTheme / vscode_vibrancy.preferredLightTheme`)
 
 Select which themes to use for light and dark modes, they will be used instead of the main Vibrancy Continued theme selected.
+
+> The previous misspelled keys `vscode_vibrancy.preferedDarkTheme` / `vscode_vibrancy.preferedLightTheme` are deprecated but still honored — if you have them set, your value is used automatically. Move it to the corrected key to silence the deprecation warning.
 
 #### theme (`vscode_vibrancy.theme`)
 

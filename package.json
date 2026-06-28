@@ -154,7 +154,7 @@
           "type": "boolean",
           "default": false
         },
-        "vscode_vibrancy.preferedDarkTheme": {
+        "vscode_vibrancy.preferredDarkTheme": {
           "type": "string",
           "default": "Default Dark",
           "enum": [
@@ -175,7 +175,7 @@
             "Custom theme (use imports)"
           ]
         },
-        "vscode_vibrancy.preferedLightTheme": {
+        "vscode_vibrancy.preferredLightTheme": {
           "type": "string",
           "default": "Default Light",
           "enum": [
@@ -195,6 +195,18 @@
             "Atom One Dark",
             "Custom theme (use imports)"
           ]
+        },
+        "vscode_vibrancy.preferedDarkTheme": {
+          "type": "string",
+          "default": "Default Dark",
+          "deprecationMessage": "%configuration.preferedDarkTheme.deprecation%",
+          "markdownDeprecationMessage": "%configuration.preferedDarkTheme.deprecation%"
+        },
+        "vscode_vibrancy.preferedLightTheme": {
+          "type": "string",
+          "default": "Default Light",
+          "deprecationMessage": "%configuration.preferedLightTheme.deprecation%",
+          "markdownDeprecationMessage": "%configuration.preferedLightTheme.deprecation%"
         },
         "vscode_vibrancy.imports": {
           "description": "%configuration.imports.description%",
