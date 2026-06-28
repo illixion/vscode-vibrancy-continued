@@ -55,7 +55,7 @@ describe('install/uninstall round-trip', () => {
       expect(fs.readFileSync(htmlPath, 'utf-8')).toContain('VscodeVibrancyContinued');
 
       // 3. Inject electron options
-      const newElectron = injectElectronOptions(originalElectron, { useFrame: true, isMacos: true });
+      const newElectron = injectElectronOptions(originalElectron, { frameless: true, isMacos: true });
       fs.writeFileSync(electronPath, newElectron);
       expect(fs.readFileSync(electronPath, 'utf-8')).toContain('frame:false,transparent:true');
       expect(fs.readFileSync(electronPath, 'utf-8')).toContain('visualEffectState:"active"');
@@ -90,7 +90,7 @@ describe('install/uninstall round-trip', () => {
       // --- Install (both JS injection and electron options on same file) ---
       let content = original;
       content = generateNewJS(content, '/app', { theme: 'dark' }, '/runtime/index.mjs');
-      content = injectElectronOptions(content, { useFrame: true, isMacos: true });
+      content = injectElectronOptions(content, { frameless: true, isMacos: true });
       fs.writeFileSync(mergedPath, content);
 
       const { result: patchedHtml } = patchCSP(originalHtml);
@@ -124,9 +124,9 @@ describe('install/uninstall round-trip', () => {
 
       // Install twice
       let content = generateNewJS(original, '/app', { v: 1 }, '/runtime/index.mjs');
-      content = injectElectronOptions(content, { useFrame: true, isMacos: false });
+      content = injectElectronOptions(content, { frameless: true, isMacos: false });
       content = generateNewJS(content, '/app', { v: 2 }, '/runtime/index.mjs');
-      content = injectElectronOptions(content, { useFrame: true, isMacos: false });
+      content = injectElectronOptions(content, { frameless: true, isMacos: false });
 
       // Should have exactly one set of markers
       expect((content.match(/VSCODE-VIBRANCY-START/g) || []).length).toBe(1);
@@ -161,7 +161,7 @@ describe('install/uninstall round-trip', () => {
     });
 
     it('round-trips assignment-based Cursor window builders', () => {
-      const injected = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
+      const injected = injectElectronOptions(cursorWindowBuilder, { frameless: true, isMacos: true });
       const cleaned = removeElectronOptions(injected);
       expect(cleaned).toBe(cursorWindowBuilder);
     });

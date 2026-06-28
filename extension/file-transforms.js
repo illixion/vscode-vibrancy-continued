@@ -174,75 +174,147 @@ function injectFramelessWindow(electronJS, transparent = true) {
 }
 
 /**
- * Decide whether to inject frameless + transparent window options.
+ * Whether a FRAMELESS window should be transparent (per-pixel alpha) in this
+ * context. Transparency is a mechanism, never a user preference: it's only
+ * needed for the see-through 'transparent' vibrancy type (which paints no blur
+ * material). macOS vibrancy (native NSVisualEffectView) and Win11 DWM materials
+ * (Mica/Acrylic) all require an OPAQUE window, and on macOS Tahoe a transparent
+ * window needlessly drives WindowServer GPU/power (issue #207). The Win10 legacy
+ * accent and Linux are the exceptions that do expect a transparent window.
  *
- * Precedence (later rules win): platform/editor defaults are applied first,
- * then disableFramelessWindow can turn it off, then forceFramelessWindow can
- * force it back on. macOS is NOT frameless by default (see the macOS note in
- * the body / issue #207); macOS users can opt in via forceFramelessWindow.
+ * @param {{ osType: string, platform: NodeJS.Platform, isWindows11?: boolean, transparentType?: boolean }} ctx
+ * @returns {boolean}
+ */
+function framelessWindowTransparency({ osType, platform, isWindows11 = false, transparentType = false }) {
+  if (osType === 'macos') return transparentType;
+  if (platform === 'win32' && isWindows11) return transparentType;
+  return true; // Win10 legacy accent and Linux expect a transparent window.
+}
+
+/**
+ * Resolve the effective windowMode, folding in the deprecated boolean settings.
+ *
+ * An explicit windowMode (anything other than 'auto') always wins. Otherwise the
+ * legacy flags are migrated onto the enum, preserving their original precedence
+ * (forceFramelessWindow won over disableFramelessWindow) AND original intent —
+ * which was only ever "force the window frameless / force it framed", not a
+ * transparency choice. So the frameless variant is picked to match what the
+ * platform/material actually needs, sparing users (who likely don't know what
+ * the flags do) broken combinations:
+ *   - disableFramelessWindow → 'framed'
+ *   - forceFramelessWindow   → 'frameless' on macOS / Win11 DWM materials (opaque,
+ *                              the safe + low-power choice), 'frameless-transparent'
+ *                              where a see-through window is actually wanted
+ *                              (Win10, Linux, or the 'transparent' type)
+ *
+ * `forceFramelessWindow` still matters under 'auto' on configs where auto stays
+ * framed — e.g. older VSCode on Windows with Electron <27 (issue #140).
+ *
+ * @param {{
+ *   windowMode?: string,
+ *   forceFramelessWindow?: boolean,
+ *   disableFramelessWindow?: boolean,
+ *   osType?: string,
+ *   platform?: NodeJS.Platform,
+ *   isWindows11?: boolean,
+ *   transparentType?: boolean,
+ * }} opts
+ * @returns {'auto' | 'framed' | 'frameless' | 'frameless-transparent'}
+ */
+function resolveEffectiveWindowMode(opts) {
+  const {
+    windowMode = 'auto',
+    forceFramelessWindow = false,
+    disableFramelessWindow = false,
+  } = opts;
+  if (windowMode && windowMode !== 'auto') return windowMode;
+  if (forceFramelessWindow) {
+    return framelessWindowTransparency(opts) ? 'frameless-transparent' : 'frameless';
+  }
+  if (disableFramelessWindow) return 'framed';
+  return 'auto';
+}
+
+/**
+ * Resolve the effective window mode into concrete BrowserWindow flags
+ * ({ frameless, transparent }).
+ *
+ * `windowMode` (vscode_vibrancy.windowMode) values:
+ *   - 'auto'                  platform/editor-appropriate default (see below)
+ *   - 'framed'                keep the OS frame, opaque window
+ *   - 'frameless'             borderless, opaque window
+ *   - 'frameless-transparent' borderless, transparent (see-through) window
+ *
+ * `transparent` is the BrowserWindow's per-pixel-alpha flag, NOT the vibrancy
+ * effect: macOS vibrancy comes from a native NSVisualEffectView painted over an
+ * OPAQUE window, and Win11 DWM materials (Mica/Acrylic) also require an opaque
+ * window. A transparent window is only needed for the see-through 'transparent'
+ * vibrancy type (which paints no blur material), and on macOS Tahoe it
+ * needlessly drives WindowServer GPU/power that scales with window size and
+ * count (issue #207) — so transparency is opt-in, derived from the type.
+ *
+ * 'auto' resolution:
+ *   - Cursor:               frameless on every platform it runs on
+ *   - macOS:                frameless; opaque unless the 'transparent' type is in use
+ *   - Windows Electron >=27: frameless (issue #122); opaque only for a Win11 DWM
+ *                            material, transparent otherwise (Win10 legacy accent)
+ *   - Windows Electron <27:  framed
+ *   - Linux:                frameless + transparent (handled manually)
  *
  * @param {{
  *   osType: string,
  *   platform: NodeJS.Platform,
  *   electronMajorVersion: number,
  *   appName: string,
- *   disableFramelessWindow?: boolean,
- *   forceFramelessWindow?: boolean,
- * }} opts
- * @returns {boolean} true if frameless+transparent options should be injected
+ *   isWindows11?: boolean,
+ *   transparentType?: boolean,
+ *   windowMode?: 'auto' | 'framed' | 'frameless' | 'frameless-transparent',
+ * }} opts - `transparentType` is whether the resolved vibrancy type === 'transparent'.
+ * @returns {{ frameless: boolean, transparent: boolean }}
  */
-function resolveUseFrame({
+function resolveWindowMode({
   osType,
   platform,
   electronMajorVersion,
   appName,
-  disableFramelessWindow = false,
-  forceFramelessWindow = false,
+  isWindows11 = false,
+  transparentType = false,
+  windowMode = 'auto',
 }) {
-  let useFrame = false;
+  // Explicit overrides map directly to flags.
+  if (windowMode === 'framed') return { frameless: false, transparent: false };
+  if (windowMode === 'frameless') return { frameless: true, transparent: false };
+  if (windowMode === 'frameless-transparent') return { frameless: true, transparent: true };
 
-  // On Cursor, always use frame
+  // windowMode === 'auto': pick frame and transparency per platform/editor.
+  let frameless;
   if (appName === 'Cursor') {
-    useFrame = true;
+    frameless = true;
+  } else if (osType === 'macos') {
+    frameless = true;
+  } else if (platform === 'win32') {
+    // Electron >=27 needs frame:false for vibrancy on Windows (issue #122).
+    frameless = electronMajorVersion >= 27;
+  } else if (platform === 'linux') {
+    frameless = true;
+  } else {
+    frameless = false;
   }
 
-  // On Windows with Electron >=27, always use frame (issue 122)
-  if (platform === 'win32' && electronMajorVersion >= 27) {
-    useFrame = true;
-  }
+  const transparent = frameless
+    ? framelessWindowTransparency({ osType, platform, isWindows11, transparentType })
+    : false;
 
-  // Linux doesn't have a universal native API for transparent frames,
-  // so we need to handle transparency and window frames manually.
-  if (platform === 'linux') {
-    useFrame = true;
-  }
-
-  // macOS is NOT frameless by default. v1.1.81 enabled it by default to fix
-  // occasional flashing on file-browser hover (seen intermittently on an M2 Max
-  // MacBook Pro), but on macOS Tahoe 26.5 the frameless+transparent window
-  // causes excessive WindowServer GPU utilization while a VSCode window is open,
-  // scaling with window size. The default is therefore back off as of v1.1.83.
-  // Users who accept the higher power draw and want the flashing gone can opt in
-  // with forceFramelessWindow (not guaranteed to fix it). See issue #207.
-
-  if (disableFramelessWindow) {
-    useFrame = false;
-  }
-
-  if (forceFramelessWindow) {
-    useFrame = true;
-  }
-
-  return useFrame;
+  return { frameless, transparent };
 }
 
 /**
  * Inject Electron BrowserWindow options (frame, transparent, visualEffectState).
  * @param {string} electronJS - Electron main.js content
- * @param {{ useFrame: boolean, isMacos: boolean }} opts
+ * @param {{ frameless: boolean, isMacos: boolean, transparent?: boolean }} opts
  * @returns {string} Modified content
  */
-function injectElectronOptions(electronJS, { useFrame, isMacos, transparent = true }) {
+function injectElectronOptions(electronJS, { frameless, isMacos, transparent = true }) {
   let result = electronJS;
 
   // visualEffectState is a macOS-only Electron option.
@@ -250,10 +322,9 @@ function injectElectronOptions(electronJS, { useFrame, isMacos, transparent = tr
     result = injectVisualEffectState(result);
   }
 
-  // Add frameless + (optionally) transparent window options.
-  // Win11 DWM backdrop materials (Mica/Acrylic) require an opaque window, so
-  // the caller passes transparent:false in that case.
-  if (useFrame) {
+  // Add frameless + (optionally) transparent window options. The caller passes
+  // transparent:false for opaque modes (e.g. macOS vibrancy, Win11 DWM materials).
+  if (frameless) {
     result = injectFramelessWindow(result, transparent);
   }
 
@@ -428,7 +499,8 @@ module.exports = {
   MARKER_REGEX,
   generateNewJS,
   removeJSMarkers,
-  resolveUseFrame,
+  resolveEffectiveWindowMode,
+  resolveWindowMode,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,

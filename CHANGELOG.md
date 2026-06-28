@@ -1,3 +1,9 @@
+# 1.1.84
+
+* Core:
+  * macOS now defaults to a **frameless + opaque** window, which fixes the file-browser hover flash (issues [#200](https://github.com/illixion/vscode-vibrancy-continued/issues/200), [#206](https://github.com/illixion/vscode-vibrancy-continued/issues/206), [#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)) without the elevated WindowServer GPU/power usage that a *transparent* frameless window causes on macOS Tahoe. Vibrancy is unaffected — on macOS it comes from the native effect view over an opaque window, so a transparent window was never required (except for the see-through `transparent` type).
+  * New `vscode_vibrancy.windowMode` setting (`auto` / `framed` / `frameless` / `frameless-transparent`) replaces the `forceFramelessWindow` and `disableFramelessWindow` booleans, which are now deprecated. Existing configs are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for the platform (opaque `frameless` on macOS and with Windows 11 Mica/Acrylic, `frameless-transparent` where a see-through window is actually needed). The migration is platform/material-aware so it never produces a broken combination, and `auto` picks the right combination per platform.
+
 # 1.1.83
 
 * Core:

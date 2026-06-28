@@ -3,7 +3,8 @@ const path = require('path');
 const {
   generateNewJS,
   removeJSMarkers,
-  resolveUseFrame,
+  resolveEffectiveWindowMode,
+  resolveWindowMode,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,
@@ -84,125 +85,197 @@ describe('removeJSMarkers', () => {
   });
 });
 
-// --- resolveUseFrame ---
+// --- resolveEffectiveWindowMode (legacy setting migration) ---
 
-describe('resolveUseFrame', () => {
+describe('resolveEffectiveWindowMode', () => {
+  const mac = { osType: 'macos', platform: 'darwin' };
+  const win11 = { osType: 'win10', platform: 'win32', isWindows11: true };
+  const win10 = { osType: 'win10', platform: 'win32', isWindows11: false };
+  const linux = { osType: 'unknown', platform: 'linux' };
+
+  it('defaults to auto when nothing is set', () => {
+    expect(resolveEffectiveWindowMode({ ...mac })).toBe('auto');
+  });
+
+  it('migrates disableFramelessWindow to framed on any platform', () => {
+    expect(resolveEffectiveWindowMode({ ...mac, disableFramelessWindow: true })).toBe('framed');
+    expect(resolveEffectiveWindowMode({ ...win11, disableFramelessWindow: true })).toBe('framed');
+  });
+
+  // forceFramelessWindow was only ever a "force frameless" toggle; the migration
+  // picks the frameless variant that matches what the platform/material needs.
+  it('migrates forceFramelessWindow to opaque frameless on macOS (no needless transparency)', () => {
+    expect(resolveEffectiveWindowMode({ ...mac, forceFramelessWindow: true })).toBe('frameless');
+  });
+
+  it('migrates forceFramelessWindow to transparent frameless on macOS only for the transparent type', () => {
+    expect(resolveEffectiveWindowMode({ ...mac, transparentType: true, forceFramelessWindow: true }))
+      .toBe('frameless-transparent');
+  });
+
+  it('migrates forceFramelessWindow to opaque frameless on Win11 with a DWM material (Mica/Acrylic)', () => {
+    expect(resolveEffectiveWindowMode({ ...win11, transparentType: false, forceFramelessWindow: true }))
+      .toBe('frameless');
+  });
+
+  it('migrates forceFramelessWindow to transparent frameless on Win10 and Linux', () => {
+    expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true })).toBe('frameless-transparent');
+    expect(resolveEffectiveWindowMode({ ...linux, forceFramelessWindow: true })).toBe('frameless-transparent');
+  });
+
+  it('forceFramelessWindow wins over disableFramelessWindow (preserves legacy precedence)', () => {
+    expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true, disableFramelessWindow: true }))
+      .toBe('frameless-transparent');
+  });
+
+  it('an explicit windowMode always wins over the legacy flags', () => {
+    expect(resolveEffectiveWindowMode({
+      ...mac, windowMode: 'framed', forceFramelessWindow: true, disableFramelessWindow: true,
+    })).toBe('framed');
+    expect(resolveEffectiveWindowMode({ ...win10, windowMode: 'frameless', forceFramelessWindow: true }))
+      .toBe('frameless');
+  });
+});
+
+// --- resolveWindowMode ---
+
+describe('resolveWindowMode', () => {
   const base = {
     osType: 'win10',
     platform: 'win32',
     electronMajorVersion: 27,
     appName: 'Visual Studio Code',
-    disableFramelessWindow: false,
-    forceFramelessWindow: false,
+    isWindows11: false,
+    transparentType: false,
+    windowMode: 'auto',
   };
+  const macos = { ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 };
+  const linux = { ...base, osType: 'unknown', platform: 'linux', electronMajorVersion: 0 };
 
-  it('uses frameless on Windows with Electron >=27', () => {
-    expect(resolveUseFrame({ ...base, electronMajorVersion: 27 })).toBe(true);
+  // --- auto: platform defaults ---
+
+  it('auto: Windows Electron >=27 is frameless + transparent (Win10 accent)', () => {
+    expect(resolveWindowMode({ ...base, electronMajorVersion: 27 })).toEqual({ frameless: true, transparent: true });
   });
 
-  it('does not use frameless on Windows with Electron <27', () => {
-    expect(resolveUseFrame({ ...base, electronMajorVersion: 26 })).toBe(false);
+  it('auto: Windows Electron <27 is framed', () => {
+    expect(resolveWindowMode({ ...base, electronMajorVersion: 26 })).toEqual({ frameless: false, transparent: false });
   });
 
-  it('uses frameless on Linux', () => {
-    expect(resolveUseFrame({ ...base, osType: 'unknown', platform: 'linux', electronMajorVersion: 0 })).toBe(true);
+  it('auto: Win11 with a DWM material (Mica/Acrylic) is frameless + opaque', () => {
+    expect(resolveWindowMode({ ...base, isWindows11: true, transparentType: false }))
+      .toEqual({ frameless: true, transparent: false });
   });
 
-  it('uses frameless on Cursor regardless of platform', () => {
-    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0, appName: 'Cursor' })).toBe(true);
+  it('auto: Win11 with the transparent type is frameless + transparent', () => {
+    expect(resolveWindowMode({ ...base, isWindows11: true, transparentType: true }))
+      .toEqual({ frameless: true, transparent: true });
   });
 
-  // macOS is NOT frameless by default: v1.1.81 enabled it to fix file-browser
-  // hover flashing, but it causes excessive WindowServer GPU usage on macOS
-  // Tahoe 26.5, so v1.1.83 reverted the default. Opt in via forceFramelessWindow.
-  it('does not use frameless on macOS by default', () => {
-    expect(resolveUseFrame({ ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0 })).toBe(false);
+  it('auto: Linux is frameless + transparent', () => {
+    expect(resolveWindowMode(linux)).toEqual({ frameless: true, transparent: true });
   });
 
-  it('forceFramelessWindow opts macOS into a frameless window', () => {
-    expect(resolveUseFrame({
-      ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0,
-      forceFramelessWindow: true,
-    })).toBe(true);
+  it('auto: Cursor is frameless on every platform', () => {
+    expect(resolveWindowMode({ ...macos, appName: 'Cursor' }).frameless).toBe(true);
+    expect(resolveWindowMode({ ...linux, appName: 'Cursor' }).frameless).toBe(true);
   });
 
-  it('disableFramelessWindow opts out on Windows too', () => {
-    expect(resolveUseFrame({ ...base, disableFramelessWindow: true })).toBe(false);
+  // macOS default is now frameless + OPAQUE: it fixes the file-browser hover
+  // flash (#200/#206/#207) without the WindowServer GPU cost of a transparent
+  // window on Tahoe. The see-through 'transparent' type is the exception.
+  it('auto: macOS is frameless + opaque by default', () => {
+    expect(resolveWindowMode(macos)).toEqual({ frameless: true, transparent: false });
   });
 
-  it('forceFramelessWindow wins over disableFramelessWindow', () => {
-    expect(resolveUseFrame({
-      ...base, osType: 'macos', platform: 'darwin', electronMajorVersion: 0,
-      disableFramelessWindow: true, forceFramelessWindow: true,
-    })).toBe(true);
+  it('auto: macOS with the transparent type is frameless + transparent', () => {
+    expect(resolveWindowMode({ ...macos, transparentType: true }))
+      .toEqual({ frameless: true, transparent: true });
   });
 
-  it('forceFramelessWindow enables frameless on an otherwise-framed config', () => {
-    expect(resolveUseFrame({ ...base, electronMajorVersion: 26, forceFramelessWindow: true })).toBe(true);
+  // --- explicit overrides win over platform defaults ---
+
+  it('framed: always framed + opaque, even on macOS', () => {
+    expect(resolveWindowMode({ ...macos, windowMode: 'framed' }))
+      .toEqual({ frameless: false, transparent: false });
+  });
+
+  it('frameless: frameless + opaque, even where auto would be transparent', () => {
+    expect(resolveWindowMode({ ...linux, windowMode: 'frameless' }))
+      .toEqual({ frameless: true, transparent: false });
+  });
+
+  it('frameless-transparent: frameless + transparent, even on macOS', () => {
+    expect(resolveWindowMode({ ...macos, windowMode: 'frameless-transparent' }))
+      .toEqual({ frameless: true, transparent: true });
+  });
+
+  it('explicit framed forces frame even on an otherwise-frameless Linux config', () => {
+    expect(resolveWindowMode({ ...linux, windowMode: 'framed' }).frameless).toBe(false);
   });
 });
 
 // --- injectElectronOptions ---
 
 describe('injectElectronOptions', () => {
-  it('injects frame:false,transparent:true when useFrame is true', () => {
+  it('injects frame:false,transparent:true when frameless is true', () => {
     const original = loadFixture('main-merged.js');
-    const result = injectElectronOptions(original, { useFrame: true, isMacos: false });
+    const result = injectElectronOptions(original, { frameless: true, isMacos: false });
     expect(result).toContain('frame:false,transparent:true,experimentalDarkMode');
   });
 
-  it('does not inject frame options when useFrame is false', () => {
+  it('does not inject frame options when frameless is false', () => {
     const original = loadFixture('main-merged.js');
-    const result = injectElectronOptions(original, { useFrame: false, isMacos: false });
+    const result = injectElectronOptions(original, { frameless: false, isMacos: false });
     expect(result).not.toContain('frame:false');
     expect(result).toContain('experimentalDarkMode');
   });
 
   it('injects visualEffectState on macOS', () => {
     const original = loadFixture('main-merged.js');
-    const result = injectElectronOptions(original, { useFrame: false, isMacos: true });
+    const result = injectElectronOptions(original, { frameless: false, isMacos: true });
     expect(result).toContain('visualEffectState:"active",experimentalDarkMode');
   });
 
-  it('injects both frame and visualEffectState on macOS with useFrame', () => {
+  it('injects both frame and visualEffectState on macOS when frameless', () => {
     const original = loadFixture('main-merged.js');
-    const result = injectElectronOptions(original, { useFrame: true, isMacos: true });
+    const result = injectElectronOptions(original, { frameless: true, isMacos: true });
     expect(result).toContain('visualEffectState:"active"');
     expect(result).toContain('frame:false,transparent:true');
   });
 
   it('injects visualEffectState into assignment-based Cursor window builders', () => {
-    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: false, isMacos: true });
+    const result = injectElectronOptions(cursorWindowBuilder, { frameless: false, isMacos: true });
     expect(result).toContain('u.visualEffectState="active",u.titleBarStyle="hidden"');
   });
 
   it('injects frameless options into assignment-based Cursor window builders', () => {
-    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: false });
+    const result = injectElectronOptions(cursorWindowBuilder, { frameless: true, isMacos: false });
     expect(result).toContain('u.frame=false,u.transparent=true,u.titleBarStyle="hidden"');
   });
 
   it('injects frame:false,transparent:false when transparent is false (Win11 Mica)', () => {
     const original = loadFixture('main-merged.js');
-    const result = injectElectronOptions(original, { useFrame: true, isMacos: false, transparent: false });
+    const result = injectElectronOptions(original, { frameless: true, isMacos: false, transparent: false });
     expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
     expect(result).not.toContain('transparent:true');
   });
 
   it('injects opaque frameless options into Cursor window builders when transparent is false', () => {
-    const result = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: false, transparent: false });
+    const result = injectElectronOptions(cursorWindowBuilder, { frameless: true, isMacos: false, transparent: false });
     expect(result).toContain('u.frame=false,u.transparent=false,u.titleBarStyle="hidden"');
   });
 
   it('does not double-inject if already present', () => {
     const original = loadFixture('main-merged.js');
-    const first = injectElectronOptions(original, { useFrame: true, isMacos: true });
-    const second = injectElectronOptions(first, { useFrame: true, isMacos: true });
+    const first = injectElectronOptions(original, { frameless: true, isMacos: true });
+    const second = injectElectronOptions(first, { frameless: true, isMacos: true });
     expect(second).toBe(first);
   });
 
   it('does not double-inject assignment-based window builders', () => {
-    const first = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
-    const second = injectElectronOptions(first, { useFrame: true, isMacos: true });
+    const first = injectElectronOptions(cursorWindowBuilder, { frameless: true, isMacos: true });
+    const second = injectElectronOptions(first, { frameless: true, isMacos: true });
     expect(second).toBe(first);
   });
 });
@@ -222,7 +295,7 @@ describe('removeElectronOptions', () => {
 
   it('round-trips opaque (transparent:false) inject then remove', () => {
     const original = loadFixture('main-merged.js');
-    const injected = injectElectronOptions(original, { useFrame: true, isMacos: true, transparent: false });
+    const injected = injectElectronOptions(original, { frameless: true, isMacos: true, transparent: false });
     expect(removeElectronOptions(injected)).toBe(original);
   });
 
@@ -232,13 +305,13 @@ describe('removeElectronOptions', () => {
   });
 
   it('removes assignment-based Cursor injections', () => {
-    const injected = injectElectronOptions(cursorWindowBuilder, { useFrame: true, isMacos: true });
+    const injected = injectElectronOptions(cursorWindowBuilder, { frameless: true, isMacos: true });
     expect(removeElectronOptions(injected)).toBe(cursorWindowBuilder);
   });
 
   it('round-trips: inject then remove produces original', () => {
     const original = loadFixture('main-merged.js');
-    const injected = injectElectronOptions(original, { useFrame: true, isMacos: true });
+    const injected = injectElectronOptions(original, { frameless: true, isMacos: true });
     const cleaned = removeElectronOptions(injected);
     expect(cleaned).toBe(original);
   });

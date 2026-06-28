@@ -6,7 +6,8 @@ var { spawn } = require('child_process');
 var {
   generateNewJS: _generateNewJS,
   removeJSMarkers,
-  resolveUseFrame,
+  resolveEffectiveWindowMode,
+  resolveWindowMode,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -567,30 +568,50 @@ function activate(context) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-    const frameOpts = {
+
+    // The 'transparent' vibrancy type paints no blur material, so it needs an
+    // actually see-through window; every other type paints over an opaque window
+    // (native NSVisualEffectView on macOS, DWM backdrop on Win11). Resolve 'auto'
+    // against the theme's per-OS default to tell whether transparency is needed.
+    const resolvedType = config.type === 'auto'
+      ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
+      : config.type;
+    const platformCtx = {
       osType,
       platform: process.platform,
       electronMajorVersion,
       appName: vscode.env.appName,
-      disableFramelessWindow: config.disableFramelessWindow,
-      forceFramelessWindow: config.forceFramelessWindow,
+      isWindows11,
+      transparentType: resolvedType === 'transparent',
     };
-    const useFrame = resolveUseFrame(frameOpts);
+
+    // Resolve the effective window mode, migrating the deprecated boolean
+    // settings (forceFramelessWindow / disableFramelessWindow) onto the new
+    // windowMode enum. An explicit windowMode always wins over the legacy flags;
+    // the migration is platform/material-aware so it never produces a broken
+    // combination (e.g. a transparent window over a Win11 Mica material).
+    const windowMode = resolveEffectiveWindowMode({
+      ...platformCtx,
+      windowMode: config.windowMode,
+      forceFramelessWindow: config.forceFramelessWindow,
+      disableFramelessWindow: config.disableFramelessWindow,
+    });
+    const frameCtx = { ...platformCtx, windowMode };
+    const { frameless, transparent } = resolveWindowMode(frameCtx);
 
     // On non-VSCode editors, injecting frameless+transparent window options is
     // risky, so we only do it on a list of known working editors.
     if (!knownEditors.includes(vscode.env.appName)) {
-      if (useFrame) {
-        // useFrame being on can mean two different things here, and they have
-        // very different fixes:
-        //   1. The editor's own defaults require frame handling (truly
-        //      unsupported) — nothing the user can do.
-        //   2. forceFramelessWindow flipped it on even though the defaults
-        //      would have left it off — a user misconfiguration that can be
-        //      undone by disabling that setting.
-        // Resolve again without the forced override to tell them apart.
-        const useFrameByDefault = resolveUseFrame({ ...frameOpts, forceFramelessWindow: false });
-        if (config.forceFramelessWindow && !useFrameByDefault) {
+      if (frameless) {
+        // A frameless result on an unsupported editor has two causes with very
+        // different fixes:
+        //   1. The editor's own defaults require it (truly unsupported) — nothing
+        //      the user can do.
+        //   2. An explicit windowMode forced it on even though 'auto' would have
+        //      left it framed — a user misconfiguration that can be undone.
+        // Resolve again as 'auto' to tell them apart.
+        const auto = resolveWindowMode({ ...frameCtx, windowMode: 'auto' });
+        if (windowMode !== 'auto' && !auto.frameless) {
           throw new Error(localize('messages.forceFramelessUnsupportedEditor'));
         }
         throw new Error(localize('messages.unsupportedEditor'));
@@ -598,19 +619,7 @@ function activate(context) {
       return;
     }
 
-    // On Windows 11, DWM backdrop materials (Mica/Acrylic/Tabbed) only render on
-    // an opaque window — a transparent window suppresses the material entirely.
-    // The 'transparent' type is the exception: it needs a see-through window and
-    // uses no material. Resolve 'auto' against the theme's Windows default.
-    let transparent = true;
-    if (isWindows11) {
-      const resolvedType = config.type === 'auto'
-        ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
-        : config.type;
-      transparent = resolvedType === 'transparent';
-    }
-
-    ElectronJS = injectElectronOptions(ElectronJS, { useFrame, isMacos: osType === 'macos', transparent });
+    ElectronJS = injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
 
     await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
   }

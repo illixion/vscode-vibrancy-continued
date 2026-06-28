@@ -213,15 +213,36 @@
           "type": "boolean",
           "default": true
         },
+        "vscode_vibrancy.windowMode": {
+          "description": "%configuration.windowMode.description%",
+          "type": "string",
+          "enum": [
+            "auto",
+            "framed",
+            "frameless",
+            "frameless-transparent"
+          ],
+          "enumDescriptions": [
+            "%configuration.windowMode.auto%",
+            "%configuration.windowMode.framed%",
+            "%configuration.windowMode.frameless%",
+            "%configuration.windowMode.framelessTransparent%"
+          ],
+          "default": "auto"
+        },
         "vscode_vibrancy.forceFramelessWindow": {
           "description": "%configuration.forceFramelessWindow.description%",
           "type": "boolean",
-          "default": false
+          "default": false,
+          "deprecationMessage": "%configuration.forceFramelessWindow.deprecation%",
+          "markdownDeprecationMessage": "%configuration.forceFramelessWindow.deprecation%"
         },
         "vscode_vibrancy.disableFramelessWindow": {
           "description": "%configuration.disableFramelessWindow.description%",
           "type": "boolean",
-          "default": false
+          "default": false,
+          "deprecationMessage": "%configuration.disableFramelessWindow.deprecation%",
+          "markdownDeprecationMessage": "%configuration.disableFramelessWindow.deprecation%"
         },
         "vscode_vibrancy.disableThemeFixes": {
           "description": "%configuration.disableThemeFixes.description%",

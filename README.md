@@ -37,7 +37,7 @@ Some VSCode/Electron versions (and certain GPUs) had a hardware-acceleration bug
 1. Update your VSCode shortcut to include `--disable-gpu-compositing` at the end of the "Target" field, for example: `"C:\Users\User\AppData\Local\Programs\Microsoft VS Code\Code.exe" --disable-gpu-compositing`
 2. (optional) Update your shell configuration to add the same argument to `code`, needed if VSCode isn't running when you use `code`
 3. Install Vibrancy Continued
-4. Go to settings and check **Disable frameless window** (`vscode_vibrancy.disableFramelessWindow`)
+4. Go to settings and set **Window Mode** (`vscode_vibrancy.windowMode`) to `framed`
 5. Press F1 and select **Reload Vibrancy**
 
 For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
@@ -134,15 +134,22 @@ Use a new method for preventing window flashing during resizing. Eliminates the 
 
 *boolean, default is true*
 
-#### Force Frameless Window (`vscode_vibrancy.forceFramelessWindow`)
+#### Window Mode (`vscode_vibrancy.windowMode`)
 
-Always set the VSCode window to use `frame: false`. This is already the default on Windows, so you normally don't need to enable it there — it's mainly an override for editors or platforms where the frameless window isn't applied automatically but is needed to fix visual rendering issues.
+Controls how the VSCode window frame and transparency are applied. **Leave this on `auto` unless you're troubleshooting a rendering issue** — `auto` already picks the right combination for your platform.
 
-On macOS it's **off by default**. Enabling it can stop the occasional flashing seen when hovering over the file browser, but on recent macOS (observed on Tahoe 26.5) a frameless + transparent window causes elevated WindowServer GPU and power usage that scales with window size, so it's not guaranteed to be worthwhile (see [#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)).
+*enum, default is `auto`*
 
-#### Disable Frameless Window (`vscode_vibrancy.disableFramelessWindow`)
+| Value | Frame | Window | Notes |
+| --- | --- | --- | --- |
+| `auto` | platform default | platform default | Recommended. macOS → borderless + opaque; Windows → borderless, transparent unless a Mica/Acrylic material is in use; Linux → borderless + transparent. |
+| `framed` | OS title bar/frame | opaque | Use if a borderless window causes problems (e.g. you can't resize/snap it). |
+| `frameless` | borderless | opaque | On macOS this fixes the file-browser hover flash **without** the WindowServer GPU/power cost of a transparent window ([#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)). |
+| `frameless-transparent` | borderless | transparent | Required for the `transparent` vibrancy type and for transparency on Windows. On macOS Tahoe a transparent window raises WindowServer GPU/power usage. |
 
-**Legacy / troubleshooting setting.** The frameless window is a mitigation for a hardware-acceleration render bug seen on some VSCode/Electron versions and GPUs. On current VSCode versions it no longer interferes with window interaction, so most users never need to touch this. If the frameless window causes problems for you (e.g. you can't resize/snap the window), enable this to turn it off — but on an affected GPU you may then see distorted, blurry graphics unless you also launch VSCode with `--disable-gpu-compositing` (see the [Windows notes](#-windows-1011-notes) above).
+> The window's *transparency* is not the same as the vibrancy effect: on macOS the glass comes from a native effect view painted over an **opaque** window, and Windows 11 Mica/Acrylic materials also need an opaque window. A see-through (transparent) window is only required for the `transparent` vibrancy type.
+
+> **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless` (opaque) on macOS and with Windows 11 Mica/Acrylic materials, `frameless-transparent` where a see-through window is actually needed. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 
 #### Disable Theme Fixes (`vscode_vibrancy.disableThemeFixes`)
 
