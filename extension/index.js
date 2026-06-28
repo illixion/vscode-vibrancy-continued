@@ -276,8 +276,19 @@ async function promptRestart(setControlsStyle) {
       }
     }
 
-    // Pure VBScript: poll for process exit via WMI, copy .node files,
-    // relaunch hidden, self-delete.
+    // The editor binary name (e.g. "Code.exe") and the matching updater setup
+    // name pattern (e.g. "CodeSetup%"). Quitting the editor when an update is
+    // pending triggers its installer (CodeSetup*.exe) to rewrite the install in
+    // place; if we relaunch while that's still copying files, we race the
+    // extraction and can corrupt the install (missing icudtl.dat / DLLs → the
+    // editor won't start). So we wait for the updater to finish, and skip our
+    // relaunch entirely if the updater already brought the editor back up.
+    const binName = path.basename(process.execPath);
+    const updaterPattern = `${binName.replace(/\.exe$/i, '')}Setup%`;
+
+    // Pure VBScript: wait for our process to exit, copy .node files, wait out
+    // any in-progress editor update, relaunch hidden (unless already running),
+    // self-delete.
     const vbsScript = [
       `Set WshShell = CreateObject("WScript.Shell")`,
       `Set WMI = GetObject("winmgmts:\\\\.\\root\\cimv2")`,
@@ -288,7 +299,23 @@ async function promptRestart(setControlsStyle) {
       `Loop`,
       `WScript.Sleep 1000`,
       ...nodeCopyLines,
-      `WshShell.Run """${cliCommand}""", 0, False`,
+      // Wait out an in-progress editor update (capped at ~5 min so we can never
+      // hang forever) before touching the install by relaunching.
+      `vibWaited = 0`,
+      `Do While vibWaited < 300`,
+      `  Set ups = WMI.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name LIKE '${updaterPattern}'")`,
+      `  If ups.Count = 0 Then Exit Do`,
+      `  WScript.Sleep 1000`,
+      `  vibWaited = vibWaited + 1`,
+      `Loop`,
+      `WScript.Sleep 2000`,
+      // The updater relaunches the editor itself after applying an update, so
+      // only start it if nothing is already running (avoids a duplicate window
+      // and avoids launching into a half-applied install).
+      `Set running = WMI.ExecQuery("SELECT ProcessId FROM Win32_Process WHERE Name = '${binName}'")`,
+      `If running.Count = 0 Then`,
+      `  WshShell.Run """${cliCommand}""", 0, False`,
+      `End If`,
       `CreateObject("Scripting.FileSystemObject").DeleteFile WScript.ScriptFullName`,
     ].join('\r\n');
     const vbsPath = path.join(os.tmpdir(), 'vibrancy-restart.vbs');
