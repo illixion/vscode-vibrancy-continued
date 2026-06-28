@@ -4,6 +4,8 @@ Enable Acrylic/Glass effect in VS Code.
 
 > [!TIP]
 > Solutions for common issues can be found in the [FAQ](#FAQs) and [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)
+>
+> See also: [Windows 10/11 notes](#-windows-1011-notes) and [Linux notes](#linux-why-is-the-background-transparent-but-not-blurred)
 
 ![screenshot](./images/screenshot.png)
 
@@ -25,43 +27,6 @@ Maintenance of this project is made possible by all the <a href="https://github.
 <a href="https://github.com/doughayden"><img src="https://avatars.githubusercontent.com/u/110487462?s=120&v=4" width="64px" alt="User avatar of user doughayden" /></a>
 <a href="https://github.com/hjnnjh"><img src="https://avatars.githubusercontent.com/u/37699150?s=64&v=4" width="32px" alt="User avatar of user hjnnjh" /></a>
 </p>
-
-# 🪟 Windows 10/11 notes
-
-**Vibrancy works out of the box on Windows — no extra setup is required.** By default the window is borderless **and opaque**, so Windows Aero Snap, maximize, and resize all keep working.
-
-### Borderless look vs. window snapping (Windows 10)
-
-On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
-
-- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
-- **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
-
-> [!TIP]
-> Want the borderless look *and* snapping? Set `"vscode_vibrancy.windowMode": "frameless-transparent"` for the pixel-perfect window, and use a third-party window-snapping utility (e.g. [FancyZones](https://learn.microsoft.com/windows/powertoys/fancyzones) from PowerToys) to get snapping back. If you'd rather keep native snapping and don't mind the 1px Win10 border, just leave `windowMode` on `auto`.
-
-### Windows 11 materials: Acrylic vs Mica
-
-On Windows 11 you can choose the backdrop material via `vscode_vibrancy.type`:
-
-- **`acrylic`** (default) — a real-time translucent blur of *whatever is behind the window*, including your other windows and the desktop. This is the classic see-through "glass" vibrancy effect.
-- **`mica`** — samples only your *desktop wallpaper* (not the windows behind VSCode) and is mostly static, so it costs almost nothing on GPU/battery. It's Microsoft's recommended material for app backgrounds and gives a subtle, native Windows 11 feel rather than a see-through effect.
-- **`tabbed`** — "Mica Alt", a more strongly tinted variant of Mica.
-
-> [!TIP]
-> On a laptop, or if you want the native Windows 11 look without the continuous-blur power cost of Acrylic, set `"vscode_vibrancy.type": "mica"` (or `"tabbed"`). Just note that Mica reflects your wallpaper only — it won't show the windows behind VSCode the way Acrylic does. Mica and Mica Alt are Windows 11 only; on Windows 10 they automatically fall back to Acrylic.
-
-### Legacy / troubleshooting: window can't be resized, or text looks distorted
-
-Some VSCode/Electron versions (and certain GPUs) had a hardware-acceleration bug where enabling Vibrancy made windows non-resizable/snappable/maximizable, or produced distorted, blurry text. **If you don't experience this, you can ignore this section.** If you do, apply the following mitigation:
-
-1. Update your VSCode shortcut to include `--disable-gpu-compositing` at the end of the "Target" field, for example: `"C:\Users\User\AppData\Local\Programs\Microsoft VS Code\Code.exe" --disable-gpu-compositing`
-2. (optional) Update your shell configuration to add the same argument to `code`, needed if VSCode isn't running when you use `code`
-3. Install Vibrancy Continued
-4. Go to settings and set **Window Mode** (`vscode_vibrancy.windowMode`) to `framed`
-5. Press F1 and select **Reload Vibrancy**
-
-For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
 # ⚠️ "Your VSCode installation appears to be corrupt"
 
@@ -107,6 +72,43 @@ Some editors may present a [persistent warning](#️-your-vscode-installation-ap
 3. Restart VSCode when prompted.
 
 Each time VS Code is updated, please re-enable Vibrancy using the same steps. If you're experiencing issues, please check the [FAQs](#faqs).
+
+# 🪟 Windows 10/11 notes
+
+**Vibrancy works out of the box on Windows — no extra setup is required.** By default the window is borderless **and opaque**, so Windows Aero Snap, maximize, and resize all keep working.
+
+### Borderless look vs. window snapping (Windows 10)
+
+On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
+
+- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
+- **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
+
+> [!TIP]
+> Want the borderless look *and* snapping? Set `"vscode_vibrancy.windowMode": "frameless-transparent"` for the pixel-perfect window, and use a third-party window-snapping utility (e.g. [FancyZones](https://learn.microsoft.com/windows/powertoys/fancyzones) from PowerToys) to get snapping back. If you'd rather keep native snapping and don't mind the 1px Win10 border, just leave `windowMode` on `auto`.
+
+### Windows 11 materials: Acrylic vs Mica
+
+On Windows 11 you can choose the backdrop material via `vscode_vibrancy.type`:
+
+- **`acrylic`** (default) — a real-time translucent blur of *whatever is behind the window*, including your other windows and the desktop. This is the classic see-through "glass" vibrancy effect.
+- **`mica`** — samples only your *desktop wallpaper* (not the windows behind VSCode) and is mostly static, so it costs almost nothing on GPU/battery. It's Microsoft's recommended material for app backgrounds and gives a subtle, native Windows 11 feel rather than a see-through effect.
+- **`tabbed`** — "Mica Alt", a more strongly tinted variant of Mica.
+
+> [!TIP]
+> On a laptop, or if you want the native Windows 11 look without the continuous-blur power cost of Acrylic, set `"vscode_vibrancy.type": "mica"` (or `"tabbed"`). Just note that Mica reflects your wallpaper only — it won't show the windows behind VSCode the way Acrylic does. Mica and Mica Alt are Windows 11 only; on Windows 10 they automatically fall back to Acrylic.
+
+### Legacy / troubleshooting: window can't be resized, or text looks distorted
+
+Some VSCode/Electron versions (and certain GPUs) had a hardware-acceleration bug where enabling Vibrancy made windows non-resizable/snappable/maximizable, or produced distorted, blurry text. **If you don't experience this, you can ignore this section.** If you do, apply the following mitigation:
+
+1. Update your VSCode shortcut to include `--disable-gpu-compositing` at the end of the "Target" field, for example: `"C:\Users\User\AppData\Local\Programs\Microsoft VS Code\Code.exe" --disable-gpu-compositing`
+2. (optional) Update your shell configuration to add the same argument to `code`, needed if VSCode isn't running when you use `code`
+3. Install Vibrancy Continued
+4. Go to settings and set **Window Mode** (`vscode_vibrancy.windowMode`) to `framed`
+5. Press F1 and select **Reload Vibrancy**
+
+For more information, see issues [#140](https://github.com/illixion/vscode-vibrancy-continued/issues/140) and [#122](https://github.com/illixion/vscode-vibrancy-continued/issues/122).
 
 ## Options
 
