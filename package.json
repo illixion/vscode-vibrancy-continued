@@ -117,9 +117,9 @@
         "vscode_vibrancy.opacity": {
           "description": "%configuration.opacity.description%",
           "type": "number",
-          "default": "-1",
-          "minimum": "-1",
-          "maximum": "1"
+          "default": -1,
+          "minimum": -1,
+          "maximum": 1
         },
         "vscode_vibrancy.backgroundOverride": {
           "description": "%configuration.backgroundOverride.description%",
@@ -206,7 +206,7 @@
         "vscode_vibrancy.refreshInterval": {
           "description": "%configuration.refreshInterval.description%",
           "type": "number",
-          "default": "10"
+          "default": 10
         },
         "vscode_vibrancy.preventFlash": {
           "description": "%configuration.preventFlash.description%",
