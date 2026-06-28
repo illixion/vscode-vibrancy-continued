@@ -48,7 +48,7 @@ jobs:
         #   os: [self-hosted-linux, self-hosted-macos, self-hosted-windows]
         # Self-hosted runners need: Node.js 20+, git, and a desktop session.
         # On Linux self-hosted: also install imagemagick.
-        os: [ubuntu-latest, macos-26, windows-11-arm]
+        os: [ubuntu-latest, macos-26, windows-latest, windows-11-arm]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -66,6 +66,14 @@ jobs:
           cp build/Release/vibrancy.node native/prebuilt/vibrancy-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
           mv binding.gyp binding.gyp.dist
         shell: bash
+      # Reuse this freshly-compiled binary for the packaged vsix instead of
+      # rebuilding it in a separate job.
+      - name: Upload native module
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: prebuilt-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}
+          path: native/prebuilt/vibrancy-${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}.node
       - name: Install screenshot tools (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y imagemagick
@@ -84,6 +92,34 @@ jobs:
           name: screenshots-${{ matrix.os }}
           path: test/screenshots/
           if-no-files-found: ignore
+
+  # Assemble the vsix with both freshly-compiled native modules bundled in.
+  # The e2e matrix builds and tests on both Windows x64 and arm64, uploading
+  # each compiled vibrancy.node as a `prebuilt-<arch>` artifact for this job.
+  package:
+    needs: [e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm install @vscode/vsce
+      # Overwrite the committed prebuilt binaries with the ones compiled in this
+      # run. download-artifact merges all `prebuilt-*` artifacts into one dir.
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: prebuilt-*
+          merge-multiple: true
+          path: native/prebuilt/
+      - name: Package vsix
+        run: npx vsce package --out vscode-vibrancy-continued.vsix
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix
+          path: vscode-vibrancy-continued.vsix
+          if-no-files-found: error
 
   ci:
     if: always()
