@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install node-addon-api
         run: npm install node-addon-api
       - name: Rename binding.gyp.dist to binding.gyp
@@ -60,7 +60,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Download native modules (x64)
         uses: actions/download-artifact@v8
         with:

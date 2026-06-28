@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
       # Use `npm ci`, not `npm install`: the latter re-resolves the dependency
       # tree and intermittently prunes platform-specific optional deps (npm bug
       # npm/cli#4828), which on Linux drops @rolldown/binding-linux-x64-gnu and
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm install
       - run: npm install @vscode/test-electron @vscode/vsce
       - name: Build native modules (Windows)
@@ -103,7 +103,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
       - run: npm install @vscode/vsce
       # Overwrite the committed prebuilt binaries with the ones compiled in this
