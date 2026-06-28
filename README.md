@@ -30,6 +30,17 @@ Maintenance of this project is made possible by all the <a href="https://github.
 
 **Vibrancy works out of the box on Windows — no extra setup is required.** The extension automatically applies a frameless-window mitigation, and on current VSCode versions this no longer interferes with resizing, snapping, or maximizing.
 
+### Windows 11 materials: Acrylic vs Mica
+
+On Windows 11 you can choose the backdrop material via `vscode_vibrancy.type`:
+
+- **`acrylic`** (default) — a real-time translucent blur of *whatever is behind the window*, including your other windows and the desktop. This is the classic see-through "glass" vibrancy effect.
+- **`mica`** — samples only your *desktop wallpaper* (not the windows behind VSCode) and is mostly static, so it costs almost nothing on GPU/battery. It's Microsoft's recommended material for app backgrounds and gives a subtle, native Windows 11 feel rather than a see-through effect.
+- **`tabbed`** — "Mica Alt", a more strongly tinted variant of Mica.
+
+> [!TIP]
+> On a laptop, or if you want the native Windows 11 look without the continuous-blur power cost of Acrylic, set `"vscode_vibrancy.type": "mica"` (or `"tabbed"`). Just note that Mica reflects your wallpaper only — it won't show the windows behind VSCode the way Acrylic does. Mica and Mica Alt are Windows 11 only; on Windows 10 they automatically fall back to Acrylic.
+
 ### Legacy / troubleshooting: window can't be resized, or text looks distorted
 
 Some VSCode/Electron versions (and certain GPUs) had a hardware-acceleration bug where enabling Vibrancy made windows non-resizable/snappable/maximizable, or produced distorted, blurry text. **If you don't experience this, you can ignore this section.** If you do, apply the following mitigation:
