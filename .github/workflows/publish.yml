@@ -11,6 +11,11 @@ on:
         type: boolean
         default: false
 
+# Least-privilege default for GITHUB_TOKEN. Only the publish job needs write
+# access (it uploads the GitHub release); it sets contents: write at job level.
+permissions:
+  contents: read
+
 jobs:
   build-native:
     runs-on: ${{ matrix.os }}
