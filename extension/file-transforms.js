@@ -175,20 +175,26 @@ function injectFramelessWindow(electronJS, transparent = true) {
 
 /**
  * Whether a FRAMELESS window should be transparent (per-pixel alpha) in this
- * context. Transparency is a mechanism, never a user preference: it's only
- * needed for the see-through 'transparent' vibrancy type (which paints no blur
- * material). macOS vibrancy (native NSVisualEffectView) and Win11 DWM materials
- * (Mica/Acrylic) all require an OPAQUE window, and on macOS Tahoe a transparent
- * window needlessly drives WindowServer GPU/power (issue #207). The Win10 legacy
- * accent and Linux are the exceptions that do expect a transparent window.
+ * context. An opaque window is preferred everywhere it works, because a
+ * transparent (layered) window on Windows can't Aero-Snap or maximize, and on
+ * macOS Tahoe needlessly drives WindowServer GPU/power (issue #207). Vibrancy
+ * still shows on an opaque window — macOS via the native NSVisualEffectView,
+ * Windows via the DWM material / legacy accent applied to the HWND. So opaque is
+ * the default and transparency is opt-in, only for the see-through 'transparent'
+ * vibrancy type (which paints no blur material of its own).
+ *
+ * The lone exception is Linux, which has no native compositor path and relies on
+ * an actually-transparent window.
  *
  * @param {{ osType: string, platform: NodeJS.Platform, isWindows11?: boolean, transparentType?: boolean }} ctx
  * @returns {boolean}
  */
 function framelessWindowTransparency({ osType, platform, isWindows11 = false, transparentType = false }) {
-  if (osType === 'macos') return transparentType;
-  if (platform === 'win32' && isWindows11) return transparentType;
-  return true; // Win10 legacy accent and Linux expect a transparent window.
+  if (platform === 'linux') return true; // Linux: no native compositor, needs a transparent window.
+  // macOS + Windows (incl. Win10): opaque, so the window keeps snap/maximize and
+  // (on macOS) avoids the WindowServer GPU cost; transparent only for the
+  // see-through 'transparent' type.
+  return transparentType;
 }
 
 /**
@@ -256,8 +262,9 @@ function resolveEffectiveWindowMode(opts) {
  * 'auto' resolution:
  *   - Cursor:               frameless on every platform it runs on
  *   - macOS:                frameless; opaque unless the 'transparent' type is in use
- *   - Windows Electron >=27: frameless (issue #122); opaque only for a Win11 DWM
- *                            material, transparent otherwise (Win10 legacy accent)
+ *   - Windows Electron >=27: frameless (issue #122) + opaque, so Aero Snap /
+ *                            maximize work (a thin border shows on Win10); only
+ *                            the 'transparent' type uses a see-through window
  *   - Windows Electron <27:  framed
  *   - Linux:                frameless + transparent (handled manually)
  *

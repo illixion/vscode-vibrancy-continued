@@ -28,7 +28,17 @@ Maintenance of this project is made possible by all the <a href="https://github.
 
 # 🪟 Windows 10/11 notes
 
-**Vibrancy works out of the box on Windows — no extra setup is required.** The extension automatically applies a frameless-window mitigation, and on current VSCode versions this no longer interferes with resizing, snapping, or maximizing.
+**Vibrancy works out of the box on Windows — no extra setup is required.** By default the window is borderless **and opaque**, so Windows Aero Snap, maximize, and resize all keep working.
+
+### Borderless look vs. window snapping (Windows 10)
+
+On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
+
+- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping.
+- **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
+
+> [!TIP]
+> Want the borderless look *and* snapping? Set `"vscode_vibrancy.windowMode": "frameless-transparent"` for the pixel-perfect window, and use a third-party window-snapping utility (e.g. [FancyZones](https://learn.microsoft.com/windows/powertoys/fancyzones) from PowerToys) to get snapping back. If you'd rather keep native snapping and don't mind the 1px Win10 border, just leave `windowMode` on `auto`.
 
 ### Windows 11 materials: Acrylic vs Mica
 
@@ -153,12 +163,12 @@ Controls how the VSCode window frame and transparency are applied. **Leave this 
 
 | Value | Frame | Window | Notes |
 | --- | --- | --- | --- |
-| `auto` | platform default | platform default | Recommended. macOS → borderless + opaque; Windows → borderless, transparent unless a Mica/Acrylic material is in use; Linux → borderless + transparent. |
-| `framed` | OS title bar/frame | opaque | Use if a borderless window causes problems (e.g. you can't resize/snap it). |
-| `frameless` | borderless | opaque | On macOS this fixes the file-browser hover flash **without** the WindowServer GPU/power cost of a transparent window ([#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)). |
-| `frameless-transparent` | borderless | transparent | Required for the `transparent` vibrancy type and for transparency on Windows. On macOS Tahoe a transparent window raises WindowServer GPU/power usage. |
+| `auto` | platform default | platform default | Recommended. macOS → borderless + opaque; Windows → borderless + opaque (Aero Snap works; thin border on Win10); Linux → borderless + transparent. |
+| `framed` | OS title bar/frame | opaque | Most compatible. Use if a borderless window misbehaves for you. |
+| `frameless` | borderless | opaque | Keeps Windows Aero Snap / maximize / resize, at the cost of a thin window border on Windows 10 (Windows 11 has none). On macOS this is the default and fixes the file-browser hover flash **without** the GPU cost of a transparent window ([#207](https://github.com/illixion/vscode-vibrancy-continued/issues/207)). |
+| `frameless-transparent` | borderless | transparent | Fully borderless, but **Windows Aero Snap / maximize won't work** (see the Windows note below). Also required for the `transparent` vibrancy type. On macOS Tahoe a transparent window raises WindowServer GPU/power usage. |
 
-> The window's *transparency* is not the same as the vibrancy effect: on macOS the glass comes from a native effect view painted over an **opaque** window, and Windows 11 Mica/Acrylic materials also need an opaque window. A see-through (transparent) window is only required for the `transparent` vibrancy type.
+> The window's *transparency* is not the same as the vibrancy effect: vibrancy shows fine on an **opaque** window (macOS via the native effect view, Windows via the DWM material / accent on the window). A see-through (transparent) window is only required for the `transparent` vibrancy type — and on Windows a transparent window is a *layered* window, which the OS excludes from Aero Snap.
 
 > **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless` (opaque) on macOS and with Windows 11 Mica/Acrylic materials, `frameless-transparent` where a see-through window is actually needed. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 

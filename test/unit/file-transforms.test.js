@@ -118,14 +118,14 @@ describe('resolveEffectiveWindowMode', () => {
       .toBe('frameless');
   });
 
-  it('migrates forceFramelessWindow to transparent frameless on Win10 and Linux', () => {
-    expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true })).toBe('frameless-transparent');
+  it('migrates forceFramelessWindow to opaque frameless on Windows, transparent frameless on Linux', () => {
+    expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true })).toBe('frameless');
     expect(resolveEffectiveWindowMode({ ...linux, forceFramelessWindow: true })).toBe('frameless-transparent');
   });
 
   it('forceFramelessWindow wins over disableFramelessWindow (preserves legacy precedence)', () => {
     expect(resolveEffectiveWindowMode({ ...win10, forceFramelessWindow: true, disableFramelessWindow: true }))
-      .toBe('frameless-transparent');
+      .toBe('frameless');
   });
 
   it('an explicit windowMode always wins over the legacy flags', () => {
@@ -154,8 +154,16 @@ describe('resolveWindowMode', () => {
 
   // --- auto: platform defaults ---
 
-  it('auto: Windows Electron >=27 is frameless + transparent (Win10 accent)', () => {
-    expect(resolveWindowMode({ ...base, electronMajorVersion: 27 })).toEqual({ frameless: true, transparent: true });
+  // Windows default is frameless + OPAQUE so Aero Snap / maximize work (a thin
+  // border shows on Win10). Only the see-through 'transparent' type opts into a
+  // transparent window (which gives up snap).
+  it('auto: Windows Electron >=27 is frameless + opaque (snappable)', () => {
+    expect(resolveWindowMode({ ...base, electronMajorVersion: 27 })).toEqual({ frameless: true, transparent: false });
+  });
+
+  it('auto: Windows with the transparent type is frameless + transparent', () => {
+    expect(resolveWindowMode({ ...base, electronMajorVersion: 27, transparentType: true }))
+      .toEqual({ frameless: true, transparent: true });
   });
 
   it('auto: Windows Electron <27 is framed', () => {
