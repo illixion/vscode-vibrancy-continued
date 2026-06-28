@@ -175,31 +175,34 @@ function injectFramelessWindow(electronJS, transparent = true) {
 
 /**
  * Whether a FRAMELESS window should be transparent (per-pixel alpha) in this
- * context. An opaque window is preferred everywhere it works, because a
- * transparent (layered) window on Windows can't Aero-Snap or maximize, and on
- * macOS Tahoe needlessly drives WindowServer GPU/power (issue #207). Vibrancy
- * still shows on an opaque window — macOS via the native NSVisualEffectView,
- * Windows via the DWM material / legacy accent applied to the HWND. So opaque is
- * the default and transparency is opt-in, only for the see-through 'transparent'
- * vibrancy type (which paints no blur material of its own).
+ * context.
  *
- * Two exceptions keep a transparent window:
- *   - Linux has no native compositor path and relies on a transparent window.
- *   - Older Windows builds: opaque vibrancy renders with sheared/unreadable text
- *     there (issue #122 needed frame:false + transparent:true). `winOpaqueSafe`
- *     is true only on a VSCode build where opaque has been confirmed to render
- *     correctly; below that we keep the transparent (no-snap) behavior so nobody
- *     regresses.
+ * macOS and Linux use a transparent window. On macOS this fixes the file-browser
+ * hover flash (issue #207) and avoids the opaque-window stale-backing "ghost"
+ * (an opaque NSWindow keeps stale pixels in regions Chromium only partially
+ * repaints; no repaint/invalidate/resize trick reliably clears it). An earlier
+ * build defaulted macOS to opaque to cut "WindowServer GPU" — but that was a
+ * misread: it was GPU *utilization %* (occupancy), not power. Measured on both
+ * an M2 Max and a 2019 Intel (Iris Plus 655), the actual power delta between
+ * transparent and opaque is negligible (tens of mW; the GPU sits ~98% idle when
+ * static), so opaque bought no real battery saving while introducing the ghost.
+ *
+ * Windows is the exception: a transparent (layered) window can't Aero-Snap or
+ * maximize, so it uses an opaque window where vibrancy still shows via the DWM
+ * material / legacy accent on the HWND. Older Windows builds stay transparent
+ * because opaque vibrancy rendered sheared/unreadable text there (issue #122);
+ * `winOpaqueSafe` is true only on a build confirmed to render opaque correctly.
+ * The see-through 'transparent' vibrancy type always needs a transparent window.
  *
  * @param {{ platform: NodeJS.Platform, transparentType?: boolean, winOpaqueSafe?: boolean }} ctx
  * @returns {boolean}
  */
 function framelessWindowTransparency({ platform, transparentType = false, winOpaqueSafe = false }) {
-  if (platform === 'linux') return true; // Linux: no native compositor, needs a transparent window.
+  if (platform === 'linux') return true;  // no native compositor, needs a transparent window.
+  if (platform === 'darwin') return true; // fixes #207 hover flash + avoids the opaque-backing ghost; power cost is negligible.
   if (platform === 'win32' && !winOpaqueSafe) return true; // older Windows build: transparent (issue #122).
-  // macOS, and Windows on a confirmed-good build: opaque, so the window keeps
-  // snap/maximize and (on macOS) avoids the WindowServer GPU cost; transparent
-  // only for the see-through 'transparent' type.
+  // Windows on a confirmed-good build: opaque so the window keeps Aero Snap /
+  // maximize; transparent only for the see-through 'transparent' type.
   return transparentType;
 }
 
@@ -214,10 +217,11 @@ function framelessWindowTransparency({ platform, transparentType = false, winOpa
  * platform/material actually needs, sparing users (who likely don't know what
  * the flags do) broken combinations:
  *   - disableFramelessWindow → 'framed'
- *   - forceFramelessWindow   → 'frameless' on macOS / Win11 DWM materials (opaque,
- *                              the safe + low-power choice), 'frameless-transparent'
- *                              where a see-through window is actually wanted
- *                              (Win10, Linux, or the 'transparent' type)
+ *   - forceFramelessWindow   → 'frameless' (opaque) on current Windows / Win11 DWM
+ *                              materials, where an opaque window keeps Aero Snap;
+ *                              'frameless-transparent' where a see-through window
+ *                              is wanted or needed (macOS, Linux, older Windows,
+ *                              or the 'transparent' type)
  *
  * `forceFramelessWindow` still matters under 'auto' on configs where auto stays
  * framed — e.g. older VSCode on Windows with Electron <27 (issue #140).
@@ -258,16 +262,18 @@ function resolveEffectiveWindowMode(opts) {
  *   - 'frameless-transparent' borderless, transparent (see-through) window
  *
  * `transparent` is the BrowserWindow's per-pixel-alpha flag, NOT the vibrancy
- * effect: macOS vibrancy comes from a native NSVisualEffectView painted over an
- * OPAQUE window, and Win11 DWM materials (Mica/Acrylic) also require an opaque
- * window. A transparent window is only needed for the see-through 'transparent'
- * vibrancy type (which paints no blur material), and on macOS Tahoe it
- * needlessly drives WindowServer GPU/power that scales with window size and
- * count (issue #207) — so transparency is opt-in, derived from the type.
+ * effect: vibrancy shows on either an opaque or a transparent window (macOS via
+ * a native NSVisualEffectView, Win11 via the DWM material). macOS and Linux use
+ * a transparent window — on macOS this fixes the file-browser hover flash
+ * (issue #207) and avoids the opaque-window stale-backing "ghost"; its power
+ * cost is negligible (the earlier "WindowServer GPU" worry was GPU utilization
+ * %, not actual power). Windows uses an opaque window so it keeps Aero Snap /
+ * maximize (a transparent window there is a layered window the OS won't snap),
+ * except older builds (issue #122) and the see-through 'transparent' type.
  *
  * 'auto' resolution:
  *   - Cursor:               frameless on every platform it runs on
- *   - macOS:                frameless; opaque unless the 'transparent' type is in use
+ *   - macOS:                frameless + transparent
  *   - Windows Electron >=27: frameless (issue #122) + opaque, so Aero Snap /
  *                            maximize work (a thin border shows on Win10); only
  *                            the 'transparent' type uses a see-through window
@@ -337,7 +343,7 @@ function injectElectronOptions(electronJS, { frameless, isMacos, transparent = t
   }
 
   // Add frameless + (optionally) transparent window options. The caller passes
-  // transparent:false for opaque modes (e.g. macOS vibrancy, Win11 DWM materials).
+  // transparent:false for opaque modes (Windows snapping, Win11 DWM materials).
   if (frameless) {
     result = injectFramelessWindow(result, transparent);
   }

@@ -106,8 +106,8 @@ describe('resolveEffectiveWindowMode', () => {
 
   // forceFramelessWindow was only ever a "force frameless" toggle; the migration
   // picks the frameless variant that matches what the platform/material needs.
-  it('migrates forceFramelessWindow to opaque frameless on macOS (no needless transparency)', () => {
-    expect(resolveEffectiveWindowMode({ ...mac, forceFramelessWindow: true })).toBe('frameless');
+  it('migrates forceFramelessWindow to transparent frameless on macOS', () => {
+    expect(resolveEffectiveWindowMode({ ...mac, forceFramelessWindow: true })).toBe('frameless-transparent');
   });
 
   it('migrates forceFramelessWindow to transparent frameless on macOS only for the transparent type', () => {
@@ -207,8 +207,8 @@ describe('resolveWindowMode', () => {
   // macOS default is now frameless + OPAQUE: it fixes the file-browser hover
   // flash (#200/#206/#207) without the WindowServer GPU cost of a transparent
   // window on Tahoe. The see-through 'transparent' type is the exception.
-  it('auto: macOS is frameless + opaque by default', () => {
-    expect(resolveWindowMode(macos)).toEqual({ frameless: true, transparent: false });
+  it('auto: macOS is frameless + transparent by default (fixes #207, avoids opaque-backing ghost)', () => {
+    expect(resolveWindowMode(macos)).toEqual({ frameless: true, transparent: true });
   });
 
   it('auto: macOS with the transparent type is frameless + transparent', () => {
