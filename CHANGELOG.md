@@ -1,3 +1,9 @@
+# 1.1.85
+
+* Core:
+  * Fix quadratic regex backtracking on large bundles that caused ~20 second parsing delays, now reduced to ~200ms
+  * Add support for the rebranded "Antigravity IDE" editor
+
 # 1.1.84
 
 * Core:
