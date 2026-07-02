@@ -100,8 +100,12 @@ function injectObjectLiteralWindowOptions(electronJS, injectedOptions) {
  * @returns {string} Patched content, or the original string if no anchor exists
  */
 function injectCursorWindowOptions(electronJS, createInjectedOptions) {
+  // The (?<![\w$]) guards on these identifier-prefixed regexes are load-bearing
+  // for performance: without one, every position inside every long word run of
+  // a minified multi-MB bundle starts a greedy identifier match that backtracks,
+  // turning a single pass into tens of seconds (see issue with 12MB bundles).
   return electronJS.replace(
-    /([A-Za-z_$][\w$]*)\.titleBarStyle=(["'])hidden\2,/g,
+    /(?<![\w$])([A-Za-z_$][\w$]*)\.titleBarStyle=(["'])hidden\2,/g,
     (_, target, quote) =>
       `${createInjectedOptions(target, quote)}${target}.titleBarStyle=${quote}hidden${quote},`
   );
@@ -114,8 +118,8 @@ function injectCursorWindowOptions(electronJS, createInjectedOptions) {
  */
 function removeCursorWindowOptions(electronJS) {
   return electronJS
-    .replace(/([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=(?:true|false),/g, '')
-    .replace(/[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/g, '');
+    .replace(/(?<![\w$])([A-Za-z_$][\w$]*)\.frame=false,\1\.transparent=(?:true|false),/g, '')
+    .replace(/(?<![\w$])[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/g, '');
 }
 
 /**
@@ -126,7 +130,7 @@ function removeCursorWindowOptions(electronJS) {
 function injectVisualEffectState(electronJS) {
   if (
     electronJS.includes('visualEffectState:"active"') ||
-    /[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/.test(electronJS)
+    /(?<![\w$])[A-Za-z_$][\w$]*\.visualEffectState=(["'])active\1,/.test(electronJS)
   ) {
     return electronJS;
   }
@@ -154,7 +158,7 @@ function injectFramelessWindow(electronJS, transparent = true) {
   const t = transparent ? 'true' : 'false';
   if (
     electronJS.includes(`frame:false,transparent:${t}`) ||
-    new RegExp(`([A-Za-z_$][\\w$]*)\\.frame=false,\\1\\.transparent=${t},`).test(electronJS)
+    new RegExp(`(?<![\\w$])([A-Za-z_$][\\w$]*)\\.frame=false,\\1\\.transparent=${t},`).test(electronJS)
   ) {
     return electronJS;
   }
