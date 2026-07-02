@@ -108,6 +108,7 @@ const knownEditors = [
   'Cursor',
   'Code - OSS',
   'Antigravity',
+  'Antigravity IDE',
   'Devin',
 ];
 
