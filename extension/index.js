@@ -98,6 +98,10 @@ const themeFixPaths = {
   'Antigravity': {
     'Default Dark': '../themes/fixes/Antigravity.css',
     'Default Light': '../themes/fixes/Antigravity.css',
+  },
+  'Antigravity IDE': {
+    'Default Dark': '../themes/fixes/Antigravity.css',
+    'Default Light': '../themes/fixes/Antigravity.css',
   }
 }
 
@@ -120,6 +124,7 @@ const editorCliCommands = {
   'Cursor': 'cursor',
   'Code - OSS': 'code-oss',
   'Antigravity': 'antigravity',
+  'Antigravity IDE': 'antigravity-ide',
   'Devin': 'devin-desktop',
 };
 
@@ -131,6 +136,7 @@ const editorConfigDirNames = {
   'Cursor': 'Cursor',
   'Code - OSS': 'Code - OSS',
   'Antigravity': 'Antigravity',
+  'Antigravity IDE': 'Antigravity IDE',
   'Devin': 'Devin',
 };
 
