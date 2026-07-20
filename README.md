@@ -286,7 +286,7 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 ### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
 
-Please see [Important notice for Windows users](#️-important-notice-for-windows-1011-users) at the top of the description.
+Please see [Windows 10/11 notes](#-windows-1011-notes) at the top of the description.
 
 ### Effect doesn't work, but there are no errors
 
