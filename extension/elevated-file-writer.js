@@ -8,14 +8,23 @@ const { exec, execFile, execSync } = require('child_process');
 /**
  * Check if the VSCode installation directory requires elevated privileges to write to.
  * Returns:
- *   false    - no elevation needed (user has write access)
- *   'snap'   - Snap install detected (immutable filesystem, elevation impossible)
- *   true     - elevation needed
+ *   false       - no elevation needed (user has write access)
+ *   true        - elevation needed
+ *   'snap'      - Snap install detected (immutable squashfs, elevation impossible)
+ *   'nix'       - Nix store install detected (read-only mount; redirect to a home-dir mirror)
+ *   'immutable' - other read-only filesystem (unsupported, elevation impossible)
  */
 function checkNeedsElevation(appDir) {
   // Snap detection: squashfs mounts are immutable, even root can't write
   if (appDir.startsWith('/snap/') || process.env.SNAP) {
     return 'snap';
+  }
+
+  // Nix store is a read-only mount — even root gets EROFS, so elevation is
+  // useless. Detect by prefix so the write probe (which would still fail)
+  // isn't relied upon.
+  if (appDir.startsWith('/nix/store/')) {
+    return 'nix';
   }
 
   try {
@@ -28,6 +37,10 @@ function checkNeedsElevation(appDir) {
   } catch (err) {
     if (err.code === 'EACCES' || err.code === 'EPERM') {
       return true;
+    }
+    if (err.code === 'EROFS') {
+      // Read-only filesystem where elevation can't help
+      return 'immutable';
     }
     // For other errors (e.g. ENOENT), don't attempt elevation
     return false;

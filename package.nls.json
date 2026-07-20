@@ -61,5 +61,11 @@
   "messages.pkexecMissing": "polkit (pkexec) is not installed. Install it or manually change file ownership with: sudo chown -R $(whoami) ",
   "messages.snapImmutable": "VSCode installed via Snap has an immutable filesystem that cannot be modified even with elevated privileges. Please install VSCode via .deb, .rpm, or Flatpak instead.",
   "messages.noNewPrivs": "Elevated privileges are unavailable because VSCode was reloaded in-process. Please close VSCode completely and reopen it, then try again.",
-  "messages.windowsSudoMissing": "This system-level VSCode installation requires administrator privileges. Please enable Windows sudo (Settings → System → For Developers → Enable sudo) or run VSCode as administrator."
+  "messages.windowsSudoMissing": "This system-level VSCode installation requires administrator privileges. Please enable Windows sudo (Settings → System → For Developers → Enable sudo) or run VSCode as administrator.",
+  "messages.immutableUnsupported": "This VSCode installation is on a read-only filesystem that cannot be modified even with elevated privileges, and automatic workarounds are not available for this setup. See the extension README for supported install methods.",
+  "messages.nixMirrorProgress": "Vibrancy: creating a writable copy of VSCode in your home folder (one-time)…",
+  "messages.nixRelaunchTitle": "Vibrancy enabled — launch the \"(Vibrancy)\" app to use it",
+  "messages.nixRelaunch": "Your Nix store installation is read-only, so Vibrancy was applied to a writable copy of VSCode instead. Launch \"%1 (Vibrancy)\" from your application menu to use it — restart prompts in this window can be ignored (this copy stays unpatched). If the new copy complains about a corrupted installation, click DON'T SHOW AGAIN.",
+  "messages.nixStale": "Your system's VSCode was updated since Vibrancy's writable copy was created. Re-enable Vibrancy to rebuild the copy from the new version.",
+  "messages.nixStaleReenable": "Rebuild and re-enable"
 }

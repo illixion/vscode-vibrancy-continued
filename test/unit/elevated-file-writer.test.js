@@ -158,6 +158,26 @@ describe('checkNeedsElevation', () => {
       fs.chmodSync(tmpDir, 0o755);
     });
   }
+
+  it("returns 'nix' for /nix/store paths without probing", () => {
+    const result = checkNeedsElevation('/nix/store/abc123-vscode-1.119.0/lib/vscode/resources/app/out');
+    expect(result).toBe('nix');
+  });
+
+  it("returns 'immutable' when the write probe fails with EROFS", () => {
+    const err = new Error('read-only file system');
+    err.code = 'EROFS';
+    const spy = vi.spyOn(fs, 'writeFileSync').mockImplementation(() => { throw err; });
+    try {
+      expect(checkNeedsElevation('/usr/lib/code/resources/app/out')).toBe('immutable');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("returns 'snap' before the nix check for snap paths", () => {
+    expect(checkNeedsElevation('/snap/code/current/usr/share/code')).toBe('snap');
+  });
 });
 
 // --- StagedFileWriter (non-elevated) ---

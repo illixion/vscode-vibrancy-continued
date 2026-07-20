@@ -61,5 +61,11 @@
   "messages.pkexecMissing": "polkit (pkexec) がインストールされていません。インストールするか、次のコマンドでファイルの所有権を変更してください: sudo chown -R $(whoami) ",
   "messages.snapImmutable": "Snap経由でインストールされたVSCodeは不変のファイルシステムを使用しているため、管理者権限でも変更できません。.deb、.rpm、またはFlatpak経由でVSCodeをインストールしてください。",
   "messages.noNewPrivs": "VSCodeがプロセス内で再読み込みされたため、管理者権限を取得できません。VSCodeを完全に閉じてから再度開いて、もう一度お試しください。",
-  "messages.windowsSudoMissing": "このシステムレベルのVSCodeインストールには管理者権限が必要です。Windows sudoを有効にするか（設定→システム→開発者向け→sudoを有効にする）、VSCodeを管理者として実行してください。"
+  "messages.windowsSudoMissing": "このシステムレベルのVSCodeインストールには管理者権限が必要です。Windows sudoを有効にするか（設定→システム→開発者向け→sudoを有効にする）、VSCodeを管理者として実行してください。",
+  "messages.immutableUnsupported": "このVSCodeは読み取り専用ファイルシステム上にインストールされており、管理者権限でも変更できません。この環境向けの自動的な回避策はありません。対応しているインストール方法については拡張機能のREADMEをご覧ください。",
+  "messages.nixMirrorProgress": "Vibrancy: ホームフォルダーにVSCodeの書き込み可能なコピーを作成しています（初回のみ）…",
+  "messages.nixRelaunchTitle": "Vibrancy 有効化完了 — 「(Vibrancy)」アプリから起動してください",
+  "messages.nixRelaunch": "Nixストアのインストールは読み取り専用のため、書き込み可能なVSCodeのコピーにVibrancyを適用しました。アプリケーションメニューから「%1 (Vibrancy)」を起動してください。このウィンドウの再起動プロンプトは無視して構いません（このコピーは変更されていません）。新しいコピーが破損を検出した場合、\"今後表示しない\" をクリックしてください。",
+  "messages.nixStale": "Vibrancyのコピー作成後にシステムのVSCodeが更新されました。Vibrancyを再度有効化して、新しいバージョンからコピーを再作成してください。",
+  "messages.nixStaleReenable": "再作成して有効化"
 }

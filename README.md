@@ -45,6 +45,8 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Linux (transparency only, blur requires a compositor such as KWin, Hyprland, or Picom)
 
+✔ NixOS (via an automatic writable copy — see [NixOS notes](#️-nixos-notes))
+
 # Supported code editors
 
 ✔ Visual Studio Code (v1.86 and newer)
@@ -231,6 +233,28 @@ Select Vibrancy theme:
 | [Paradise](https://marketplace.visualstudio.com/items?itemName=nickesc.vscode-paradise-nickesc) Frosted Glass | ![](./images/theme-paradise-frosted-glass.png) |
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
+
+# ❄️ NixOS notes
+
+On NixOS the VSCode package lives in the read-only `/nix/store`, so its files can't be patched in place — not even with root. Instead, when you enable Vibrancy on a Nix-installed VSCode (nixpkgs `vscode`, `vscodium`, etc.), the extension automatically:
+
+1. Copies the whole VSCode package into `~/.local/share/vscode-vibrancy/` (~650 MB, one-time per VSCode version). The nixpkgs build is already linked against absolute store paths, so the copy runs from your home directory without any extra setup — your original installation is never modified.
+2. Applies the vibrancy patches to that copy.
+3. Adds a **"Visual Studio Code (Vibrancy)"** entry to your application menu that launches the patched copy.
+
+Use the *(Vibrancy)* menu entry as your daily driver. The first launch may show the usual ["installation appears to be corrupt" warning](#️-your-vscode-installation-appears-to-be-corrupt) — click **Don't Show Again**.
+
+**Terminal / `code` CLI**: typing `code` in a shell still launches the unpatched store installation. The copy is always reachable at the stable path `~/.local/share/vscode-vibrancy/current/bin/code` (`.../bin/codium` for VSCodium) — the `current` symlink is updated automatically whenever the copy is rebuilt, so it survives system updates. To make it your default `code`, add an alias to your shell config (or the equivalent `programs.bash`/`programs.zsh` option in your Nix config):
+
+```shell
+alias code="$HOME/.local/share/vscode-vibrancy/current/bin/code"
+```
+
+**After a `nixos-rebuild` that updates VSCode**, the copy becomes outdated. The extension detects this on the next launch and offers to rebuild the copy from the new version with one click. Note that if you also run `nix-collect-garbage` before rebuilding the copy, the old copy's store dependencies may be removed and the *(Vibrancy)* entry may fail to start — in that case launch your regular VSCode once and re-enable Vibrancy from there.
+
+**To remove everything**, run **"Disable Vibrancy"** (or uninstall the extension): the copy and the menu entry are deleted, leaving only your untouched store installation. Blur itself still depends on your compositor (KWin, Hyprland, Picom, …), same as on any other Linux distro.
+
+Other immutable installs (Flatpak, distros with a read-only `/usr`) are detected too, but currently unsupported — the extension will tell you instead of failing mid-patch.
 
 # FAQs
 

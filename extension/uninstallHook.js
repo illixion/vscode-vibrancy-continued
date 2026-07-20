@@ -309,14 +309,17 @@ if (require.main === module) (async () => {
 
     const config = loadConfig();
     if (config) {
-        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, cliCommand, previousCustomizations } = config;
+        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry } = config;
 
         // Determine elevation needs from the JS file path (part of VSCode install dir)
         const appDir = path.dirname(jsPath);
         const needsElevation = checkNeedsElevation(appDir);
 
-        // Snap installs are unsupported and should be skipped
-        if (needsElevation !== 'snap') {
+        // Skip installs on immutable filesystems where no files were patched
+        // in place (Snap) or where elevation can't help ('nix'/'immutable').
+        // On NixOS the patched files live in the $HOME mirror (writable, so
+        // needsElevation is false) — the store paths never appear here.
+        if (needsElevation !== 'snap' && needsElevation !== 'nix' && needsElevation !== 'immutable') {
             if (needsElevation) {
                 showNotificationSync(
                     "Vibrancy Continued was uninstalled and needs to revert changes to VSCode's internal files. " +
@@ -334,8 +337,32 @@ if (require.main === module) (async () => {
                 await writer.flush();
             } catch (err) {
                 writer.cleanup();
-                fileOpsError = err;
-                console.error('Failed to revert VSCode files:', err);
+                // On NixOS the patched files live in a $HOME mirror that may
+                // already be gone (removed by Disable or nix GC churn) — a
+                // missing file is not a failed revert there.
+                if (!(nixMirrorBase && err && err.code === 'ENOENT')) {
+                    fileOpsError = err;
+                    console.error('Failed to revert VSCode files:', err);
+                }
+            }
+
+            // NixOS shadow install: remove the $HOME mirror and its desktop
+            // entry entirely — reverting the copy is not enough, the whole
+            // shadow install belongs to this extension.
+            if (nixMirrorBase) {
+                try {
+                    // Guard against Electron asar path interception (no-op in plain node)
+                    process.noAsar = true;
+                    // Interrupted mirror copies keep the store's non-writable
+                    // dir modes, which rmSync can't delete — chmod first
+                    try { execSync(`chmod -R u+w "${nixMirrorBase}"`, { stdio: 'ignore' }); } catch {}
+                    fsSync.rmSync(nixMirrorBase, { recursive: true, force: true });
+                    if (nixDesktopEntry) {
+                        fsSync.rmSync(nixDesktopEntry, { force: true });
+                    }
+                } catch (err) {
+                    console.error('Failed to remove Vibrancy mirror:', err);
+                }
             }
 
             if (process.platform === 'win32') {

@@ -467,8 +467,10 @@ function activate(context) {
 
   const testSignalPath = testMode ? path.join(path.dirname(testModeFile), 'test-result') : null;
 
+  var testSignalFailed = false;
   function writeTestSignal(status, message) {
     if (!testMode) return;
+    if (status === 'error') testSignalFailed = true;
     try {
       require('fs').writeFileSync(testSignalPath, JSON.stringify({ status, message, ts: Date.now() }));
       console.log(`Vibrancy test signal: ${status} — ${message}`);
@@ -514,6 +516,67 @@ function activate(context) {
     HTMLFile = workbenchEsmHtmlPath;
     useEsmRuntime = true;
     runtimeSrcDir = "../runtime"
+  }
+
+  // ####  NixOS shadow install  ##############################################
+  // On NixOS the install dir is a read-only /nix/store path where elevation
+  // can't help. Redirect all patching to a writable mirror of the package
+  // under $HOME (see nix-mirror.js). The mirror is a verbatim copy, so the
+  // existence checks above (done against the store) remain valid after
+  // rebasing the target paths onto it.
+  const nixMirror = process.platform === 'linux' ? require('./nix-mirror') : null;
+  var usingMirror = false;
+  var mirrorStoreRoot = null;
+  var targetAppDir = appDir;
+  const launchedFromMirror = nixMirror ? nixMirror.isMirrorPath(appDir) : false;
+
+  function retargetToMirror(storeRoot, fromDir) {
+    const mirrorRoot = nixMirror.mirrorRootFor(storeRoot);
+    // appDir's position inside the package is identical in the store and in
+    // any mirror (the mirror is a verbatim copy), so derive it from whichever
+    // root fromDir currently lives under.
+    let relFromRoot;
+    if (fromDir.startsWith('/nix/store/')) {
+      relFromRoot = path.relative(nixMirror.deriveStoreRoot(fromDir), fromDir);
+    } else {
+      const parts = path.relative(nixMirror.mirrorBase(), fromDir).split(path.sep);
+      relFromRoot = parts.slice(1).join(path.sep);
+    }
+    const toDir = path.join(mirrorRoot, relFromRoot);
+    const rebase = (p) => path.join(toDir, path.relative(fromDir, p));
+    JSFile = rebase(JSFile);
+    ElectronJSFile = rebase(ElectronJSFile);
+    HTMLFile = rebase(HTMLFile);
+    runtimeDir = rebase(runtimeDir);
+    targetAppDir = toDir;
+    mirrorStoreRoot = storeRoot;
+    usingMirror = true;
+  }
+
+  if (nixMirror && checkNeedsElevation(appDir) === 'nix') {
+    try {
+      retargetToMirror(nixMirror.deriveStoreRoot(appDir), appDir);
+    } catch (err) {
+      console.error('Vibrancy: failed to derive Nix store root:', err);
+    }
+  }
+
+  var mirrorReady = false;
+  async function ensureMirrorIfNeeded() {
+    if (!usingMirror || mirrorReady) return;
+    const doEnsure = async () => {
+      await nixMirror.ensureMirror(mirrorStoreRoot, { vscodeVersion: vscode.version });
+      await nixMirror.writeDesktopEntry(nixMirror.mirrorRootFor(mirrorStoreRoot), vscode.env.appName);
+    };
+    if (testMode) {
+      await doEnsure();
+    } else {
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: localize('messages.nixMirrorProgress') },
+        doEnsure
+      );
+    }
+    mirrorReady = true;
   }
 
   async function installRuntime(writer) {
@@ -777,6 +840,20 @@ function activate(context) {
 
   function enabledRestart() {
     if (testMode) return;
+    // In mirror mode the patched files belong to a different copy of VSCode
+    // than the one currently running — restarting this instance won't show
+    // vibrancy. Point the user at the mirror's desktop entry instead. Modal,
+    // and shown BEFORE window.controlsStyle is written: that write triggers
+    // VSCode's own "restart to take effect" toast, whose Restart button only
+    // restarts this unpatched instance — sequencing the modal first ensures
+    // the user reads the instruction before that dead-end prompt can appear.
+    if (usingMirror) {
+      vscode.window.showInformationMessage(
+        localize('messages.nixRelaunchTitle'),
+        { modal: true, detail: localize('messages.nixRelaunch').replace('%1', vscode.env.appName) }
+      ).then(() => setControlsStyleCustom());
+      return;
+    }
     vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
         msg && promptRestart(true);
@@ -901,6 +978,12 @@ function activate(context) {
         cliCommand: require('fs').existsSync(cliFullPath) ? cliFullPath : cliName,
         previousCustomizations,
       };
+      // NixOS mirror bookkeeping so the uninstall hook can clean up the
+      // shadow install ($HOME mirror + desktop entry) too
+      if (usingMirror || launchedFromMirror) {
+        configData.nixMirrorBase = nixMirror.mirrorBase();
+        configData.nixDesktopEntry = nixMirror.desktopEntryPath();
+      }
       await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
     } else {
         await fs.unlink(configFilePath).catch(() => { });
@@ -917,10 +1000,26 @@ function activate(context) {
    */
   async function resolveElevation(forceElevation) {
     if (testMode) return false;
+    // In mirror mode all writes land under $HOME — never elevate. The probe
+    // must not run against targetAppDir either: the mirror may not exist yet
+    // at this point (it's created by ensureMirrorIfNeeded during the op).
+    if (usingMirror) return false;
     let needsElevation = forceElevation || checkNeedsElevation(appDir);
 
     if (needsElevation === 'snap') {
       vscode.window.showErrorMessage(localize('messages.snapImmutable'));
+      return null;
+    }
+
+    if (needsElevation === 'immutable') {
+      vscode.window.showErrorMessage(localize('messages.immutableUnsupported'));
+      return null;
+    }
+
+    // 'nix' only appears here when store-root derivation failed at activation
+    // (usingMirror would otherwise be set) — treat it as unsupported.
+    if (needsElevation === 'nix') {
+      vscode.window.showErrorMessage(localize('messages.immutableUnsupported'));
       return null;
     }
 
@@ -945,6 +1044,12 @@ function activate(context) {
   }
 
   function handleElevationError(error, retryFn) {
+    // In test mode there is no UI to drive a retry — surface the failure to
+    // the harness instead of letting the operation resolve as a success.
+    if (testMode) {
+      writeTestSignal('error', String(error && error.stack || error));
+      return;
+    }
     if (error && error.message === 'no_new_privs') {
       vscode.window.showErrorMessage(localize('messages.noNewPrivs'));
     } else if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
@@ -972,6 +1077,17 @@ function activate(context) {
       jsPath: JSFile,
       electronJsPath: ElectronJSFile,
     }, await changeVSCodeSettings());
+
+    // In mirror mode the enable flow never goes through promptRestart (the
+    // user relaunches via the desktop entry instead of the Restart button),
+    // so the custom window controls needed over a transparent window must be
+    // set for the mirror to read. Writing it pops VSCode's own "restart to
+    // take effect" toast, so the non-test flow defers the write until the
+    // user has acknowledged the relaunch modal (see enabledRestart) — here
+    // it's only written directly when there's no UI to sequence around.
+    if (usingMirror && testMode) {
+      await setControlsStyleCustom();
+    }
 
     // We just mutated vscode_vibrancy settings (migration + theme sync). Those
     // writes emit onDidChangeConfiguration events that can be delivered AFTER
@@ -1005,6 +1121,7 @@ function activate(context) {
     }
 
     try {
+      await ensureMirrorIfNeeded();
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
 
@@ -1044,10 +1161,39 @@ function activate(context) {
     }
   }
 
+  async function removeControlsStyle() {
+    try {
+      await vscode.workspace.getConfiguration().update("window.controlsStyle", undefined, vscode.ConfigurationTarget.Global);
+    } catch {
+      // Setting not supported on this VSCode version — nothing to remove
+    }
+  }
+
+  async function setControlsStyleCustom() {
+    try {
+      await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
+    } catch {
+      // window.controlsStyle is not supported in this version of VSCode
+    }
+  }
+
   async function Uninstall(promptRestart = true, sharedWriter) {
     // Defer settings restore when part of Update flow — Update handles it after flush
     if (!sharedWriter) {
       await restorePreviousSettings();
+    }
+
+    // Standalone disable when the mirror was never created: nothing to
+    // revert — just clean up any leftover shadow-install artifacts.
+    if (usingMirror && !sharedWriter && !require('fs').existsSync(targetAppDir)) {
+      await nixMirror.removeDesktopEntry();
+      await nixMirror.removeAllMirrors();
+      await removeControlsStyle();
+      await setLocalConfig(false);
+      if (promptRestart) {
+        disabledRestart();
+      }
+      return;
     }
 
     // Use shared writer if provided (e.g. from Update), otherwise create our own
@@ -1071,6 +1217,17 @@ function activate(context) {
       if (!sharedWriter) {
         await writer.flush();
         await setLocalConfig(false);
+
+        // Standalone disable removes the whole shadow install: the mirror
+        // and its desktop entry. A running mirror instance keeps working
+        // (open files stay mapped); the next launch uses the store VSCode.
+        if (nixMirror && (usingMirror || launchedFromMirror)) {
+          await nixMirror.removeDesktopEntry();
+          await nixMirror.removeAllMirrors();
+          // Set at install time in mirror mode, so unset here rather than
+          // relying on the user clicking through promptRestart
+          await removeControlsStyle();
+        }
 
         if (promptRestart) {
           disabledRestart();
@@ -1107,6 +1264,7 @@ function activate(context) {
     await writer.init();
 
     try {
+      await ensureMirrorIfNeeded();
       await Uninstall(false, writer);
       await Install(writer);
       // Flush all file changes at once, then apply settings only on success
@@ -1172,12 +1330,14 @@ function activate(context) {
   if (checkRuntimeUpdate(currentVersion, lastVersion)) {
     if (testMode) {
       runExclusive(() => Update()).then(() => {
+        // A swallowed operation error may have already reported failure
+        if (testSignalFailed) return;
         // Include diagnostic info about the runtime directory
         const runtimeFiles = require('fs').existsSync(runtimeDir)
           ? require('fs').readdirSync(runtimeDir).join(', ')
           : 'DIR NOT FOUND';
         const pendingCopies = typeof pendingNodeCopies !== 'undefined' ? pendingNodeCopies.length : 0;
-        writeTestSignal('success', `Install completed. Runtime: [${runtimeFiles}]. Pending .node copies: ${pendingCopies}. appDir: ${appDir}`);
+        writeTestSignal('success', `Install completed. Runtime: [${runtimeFiles}]. Pending .node copies: ${pendingCopies}. appDir: ${appDir}. targetAppDir: ${targetAppDir}. usingMirror: ${usingMirror}`);
       }).catch((err) => {
         writeTestSignal('error', String(err && err.message || err));
       });
@@ -1224,6 +1384,31 @@ function activate(context) {
   vscode.window.onDidChangeActiveColorTheme((theme) => {
     checkDarkLightMode(theme)
   });
+
+  // NixOS staleness check: when running from a mirror, a nixos-rebuild may
+  // have moved the system VSCode to a new store path. Offer to rebuild the
+  // mirror from the new package and re-apply vibrancy.
+  if (launchedFromMirror && !testMode) {
+    try {
+      const cliName = editorCliCommands[vscode.env.appName] || 'code';
+      const stale = nixMirror.checkMirrorStale(appDir, cliName);
+      if (stale) {
+        vscode.window.showWarningMessage(
+          localize('messages.nixStale'),
+          { title: localize('messages.nixStaleReenable') }
+        ).then(async (msg) => {
+          if (!msg) return;
+          await runExclusive(async () => {
+            retargetToMirror(stale.newStoreRoot, appDir);
+            mirrorReady = false;
+            await Update();
+          });
+        });
+      }
+    } catch (err) {
+      console.error('Vibrancy: mirror staleness check failed:', err);
+    }
+  }
 }
 exports.activate = activate;
 
