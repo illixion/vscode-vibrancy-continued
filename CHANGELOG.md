@@ -1,3 +1,12 @@
+# 1.1.86
+
+* Core:
+  * NixOS support: VSCode installed from nixpkgs lives in the read-only `/nix/store`, where Vibrancy previously failed since its files can't be patched even with elevated privileges. Enabling Vibrancy now automatically creates a writable copy of the VSCode package under `~/.local/share/vscode-vibrancy/`, patches the copy, and adds a **"Visual Studio Code (Vibrancy)"** entry to the application menu that launches it — the original Nix store installation is never modified. Works with both nixpkgs `vscode` and `vscodium`. See the new "NixOS notes" section in the README for details
+  * After a `nixos-rebuild` that updates VSCode, the next launch of the Vibrancy copy detects the change and offers a one-click "Rebuild and re-enable" that recreates the copy from the new version
+  * A stable path `~/.local/share/vscode-vibrancy/current/bin/code` always points at the active copy, for use in shell aliases or your Nix config (the hashed copy directory changes on every system update)
+  * Disabling Vibrancy or uninstalling the extension removes the copy, the menu entry, and all related settings
+  * Other read-only installations (e.g. distros with an immutable `/usr`) now abort with a clear "unsupported" message instead of crashing mid-install
+
 # 1.1.85
 
 * Core:
