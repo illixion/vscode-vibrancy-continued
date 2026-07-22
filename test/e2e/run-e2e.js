@@ -47,7 +47,8 @@ async function main() {
     // --- Step 1: Download VSCode ---
     const vscodeVersion = process.env.VSCODE_VERSION || 'stable';
     console.log(`[1/9] Downloading VSCode (${vscodeVersion})...`);
-    const vscodeExe = await downloadAndUnzipVSCode(vscodeVersion);
+    const vscodeCachePath = path.join(process.cwd(), '.vscode-test');
+    const vscodeExe = await downloadVSCodeWithRetry(downloadAndUnzipVSCode, vscodeVersion, vscodeCachePath);
     const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExe);
     console.log(`  Executable: ${vscodeExe}`);
     console.log(`  CLI: ${cliPath}`);
@@ -333,6 +334,77 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
  * Run the resolved VSCode CLI with --version. Output is three lines:
  * version, commit hash, architecture.
  */
+/**
+ * Resolve the real VSCode executable, working around microsoft/vscode-test#349.
+ *
+ * VSCode 1.110+ renamed the macOS main binary from Contents/MacOS/Electron to
+ * the product name ("Code - Insiders" / "Code"); a compat symlink kept the old
+ * name working until it was removed in July 2026. @vscode/test-electron still
+ * hardcodes .../Contents/MacOS/Electron, so the path it returns no longer
+ * exists and spawning it fails with ENOENT. (The CLI path is derived by
+ * relative traversal and is unaffected, which is why --version still works.)
+ *
+ * If the returned path exists, use it as-is. Otherwise, on macOS, look up the
+ * bundle's real executable via CFBundleExecutable, falling back to the sole
+ * binary in Contents/MacOS.
+ */
+function resolveVSCodeExecutable(rawExe) {
+  if (fs.existsSync(rawExe)) return rawExe;
+  if (process.platform !== 'darwin') return rawExe;
+
+  const macOsDir = path.dirname(rawExe); // .../Contents/MacOS
+  // Prefer the bundle's declared executable. PlistBuddy handles both XML and
+  // binary plists, so this is robust regardless of the plist encoding.
+  try {
+    const plist = path.join(macOsDir, '..', 'Info.plist');
+    const name = execSync(
+      `/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "${plist}"`,
+      { encoding: 'utf-8' }
+    ).trim();
+    const candidate = path.join(macOsDir, name);
+    if (name && fs.existsSync(candidate)) return candidate;
+  } catch {}
+  // Fallback: Contents/MacOS holds exactly one binary (helpers live under
+  // Contents/Frameworks), so pick the non-"Electron" entry if present.
+  try {
+    const entries = fs.readdirSync(macOsDir);
+    const picked = entries.length === 1 ? entries[0] : entries.find(e => e !== 'Electron');
+    if (picked) return path.join(macOsDir, picked);
+  } catch {}
+  return rawExe;
+}
+
+/**
+ * Download VSCode with retries.
+ *
+ * Returns the resolved executable path (see resolveVSCodeExecutable). Also
+ * guards against the occasional incomplete extraction where the download
+ * reports success but the bundle isn't fully materialized: verify the resolved
+ * executable exists and, on failure, wipe the cache to force a clean
+ * re-download.
+ */
+async function downloadVSCodeWithRetry(downloadFn, version, cachePath, attempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const rawExe = await downloadFn({ version, cachePath });
+      const vscodeExe = resolveVSCodeExecutable(rawExe);
+      if (fs.existsSync(vscodeExe)) return vscodeExe;
+      lastErr = new Error(`VSCode executable not found after download: ${vscodeExe}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    console.log(`  Download attempt ${attempt}/${attempts} failed: ${(lastErr.message || '').split('\n')[0]}`);
+    if (attempt < attempts) {
+      // Wipe the cache so the next attempt re-downloads instead of reusing a
+      // partially-extracted bundle the library would treat as cached.
+      try { fs.rmSync(cachePath, { recursive: true, force: true }); } catch {}
+      console.log('  Cleared VSCode cache; retrying...');
+    }
+  }
+  throw lastErr;
+}
+
 function getVSCodeVersionInfo(cliPath) {
   try {
     const out = execSync(`"${cliPath}" --version`, { encoding: 'utf-8', timeout: 15000 });
