@@ -290,11 +290,17 @@ Please see [Windows 10/11 notes](#-windows-1011-notes) at the top of the descrip
 
 ### Effect doesn't work, but there are no errors
 
-Ensure that you don't have transparency effects disabled globally through your OS settings.
+If the vibrancy effect isn't visible but there are no error messages, check the following in order:
 
-This can usually be found under Accessibility settings, and it may be called "Transparency effects" or "Reduce transparency." If that didn't help, you can also check the Console section in VSCode's Developer Tools, which can be accessed through the command palette.
+1. **OS-level transparency settings** — Some operating systems allow you to disable all transparency effects globally. Look in Accessibility settings for an option called "Transparency effects," "Reduce transparency," or similar. If this is disabled, enable it and restart VSCode.
 
-If nothing else worked, try reinstalling VSCode, you won't lose any settings and this will ensure that your VSCode installation is consistent.
+2. **Laptop power-saver mode** — On laptops, power-saver or battery-saver modes may disable transparency effects to save power. Try disabling power-saver mode or plugging in your laptop to see if the effect appears.
+
+3. **DWM/system-wide acrylic utilities** — Software like DWMBlurGlass or other DWM customization tools can interfere with the vibrancy effect. If you have any programs that globally modify Windows DWM acrylic or transparency, try temporarily disabling them to test. Some of these tools conflict with the extension's rendering.
+
+4. **GPU or driver issues** — If you have recently updated your graphics drivers, try rolling back or updating to the latest version. In rare cases, try disabling GPU acceleration: set `--disable-gpu-compositing` in your VSCode launch arguments (see the [Windows troubleshooting section](#legacy--troubleshooting-window-cant-be-resized-or-text-looks-distorted) for details).
+
+5. **Reinstall VSCode** — As a last resort, reinstall VSCode. This won't affect your settings or extensions, but ensures your installation is consistent.
 
 ### Linux: Why is the background transparent but not blurred?
 
