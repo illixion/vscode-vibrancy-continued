@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.86",
+  "version": "1.1.87",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -239,6 +239,23 @@
             "%configuration.windowMode.framed%",
             "%configuration.windowMode.frameless%",
             "%configuration.windowMode.framelessTransparent%"
+          ],
+          "default": "auto"
+        },
+        "vscode_vibrancy.windowControlsStyle": {
+          "description": "%configuration.windowControlsStyle.description%",
+          "type": "string",
+          "enum": [
+            "auto",
+            "custom",
+            "hidden",
+            "native"
+          ],
+          "enumDescriptions": [
+            "%configuration.windowControlsStyle.auto%",
+            "%configuration.windowControlsStyle.custom%",
+            "%configuration.windowControlsStyle.hidden%",
+            "%configuration.windowControlsStyle.native%"
           ],
           "default": "auto"
         },

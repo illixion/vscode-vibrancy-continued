@@ -1,3 +1,10 @@
+# 1.1.87
+
+* Core:
+  * Add `windowControlsStyle` setting (`auto` / `custom` / `hidden` / `native`) to control window control visibility for tiling window manager users on Linux and Windows
+  * Add a Linux fallback to a terminal sudo prompt when pkexec can't prompt
+  * Fix window options potentially being reset when installing with an elevated writer
+
 # 1.1.86
 
 * Core:

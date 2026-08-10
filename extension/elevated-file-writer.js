@@ -3,7 +3,7 @@ const fsPromises = require('fs').promises;
 const fsExtra = require('fs-extra');
 const path = require('path');
 const os = require('os');
-const { exec, execFile, execSync } = require('child_process');
+const cp = require('child_process');
 
 /**
  * Check if the VSCode installation directory requires elevated privileges to write to.
@@ -63,15 +63,32 @@ function psEscape(str) {
 }
 
 /**
- * Check if pkexec (Polkit) is available on Linux.
+ * Check whether a command exists on PATH.
  */
-function hasPkexec() {
+function hasCommand(name) {
   try {
-    execSync('which pkexec', { stdio: 'ignore' });
+    cp.execSync(`command -v ${name}`, { shell: '/bin/sh', stdio: 'ignore' });
     return true;
   } catch {
     return false;
   }
+}
+
+// Privilege-escalation commands to try in the terminal fallback, in order.
+// Both take `<cmd> <program> <args...>` so they're interchangeable here.
+const SUDO_COMMANDS = ['sudo', 'doas'];
+
+// Callback used to run an elevation command inside a real terminal. Injected
+// by the extension host (see extension/terminal-elevation.js) so this module
+// stays free of a `vscode` dependency and remains unit-testable.
+let terminalRunner = null;
+
+/**
+ * Register the terminal-based elevation fallback.
+ * @param {((options: { command: string, script: string }) => Promise<void>) | null} fn
+ */
+function setTerminalRunner(fn) {
+  terminalRunner = fn;
 }
 
 /**
@@ -174,7 +191,7 @@ function elevatedCopyWindows(operations) {
       `"Start-Process powershell.exe -ArgumentList '${innerArgs}' -Verb RunAs -WindowStyle Hidden -Wait"`,
     ].join(' ');
 
-    exec(elevateCmd, { encoding: 'utf-8' }, (error) => {
+    cp.exec(elevateCmd, { encoding: 'utf-8' }, (error) => {
       try {
         const status = fs.readFileSync(statusFile, 'utf-8').trim();
         fs.unlinkSync(statusFile);
@@ -214,7 +231,7 @@ function elevatedCopy(operations) {
       const escapedScript = script.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const osaScript = `do shell script "${escapedScript}" with administrator privileges`;
 
-      execFile('osascript', ['-e', osaScript], (error, _stdout, stderr) => {
+      cp.execFile('osascript', ['-e', osaScript], (error, _stdout, stderr) => {
         if (error) {
           reject(new Error(`Elevation failed: ${stderr || error.message}`));
         } else {
@@ -222,7 +239,12 @@ function elevatedCopy(operations) {
         }
       });
     } else if (platform === 'linux') {
-      // Linux: use pkexec (Polkit GUI dialog)
+      // Linux: try pkexec (Polkit GUI dialog) first, then fall back to running
+      // sudo in a VSCode terminal. pkexec is preferred when it works, but it
+      // needs a Polkit authentication agent to be registered — on setups
+      // without one it tries to prompt on /dev/tty and fails outright, since a
+      // GUI app has no controlling terminal. Rather than guessing up front
+      // whether an agent is present, just attempt it and fall back on failure.
 
       if (hasNoNewPrivs()) {
         // no_new_privs is set — setuid binaries won't work.
@@ -231,23 +253,43 @@ function elevatedCopy(operations) {
         return;
       }
 
-      if (!hasPkexec()) {
-        reject(new Error('pkexec_missing'));
+      const script = buildShellScript(operations);
+
+      const runInTerminal = (pkexecError) => {
+        const command = SUDO_COMMANDS.find(hasCommand);
+        if (!command || !terminalRunner) {
+          // Nothing left to try — surface why pkexec failed if it was the one
+          // that got furthest, otherwise report that no method is available.
+          reject(new Error(pkexecError
+            ? `Elevation failed: ${pkexecError}`
+            : 'no_elevation_method'));
+          return;
+        }
+        terminalRunner({ command, script }).then(resolve, reject);
+      };
+
+      if (!hasCommand('pkexec')) {
+        runInTerminal(null);
         return;
       }
 
-      const script = buildShellScript(operations);
-
-      execFile('pkexec', ['sh', '-c', script], (error, _stdout, stderr) => {
-        if (error) {
-          if (stderr && stderr.includes('setuid root')) {
-            reject(new Error('no_new_privs'));
-          } else {
-            reject(new Error(`Elevation failed: ${stderr || error.message}`));
-          }
-        } else {
+      cp.execFile('pkexec', ['sh', '-c', script], (error, _stdout, stderr) => {
+        if (!error) {
           resolve();
+          return;
         }
+        if (stderr && stderr.includes('setuid root')) {
+          reject(new Error('no_new_privs'));
+          return;
+        }
+        // 126 is pkexec's documented exit code for "the user dismissed the
+        // authentication dialog" — a deliberate cancellation, so don't follow
+        // it up with a second password prompt in a terminal.
+        if (error.code === 126) {
+          reject(new Error('cancelled'));
+          return;
+        }
+        runInTerminal(stderr || error.message);
       });
     } else if (platform === 'win32') {
       // Windows: use PowerShell Start-Process -Verb RunAs to trigger UAC
@@ -365,8 +407,9 @@ class StagedFileWriter {
 module.exports = {
   checkNeedsElevation,
   elevatedCopy,
-  hasPkexec,
+  hasCommand,
   hasNoNewPrivs,
+  setTerminalRunner,
   StagedFileWriter,
   // Exported for testing
   shellEscape,

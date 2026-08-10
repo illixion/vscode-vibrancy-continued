@@ -8,6 +8,7 @@ var {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -50,7 +51,19 @@ function vscodeVersionAtLeast([major, minor]) {
   return cur[0] > major || (cur[0] === major && cur[1] >= minor);
 }
 
-const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
+const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs, setTerminalRunner } = require('./elevated-file-writer');
+const { runElevatedInTerminal } = require('./terminal-elevation');
+
+// Linux only: give the elevation module a way to prompt for a password in a
+// real terminal when pkexec isn't usable (no Polkit agent registered).
+if (process.platform === 'linux') {
+  setTerminalRunner(({ command, script }) => runElevatedInTerminal({
+    command,
+    script,
+    title: localize('terminal.elevationTitle'),
+    prompt: localize('terminal.elevationPrompt'),
+  }));
+}
 
 var themeStylePaths = {
   'Default Dark': '../themes/Default Dark.css',
@@ -240,10 +253,16 @@ function checkDarkLightMode(theme) {
 async function promptRestart(setControlsStyle) {
   // Set/remove window.controlsStyle right before quit — deferred to here so it
   // doesn't trigger VSCode's built-in restart prompt during install/uninstall,
-  // which would cause an in-process reload and break polkit elevation.
-  if (osType === 'win10' || process.platform === 'linux') {
+  // which would cause an in-process reload and break polkit elevation. On macOS
+  // resolveWindowControlsStyle returns null (VSCode doesn't register the
+  // setting there), so this is a no-op.
+  const controlsStyle = resolveWindowControlsStyle({
+    platform: process.platform,
+    windowControlsStyle: vscode.workspace.getConfiguration("vscode_vibrancy").get("windowControlsStyle"),
+  });
+  if (controlsStyle) {
     try {
-      const value = setControlsStyle ? "custom" : undefined;
+      const value = setControlsStyle ? controlsStyle : undefined;
       await vscode.workspace.getConfiguration().update("window.controlsStyle", value, vscode.ConfigurationTarget.Global);
     } catch (error) {
       console.warn("window.controlsStyle is not supported in this version of VSCode.");
@@ -648,14 +667,21 @@ function activate(context) {
     }
   }
 
-  async function installJS(writer) {
+  /**
+   * Inject the vibrancy runtime bootstrap into the workbench main.js.
+   *
+   * `baseJS` overrides the on-disk content, so a caller that has already
+   * patched the same file in memory can fold this transform into that copy
+   * instead of re-reading it (see Install).
+   */
+  async function installJS(writer, baseJS) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
     const themeConfig = require(themeConfigPath);
     const themeStylePath = path.join(__dirname, themeStylePaths[currentTheme]);
     const themeCSS = await fs.readFile(themeStylePath, 'utf-8');
-    const JS = await fs.readFile(JSFile, 'utf-8');
+    const JS = baseJS !== undefined ? baseJS : await fs.readFile(JSFile, 'utf-8');
 
     const imports = await generateImports(config);
 
@@ -726,6 +752,16 @@ function activate(context) {
   }
 
   // BrowserWindow option modification
+  /**
+   * Inject the frameless/transparent BrowserWindow options into Electron's main file.
+   *
+   * Writes through `writer` when given one; pass a falsy writer to get the
+   * patched content back instead, so a caller can fold another transform into
+   * the same buffer (see Install).
+   *
+   * @returns {Promise<string|undefined>} the patched content, or undefined when
+   *   this editor doesn't get window options injected at all.
+   */
   async function modifyElectronJSFile(ElectronJSFile, writer) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
@@ -789,7 +825,8 @@ function activate(context) {
 
     ElectronJS = injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
 
-    await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
+    if (writer) await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
+    return ElectronJS;
   }
 
   async function installHTML(writer) {
@@ -1050,6 +1087,10 @@ function activate(context) {
       writeTestSignal('error', String(error && error.stack || error));
       return;
     }
+    if (error && error.message === 'cancelled') {
+      // User dismissed the authentication prompt — nothing to report.
+      return;
+    }
     if (error && error.message === 'no_new_privs') {
       vscode.window.showErrorMessage(localize('messages.noNewPrivs'));
     } else if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
@@ -1059,8 +1100,8 @@ function activate(context) {
       ).then(retryChoice => {
         if (retryChoice) retryFn();
       });
-    } else if (error && error.message && error.message.includes('pkexec_missing')) {
-      vscode.window.showErrorMessage(localize('messages.pkexecMissing') + appDir);
+    } else if (error && error.message && error.message.includes('no_elevation_method')) {
+      vscode.window.showErrorMessage(localize('messages.noElevationMethod') + appDir);
     } else if (error && error.message && error.message.includes('Elevation failed')) {
       vscode.window.showErrorMessage(localize('messages.elevationFailed') + error.message + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
     } else {
@@ -1130,8 +1171,19 @@ function activate(context) {
       } else {
         await installRuntime(writer);
       }
-      await modifyElectronJSFile(ElectronJSFile, writer);
-      await installJS(writer);
+      if (ElectronJSFile === JSFile) {
+        // VSCode 1.95+ merges the Electron main and workbench main into one
+        // main.js, so both patches have to land on a single in-memory copy.
+        // An elevated writer stages its writes to temp files, so re-reading
+        // the file here would return the pristine original and silently drop
+        // the window options — leaving a patched but non-transparent window.
+        // uninstallJS does the same for teardown.
+        const patchedElectronJS = await modifyElectronJSFile(ElectronJSFile, null);
+        await installJS(writer, patchedElectronJS);
+      } else {
+        await modifyElectronJSFile(ElectronJSFile, writer);
+        await installJS(writer);
+      }
       await installHTML(writer);
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
@@ -1170,8 +1222,13 @@ function activate(context) {
   }
 
   async function setControlsStyleCustom() {
+    const controlsStyle = resolveWindowControlsStyle({
+      platform: process.platform,
+      windowControlsStyle: vscode.workspace.getConfiguration("vscode_vibrancy").get("windowControlsStyle"),
+    });
+    if (!controlsStyle) return;
     try {
-      await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration().update("window.controlsStyle", controlsStyle, vscode.ConfigurationTarget.Global);
     } catch {
       // window.controlsStyle is not supported in this version of VSCode
     }

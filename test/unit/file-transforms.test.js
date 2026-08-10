@@ -5,6 +5,7 @@ const {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,
@@ -141,6 +142,40 @@ describe('resolveEffectiveWindowMode', () => {
     })).toBe('framed');
     expect(resolveEffectiveWindowMode({ ...win10, windowMode: 'frameless', forceFramelessWindow: true }))
       .toBe('frameless');
+  });
+});
+
+// --- resolveWindowControlsStyle ---
+
+describe('resolveWindowControlsStyle', () => {
+  it("auto maps to 'custom' on Linux and Windows", () => {
+    expect(resolveWindowControlsStyle({ platform: 'linux', windowControlsStyle: 'auto' })).toBe('custom');
+    expect(resolveWindowControlsStyle({ platform: 'win32', windowControlsStyle: 'auto' })).toBe('custom');
+  });
+
+  it('defaults to auto when unset', () => {
+    expect(resolveWindowControlsStyle({ platform: 'linux' })).toBe('custom');
+  });
+
+  // VSCode registers window.controlsStyle as `included: !isMacintosh`, so
+  // writing it on macOS throws "not a registered configuration".
+  it('returns null on macOS so the setting is never written', () => {
+    expect(resolveWindowControlsStyle({ platform: 'darwin', windowControlsStyle: 'auto' })).toBeNull();
+    expect(resolveWindowControlsStyle({ platform: 'darwin', windowControlsStyle: 'hidden' })).toBeNull();
+  });
+
+  it('returns null on platforms without the setting', () => {
+    expect(resolveWindowControlsStyle({ platform: 'freebsd', windowControlsStyle: 'custom' })).toBeNull();
+  });
+
+  it('passes explicit choices through', () => {
+    expect(resolveWindowControlsStyle({ platform: 'linux', windowControlsStyle: 'hidden' })).toBe('hidden');
+    expect(resolveWindowControlsStyle({ platform: 'linux', windowControlsStyle: 'native' })).toBe('native');
+    expect(resolveWindowControlsStyle({ platform: 'win32', windowControlsStyle: 'hidden' })).toBe('hidden');
+  });
+
+  it('falls back to the auto default for an unrecognised value', () => {
+    expect(resolveWindowControlsStyle({ platform: 'linux', windowControlsStyle: 'bogus' })).toBe('custom');
   });
 });
 

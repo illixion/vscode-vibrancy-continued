@@ -1,12 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const cp = require('child_process');
 const {
   shellEscape,
   psEscape,
   buildShellScript,
   buildPowerShellScript,
   checkNeedsElevation,
+  hasCommand,
+  elevatedCopy,
+  setTerminalRunner,
   StagedFileWriter,
 } = require('../../extension/elevated-file-writer');
 
@@ -177,6 +181,134 @@ describe('checkNeedsElevation', () => {
 
   it("returns 'snap' before the nix check for snap paths", () => {
     expect(checkNeedsElevation('/snap/code/current/usr/share/code')).toBe('snap');
+  });
+});
+
+// --- hasCommand ---
+
+describe('hasCommand', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns true when the command resolves', () => {
+    vi.spyOn(cp, 'execSync').mockReturnValue('');
+    expect(hasCommand('pkexec')).toBe(true);
+  });
+
+  it('returns false when the lookup fails', () => {
+    vi.spyOn(cp, 'execSync').mockImplementation(() => { throw new Error('not found'); });
+    expect(hasCommand('pkexec')).toBe(false);
+  });
+});
+
+// --- elevatedCopy (Linux elevation strategy) ---
+
+describe('elevatedCopy on Linux', () => {
+  const OPS = [{ type: 'mkdir', path: '/opt/vscode/out' }];
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+
+  /** Make hasCommand() report only the listed binaries as present. */
+  function stubAvailableCommands(available) {
+    vi.spyOn(cp, 'execSync').mockImplementation((cmd) => {
+      const name = String(cmd).replace('command -v ', '');
+      if (available.includes(name)) return '';
+      throw new Error(`${name} not found`);
+    });
+  }
+
+  /** Stub pkexec's execFile call with a given error (null = success). */
+  function stubPkexec(error, stderr = '') {
+    vi.spyOn(cp, 'execFile').mockImplementation((file, args, cb) => {
+      expect(file).toBe('pkexec');
+      cb(error, '', stderr);
+    });
+  }
+
+  beforeEach(() => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    // hasNoNewPrivs() reads /proc/self/status, which doesn't exist off Linux.
+    vi.spyOn(fs, 'readFileSync').mockReturnValue('NoNewPrivs:\t0\n');
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', originalPlatform);
+    setTerminalRunner(null);
+    vi.restoreAllMocks();
+  });
+
+  it('resolves without a terminal when pkexec succeeds', async () => {
+    stubAvailableCommands(['pkexec', 'sudo']);
+    stubPkexec(null);
+    const runner = vi.fn();
+    setTerminalRunner(runner);
+
+    await expect(elevatedCopy(OPS)).resolves.toBeUndefined();
+    expect(runner).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the terminal when pkexec is not installed', async () => {
+    stubAvailableCommands(['sudo']);
+    const runner = vi.fn().mockResolvedValue(undefined);
+    setTerminalRunner(runner);
+
+    await expect(elevatedCopy(OPS)).resolves.toBeUndefined();
+    expect(runner).toHaveBeenCalledWith({
+      command: 'sudo',
+      script: buildShellScript(OPS),
+    });
+  });
+
+  it('falls back to the terminal when pkexec fails for any reason', async () => {
+    stubAvailableCommands(['pkexec', 'sudo']);
+    stubPkexec(Object.assign(new Error('exit 127'), { code: 127 }), 'some locale-specific message');
+    const runner = vi.fn().mockResolvedValue(undefined);
+    setTerminalRunner(runner);
+
+    await expect(elevatedCopy(OPS)).resolves.toBeUndefined();
+    expect(runner).toHaveBeenCalledOnce();
+  });
+
+  it('uses doas when sudo is unavailable', async () => {
+    stubAvailableCommands(['doas']);
+    const runner = vi.fn().mockResolvedValue(undefined);
+    setTerminalRunner(runner);
+
+    await elevatedCopy(OPS);
+    expect(runner).toHaveBeenCalledWith(expect.objectContaining({ command: 'doas' }));
+  });
+
+  it('does not re-prompt in a terminal when the user dismissed the pkexec dialog', async () => {
+    stubAvailableCommands(['pkexec', 'sudo']);
+    stubPkexec(Object.assign(new Error('dismissed'), { code: 126 }));
+    const runner = vi.fn();
+    setTerminalRunner(runner);
+
+    await expect(elevatedCopy(OPS)).rejects.toThrow('cancelled');
+    expect(runner).not.toHaveBeenCalled();
+  });
+
+  it('reports no_new_privs from pkexec stderr', async () => {
+    stubAvailableCommands(['pkexec', 'sudo']);
+    stubPkexec(new Error('failed'), 'pkexec must be setuid root');
+    setTerminalRunner(vi.fn());
+
+    await expect(elevatedCopy(OPS)).rejects.toThrow('no_new_privs');
+  });
+
+  it('rejects with no_elevation_method when nothing is available', async () => {
+    stubAvailableCommands([]);
+    setTerminalRunner(vi.fn());
+
+    await expect(elevatedCopy(OPS)).rejects.toThrow('no_elevation_method');
+  });
+
+  it("surfaces pkexec's error when no fallback command exists", async () => {
+    stubAvailableCommands(['pkexec']);
+    stubPkexec(new Error('boom'), 'pkexec exploded');
+    setTerminalRunner(vi.fn());
+
+    await expect(elevatedCopy(OPS)).rejects.toThrow('pkexec exploded');
   });
 });
 
