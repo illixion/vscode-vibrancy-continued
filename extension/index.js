@@ -8,6 +8,7 @@ var {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -252,10 +253,16 @@ function checkDarkLightMode(theme) {
 async function promptRestart(setControlsStyle) {
   // Set/remove window.controlsStyle right before quit — deferred to here so it
   // doesn't trigger VSCode's built-in restart prompt during install/uninstall,
-  // which would cause an in-process reload and break polkit elevation.
-  if (osType === 'win10' || process.platform === 'linux') {
+  // which would cause an in-process reload and break polkit elevation. On macOS
+  // resolveWindowControlsStyle returns null (VSCode doesn't register the
+  // setting there), so this is a no-op.
+  const controlsStyle = resolveWindowControlsStyle({
+    platform: process.platform,
+    windowControlsStyle: vscode.workspace.getConfiguration("vscode_vibrancy").get("windowControlsStyle"),
+  });
+  if (controlsStyle) {
     try {
-      const value = setControlsStyle ? "custom" : undefined;
+      const value = setControlsStyle ? controlsStyle : undefined;
       await vscode.workspace.getConfiguration().update("window.controlsStyle", value, vscode.ConfigurationTarget.Global);
     } catch (error) {
       console.warn("window.controlsStyle is not supported in this version of VSCode.");
@@ -1215,8 +1222,13 @@ function activate(context) {
   }
 
   async function setControlsStyleCustom() {
+    const controlsStyle = resolveWindowControlsStyle({
+      platform: process.platform,
+      windowControlsStyle: vscode.workspace.getConfiguration("vscode_vibrancy").get("windowControlsStyle"),
+    });
+    if (!controlsStyle) return;
     try {
-      await vscode.workspace.getConfiguration().update("window.controlsStyle", "custom", vscode.ConfigurationTarget.Global);
+      await vscode.workspace.getConfiguration().update("window.controlsStyle", controlsStyle, vscode.ConfigurationTarget.Global);
     } catch {
       // window.controlsStyle is not supported in this version of VSCode
     }

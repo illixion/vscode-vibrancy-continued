@@ -211,6 +211,31 @@ function framelessWindowTransparency({ platform, transparentType = false, winOpa
 }
 
 /**
+ * Resolve `vscode_vibrancy.windowControlsStyle` into a value for VSCode's own
+ * `window.controlsStyle` setting.
+ *
+ * VSCode registers `window.controlsStyle` on Windows and Linux only (it's
+ * declared `included: !isMacintosh`), so writing it on macOS throws "not a
+ * registered configuration" — hence the null there, meaning "don't touch it".
+ *
+ * 'auto' maps to 'custom' so the controls are drawn by VSCode and blend with
+ * the vibrancy effect; the native ones render as an opaque strip over it.
+ * Tiling-WM users generally want 'hidden' instead, which is why this is a
+ * choice rather than a hardcoded 'custom'.
+ *
+ * @param {{ platform: NodeJS.Platform, windowControlsStyle?: string }} ctx
+ * @returns {'custom'|'hidden'|'native'|null} the value to write, or null to leave it alone
+ */
+function resolveWindowControlsStyle({ platform, windowControlsStyle = 'auto' }) {
+  if (platform === 'darwin') return null;
+  if (platform !== 'linux' && platform !== 'win32') return null;
+  if (windowControlsStyle === 'custom' || windowControlsStyle === 'hidden' || windowControlsStyle === 'native') {
+    return windowControlsStyle;
+  }
+  return 'custom';
+}
+
+/**
  * Resolve the effective windowMode, folding in the deprecated boolean settings.
  *
  * An explicit windowMode (anything other than 'auto') always wins. Otherwise the
@@ -525,6 +550,7 @@ module.exports = {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,
