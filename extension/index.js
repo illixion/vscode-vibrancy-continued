@@ -50,7 +50,19 @@ function vscodeVersionAtLeast([major, minor]) {
   return cur[0] > major || (cur[0] === major && cur[1] >= minor);
 }
 
-const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs } = require('./elevated-file-writer');
+const { StagedFileWriter, checkNeedsElevation, hasNoNewPrivs, setTerminalRunner } = require('./elevated-file-writer');
+const { runElevatedInTerminal } = require('./terminal-elevation');
+
+// Linux only: give the elevation module a way to prompt for a password in a
+// real terminal when pkexec isn't usable (no Polkit agent registered).
+if (process.platform === 'linux') {
+  setTerminalRunner(({ command, script }) => runElevatedInTerminal({
+    command,
+    script,
+    title: localize('terminal.elevationTitle'),
+    prompt: localize('terminal.elevationPrompt'),
+  }));
+}
 
 var themeStylePaths = {
   'Default Dark': '../themes/Default Dark.css',
@@ -1050,6 +1062,10 @@ function activate(context) {
       writeTestSignal('error', String(error && error.stack || error));
       return;
     }
+    if (error && error.message === 'cancelled') {
+      // User dismissed the authentication prompt — nothing to report.
+      return;
+    }
     if (error && error.message === 'no_new_privs') {
       vscode.window.showErrorMessage(localize('messages.noNewPrivs'));
     } else if (error && (error.code === 'EPERM' || error.code === 'EACCES')) {
@@ -1059,8 +1075,8 @@ function activate(context) {
       ).then(retryChoice => {
         if (retryChoice) retryFn();
       });
-    } else if (error && error.message && error.message.includes('pkexec_missing')) {
-      vscode.window.showErrorMessage(localize('messages.pkexecMissing') + appDir);
+    } else if (error && error.message && error.message.includes('no_elevation_method')) {
+      vscode.window.showErrorMessage(localize('messages.noElevationMethod') + appDir);
     } else if (error && error.message && error.message.includes('Elevation failed')) {
       vscode.window.showErrorMessage(localize('messages.elevationFailed') + error.message + ". Click here for more info: [Known Errors](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/known-errors.md)");
     } else {
