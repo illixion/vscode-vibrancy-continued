@@ -660,14 +660,21 @@ function activate(context) {
     }
   }
 
-  async function installJS(writer) {
+  /**
+   * Inject the vibrancy runtime bootstrap into the workbench main.js.
+   *
+   * `baseJS` overrides the on-disk content, so a caller that has already
+   * patched the same file in memory can fold this transform into that copy
+   * instead of re-reading it (see Install).
+   */
+  async function installJS(writer, baseJS) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
     const themeConfig = require(themeConfigPath);
     const themeStylePath = path.join(__dirname, themeStylePaths[currentTheme]);
     const themeCSS = await fs.readFile(themeStylePath, 'utf-8');
-    const JS = await fs.readFile(JSFile, 'utf-8');
+    const JS = baseJS !== undefined ? baseJS : await fs.readFile(JSFile, 'utf-8');
 
     const imports = await generateImports(config);
 
@@ -738,6 +745,16 @@ function activate(context) {
   }
 
   // BrowserWindow option modification
+  /**
+   * Inject the frameless/transparent BrowserWindow options into Electron's main file.
+   *
+   * Writes through `writer` when given one; pass a falsy writer to get the
+   * patched content back instead, so a caller can fold another transform into
+   * the same buffer (see Install).
+   *
+   * @returns {Promise<string|undefined>} the patched content, or undefined when
+   *   this editor doesn't get window options injected at all.
+   */
   async function modifyElectronJSFile(ElectronJSFile, writer) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
@@ -801,7 +818,8 @@ function activate(context) {
 
     ElectronJS = injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
 
-    await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
+    if (writer) await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
+    return ElectronJS;
   }
 
   async function installHTML(writer) {
@@ -1146,8 +1164,19 @@ function activate(context) {
       } else {
         await installRuntime(writer);
       }
-      await modifyElectronJSFile(ElectronJSFile, writer);
-      await installJS(writer);
+      if (ElectronJSFile === JSFile) {
+        // VSCode 1.95+ merges the Electron main and workbench main into one
+        // main.js, so both patches have to land on a single in-memory copy.
+        // An elevated writer stages its writes to temp files, so re-reading
+        // the file here would return the pristine original and silently drop
+        // the window options — leaving a patched but non-transparent window.
+        // uninstallJS does the same for teardown.
+        const patchedElectronJS = await modifyElectronJSFile(ElectronJSFile, null);
+        await installJS(writer, patchedElectronJS);
+      } else {
+        await modifyElectronJSFile(ElectronJSFile, writer);
+        await installJS(writer);
+      }
       await installHTML(writer);
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
