@@ -1,3 +1,9 @@
+# 1.1.88
+
+* Core:
+  * Fix `windowMode` changes not taking effect on a plain "Enable Vibrancy" (only "Reload Vibrancy" cleared old window options before): switching to `framed` could leave the window borderless and transparent, and switching between frameless modes could inject conflicting options
+  * Linux: warn at install time when `windowMode` is `framed` (or the deprecated `disableFramelessWindow` is set), since Linux vibrancy is produced entirely by window transparency and a framed window installs successfully but shows no effect (issue [#268](https://github.com/illixion/vscode-vibrancy-continued/issues/268))
+
 # 1.1.87
 
 * Core:
