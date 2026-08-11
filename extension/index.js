@@ -803,6 +803,15 @@ function activate(context) {
     const frameCtx = { ...platformCtx, windowMode };
     const { frameless, transparent } = resolveWindowMode(frameCtx);
 
+    // Linux has no native vibrancy material — the effect *is* the window's
+    // transparency, which only a frameless window gets. So a framed window
+    // there installs cleanly and then renders nothing at all, with no error
+    // anywhere. macOS and Windows still show vibrancy on an opaque window
+    // (NSVisualEffectView / DWM backdrop), so this only applies here.
+    if (process.platform === 'linux' && !frameless) {
+      vscode.window.showWarningMessage(localize('messages.linuxFramedNoEffect'));
+    }
+
     // On non-VSCode editors, injecting frameless+transparent window options is
     // risky, so we only do it on a list of known working editors.
     if (!knownEditors.includes(vscode.env.appName)) {

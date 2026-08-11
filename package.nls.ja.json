@@ -45,6 +45,7 @@
   "messages.smthingwrong": "問題が発生しました: ",
   "messages.unsupported": "サポート対象外のオペレーティングシステムです。macOS、Linux、または Windows 10/11（x64 / ARM64）をご利用ください。",
   "messages.unsupportedEditor": "サポートされているエディタのリストについては、拡張機能の説明を参照してください。",
+  "messages.linuxFramedNoEffect": "Vibrancy はインストールされていますが、効果が表示されません: ウィンドウモードが 'framed' になっています。Linux では（macOS/Windows のようなネイティブのブラー素材がないため）ビブランシー効果はウィンドウの透明度のみに依存します。`vscode_vibrancy.windowMode` を `auto` に戻すか、非推奨の `disableFramelessWindow` 設定を解除してから、「Vibrancy を再読み込み」を実行してください。",
   "messages.forceFramelessUnsupportedEditor": "このサポート対象外のエディタではフレームレスウィンドウを有効にできません。ここに Vibrancy をインストールするには、「vscode_vibrancy.windowMode」を「auto」または「framed」に設定してください。",
   "messages.admin": "変更の適用に失敗しました，管理者権限でVSCodeを実行してください，詳細については README をご確認ください: ",
   "messages.recommendedColorTheme": "現在の配色テーマは \"%1\" ですが、選択された Vibrancy テーマには \"%2\" を推奨します。",
