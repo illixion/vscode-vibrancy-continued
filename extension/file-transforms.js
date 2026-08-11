@@ -364,7 +364,15 @@ function resolveWindowMode({
  * @returns {string} Modified content
  */
 function injectElectronOptions(electronJS, { frameless, isMacos, transparent = true }) {
-  let result = electronJS;
+  // Clear previously injected options first so the result depends only on the
+  // current settings, not on install history. A plain re-install (Install, not
+  // Update) never runs removeElectronOptions, so without this: switching
+  // windowMode to 'framed' would leave the old frame:false/transparent:true in
+  // place and the window would stay borderless and see-through, and switching
+  // between the two frameless modes would inject a second, conflicting pair
+  // (frame:false,transparent:true,frame:false,transparent:false,…).
+  // It's a no-op on unpatched content.
+  let result = removeElectronOptions(electronJS);
 
   // visualEffectState is a macOS-only Electron option.
   if (isMacos) {

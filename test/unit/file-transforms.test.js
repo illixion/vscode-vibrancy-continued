@@ -302,6 +302,39 @@ describe('injectElectronOptions', () => {
     expect(result).toContain('frame:false,transparent:true');
   });
 
+  // A plain re-install never runs removeElectronOptions, so injectElectronOptions
+  // has to clear stale options itself or changing windowMode does nothing.
+  describe('switching modes on an already-patched file', () => {
+    const patchedTransparent = () =>
+      injectElectronOptions(loadFixture('main-merged.js'), { frameless: true, isMacos: false });
+
+    it('framed strips options left by a previous frameless install', () => {
+      const result = injectElectronOptions(patchedTransparent(), { frameless: false, isMacos: false });
+      expect(result).not.toContain('frame:false');
+      expect(result).toContain('experimentalDarkMode');
+    });
+
+    it('frameless-transparent to frameless leaves exactly one option pair', () => {
+      const result = injectElectronOptions(patchedTransparent(), { frameless: true, isMacos: false, transparent: false });
+      expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
+      expect(result).not.toContain('transparent:true');
+      expect(result.match(/frame:false/g)).toHaveLength(1);
+    });
+
+    it('re-applying the same mode is idempotent', () => {
+      const once = patchedTransparent();
+      const twice = injectElectronOptions(once, { frameless: true, isMacos: false });
+      expect(twice).toBe(once);
+    });
+
+    it('framed on macOS keeps visualEffectState but drops the frame options', () => {
+      const patched = injectElectronOptions(loadFixture('main-merged.js'), { frameless: true, isMacos: true });
+      const result = injectElectronOptions(patched, { frameless: false, isMacos: true });
+      expect(result).toContain('visualEffectState:"active",experimentalDarkMode');
+      expect(result).not.toContain('frame:false');
+    });
+  });
+
   it('injects visualEffectState into assignment-based Cursor window builders', () => {
     const result = injectElectronOptions(cursorWindowBuilder, { frameless: false, isMacos: true });
     expect(result).toContain('u.visualEffectState="active",u.titleBarStyle="hidden"');
