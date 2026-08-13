@@ -34,7 +34,22 @@ Please see [Important notice for Windows users](https://github.com/illixion/vsco
 
 ### Effect doesn't work, but there are no errors
 
-If the vibrancy effect isn't visible but there are no error messages, check the following in order:
+If the vibrancy effect isn't visible but there are no error messages, first check **which patches actually landed**. Vibrancy works by modifying files inside VSCode's own installation, and an install can report success while one of those patches didn't apply. On Linux and macOS, run the diagnostic script:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.sh | bash
+```
+
+It only reads files and changes nothing. Run it with Vibrancy **enabled**, and after fully quitting and reopening VSCode — an in-process reload doesn't re-read the patched files. If your install isn't auto-detected, pass its path, e.g. `bash diagnose.sh /usr/share/code/resources/app/out`.
+
+Two results are worth acting on immediately:
+
+* **`frame:false,transparent:true` is `NO` on Linux** — the window isn't transparent. On Linux the effect comes *entirely* from window transparency (there's no native blur material as on macOS/Windows), so nothing will show. Check `windowMode` under section `2b`: if it's `framed`, set `vscode_vibrancy.windowMode` back to `auto` and run **Enable Vibrancy** again.
+* **`injection anchor present` is `NO`** — your VSCode build isn't one this version knows how to patch. Please [open an issue](https://github.com/illixion/vscode-vibrancy-continued/issues) with the full output and your VSCode version.
+
+Please include the script's full output when opening an issue — it answers most of the questions we'd otherwise have to ask.
+
+If the diagnostic looks correct, check the following in order:
 
 1. **OS-level transparency settings** — Some operating systems allow you to disable all transparency effects globally. Look in Accessibility settings for an option called "Transparency effects," "Reduce transparency," or similar. If this is disabled, enable it and restart VSCode.
 
