@@ -52,6 +52,20 @@ body:
     required: false
 - type: textarea
   attributes:
+    label: Diagnostic output (Linux/macOS)
+    description: |
+      If the effect isn't showing, please run the diagnostic script with Vibrancy **enabled** (and after fully quitting and reopening VSCode) and paste the full output. It only reads files and changes nothing.
+
+      ```sh
+      curl -fsSL https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.sh | bash
+      ```
+
+      This tells us which patches actually landed and usually answers most of our follow-up questions immediately.
+    render: text
+  validations:
+    required: false
+- type: textarea
+  attributes:
     label: Anything else?
     description: |
       Links? References? Anything that will give us more context about the issue you are encountering!
