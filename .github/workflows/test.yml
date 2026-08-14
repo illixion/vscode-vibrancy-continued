@@ -56,6 +56,8 @@ jobs:
         # hsetroot, x11-xserver-utils (see "Install desktop tools" below).
         # Note: the E2E test changes the desktop wallpaper to solid green
         # while running (restored afterwards on macOS/Windows).
+        # windows-11-arm is build-only — it compiles the arm64 native module
+        # but skips the E2E run; see "Run E2E tests (Windows)" for why.
         os: [ubuntu-latest, macos-26, windows-latest, windows-11-arm]
     steps:
       - uses: actions/checkout@v6
@@ -98,8 +100,17 @@ jobs:
       - name: Run E2E tests (macOS)
         if: runner.os == 'macOS'
         run: npm run test:e2e
+      # windows-11-arm builds and uploads the arm64 native module (the package
+      # job needs that artifact) but does not run the E2E tests: its runner
+      # image boots into the Windows OOBE "Choose privacy settings" wizard,
+      # which owns the screen and can't be minimized, and leaves no initialized
+      # user desktop — SystemParametersInfo reports success but the wallpaper
+      # never paints. Verifying transparency requires capturing the screen
+      # behind the window, so there is nothing usable to capture there. (It
+      # passed historically only because the old capture used PrintWindow,
+      # which renders a window's own content and never sees what covers it.)
       - name: Run E2E tests (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.os != 'windows-11-arm'
         run: npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: always()

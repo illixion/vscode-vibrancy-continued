@@ -769,8 +769,11 @@ function captureScreenshot(outputPath, opts = {}) {
   if (process.platform === 'darwin') {
     methods.push(() => execSync(`screencapture -x "${outputPath}"`, { timeout: 10000 }));
   } else if (process.platform === 'linux') {
-    methods.push(() => execSync(`import -window root "${outputPath}"`, { timeout: 10000 }));
-    methods.push(() => execSync(`xwd -root -silent | convert xwd:- png:"${outputPath}"`, { timeout: 10000 }));
+    // png24: forces truecolor out of ImageMagick. Left to itself it stores a
+    // solid-color desktop as a 1-bit palette PNG, which is a legal but unusual
+    // encoding for a screenshot.
+    methods.push(() => execSync(`import -window root png24:"${outputPath}"`, { timeout: 10000 }));
+    methods.push(() => execSync(`xwd -root -silent | convert xwd:- png24:"${outputPath}"`, { timeout: 10000 }));
     methods.push(() => execSync(`scrot "${outputPath}"`, { timeout: 10000 }));
   } else if (process.platform === 'win32') {
     const psPath = outputPath.replace(/'/g, "''");
