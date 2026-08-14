@@ -175,8 +175,17 @@ electron.app.on('browser-window-created', (_, window) => {
   window.webContents.on('dom-ready', () => {
     const currentURL = window.webContents.getURL();
 
+    // Floating editor windows (issue #115) are auxiliary windows opened as
+    // about:blank children of the workbench and populated via DOM calls from
+    // the opener; their container mirrors the main workbench's classes, so the
+    // theme CSS applies as-is. VSCode's main process only permits about:blank
+    // child windows, so this cannot match anything else. The URL reads as ''
+    // until the initial empty document commits, so accept both forms.
+    const isAuxiliaryWindow = currentURL === 'about:blank' || currentURL === '';
+
     if (
       !(
+        isAuxiliaryWindow ||
         currentURL.includes('workbench.html') ||
         currentURL.includes('workbench-monkey-patch.html')
       )
@@ -209,8 +218,14 @@ function injectHTML(window) {
   window.webContents.executeJavaScript(`(function(){
     const vscodeVibrancyTTP = window.trustedTypes.createPolicy("VscodeVibrancyContinued", { createHTML (v) { return v; }});
 
+    // Auxiliary (floating) windows stub document.createElement to throw
+    // (see VSCode's auxiliaryWindowService createContainer), so go through
+    // the prototype. Our containers are inert, so the "instanceof HTMLElement"
+    // concern behind that stub doesn't apply here.
+    const createElement = (tag) => Document.prototype.createElement.call(document, tag);
+
     document.getElementById("vscode-vibrancy-style")?.remove();
-    const styleElement = document.createElement("div");
+    const styleElement = createElement("div");
     styleElement.id = "vscode-vibrancy-style";
     styleElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
     styleHTML()
@@ -218,7 +233,7 @@ function injectHTML(window) {
     document.body.appendChild(styleElement);
 
     document.getElementById("vscode-vibrancy-script")?.remove();
-    const scriptElement = document.createElement("div");
+    const scriptElement = createElement("div");
     scriptElement.id = "vscode-vibrancy-script";
     scriptElement.innerHTML = vscodeVibrancyTTP.createHTML(${JSON.stringify(
     scriptHTML()
