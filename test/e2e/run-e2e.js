@@ -493,6 +493,15 @@ function getVSCodeVersionInfo(cliPath) {
 // --- Desktop setup: green wallpaper (+ compositor on Linux) ---
 
 /**
+ * Block the calling thread. Node allows Atomics.wait on the main thread, which
+ * gives a synchronous sleep without a `sleep`/`Start-Sleep` subprocess (and
+ * without cmd.exe, which has neither).
+ */
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
  * Encode a small solid-color PNG (RGB, no interlace) for use as a wallpaper.
  */
 function solidPng(r, g, b, size = 64) {
@@ -570,7 +579,7 @@ function setupDesktop() {
       }
     }
     // Give openbox/picom a moment to map before anything is captured.
-    try { execSync('sleep 2'); } catch {}
+    sleepSync(2000);
   } else if (process.platform === 'darwin') {
     const pngPath = path.join(os.tmpdir(), 'vibrancy-e2e-green.png');
     fs.writeFileSync(pngPath, solidPng(0, 255, 0));
@@ -720,14 +729,30 @@ function minimizeOtherWindows() {
  * change surfaces immediately; this message is here to make clear that the fix
  * belongs in the harness, not in the extension.
  *
+ * Retries, because setting a wallpaper is asynchronous: macOS tears down the
+ * old picture and repaints on its own schedule, so a capture ~1s after the
+ * osascript call caught a completely black desktop while the change was in
+ * flight (the wallpaper was demonstrably there by the time VSCode launched).
+ *
  * @returns {{ supported: boolean, pct: number|null }}
  */
-function verifyDesktopBaseline(screenshotDir) {
-  minimizeOtherWindows();
+function verifyDesktopBaseline(screenshotDir, attempts = 10) {
   const baselinePath = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-0-desktop.png`);
-  captureScreenshot(baselinePath, { fullScreen: true });
-  const pct = checkPixels(baselinePath, '10', 'green');
-  const supported = pct !== null && pct >= 90.0;
+  let pct = null;
+  let supported = false;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    minimizeOtherWindows();
+    captureScreenshot(baselinePath, { fullScreen: true });
+    pct = checkPixels(baselinePath, '10', 'green');
+    supported = pct !== null && pct >= 90.0;
+    if (supported) break;
+    if (attempt < attempts) {
+      console.log(`  Desktop not green yet (${fmtPct(pct)}) — waiting for the wallpaper to settle (${attempt}/${attempts})`);
+      sleepSync(2000);
+    }
+  }
+
   console.log(`  Desktop baseline green: ${fmtPct(pct)} (${supported ? 'PASS' : 'FAIL'})`);
   if (!supported) {
     console.log('  !! The desktop behind VSCode is not green, so nothing downstream can');
