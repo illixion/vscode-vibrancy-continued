@@ -1,3 +1,8 @@
+# 1.1.90
+
+* Core:
+  * macOS: fix a rare case where the "Restart Visual Studio Code" flow could leave `window.titleBarStyle` stuck on `native`, making the window controls (traffic lights) disappear. The restart prompt works by briefly toggling `window.titleBarStyle`, and a restart, reload, or failed settings write in that moment could persist the wrong value. The toggle now records the original value first, restores it on failure, and any interrupted toggle is automatically repaired on the next launch — one more restart brings the controls back, no manual settings edit needed
+
 # 1.1.89
 
 * Core:
