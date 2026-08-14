@@ -1,0 +1,18 @@
+/*
+ * E2E import beacon — proves the custom-imports CSS pipeline is injected,
+ * independently of window transparency. The solid magenta square at the
+ * window center is checked for by run-e2e.js; nothing in VSCode or the
+ * bundled themes paints magenta, so its presence can only come from this
+ * file having been imported and injected.
+ */
+.monaco-workbench::after {
+  content: '';
+  position: fixed;
+  top: 42%;
+  left: 42%;
+  width: 16%;
+  height: 16%;
+  background: #ff00ff;
+  z-index: 100000;
+  pointer-events: none;
+}

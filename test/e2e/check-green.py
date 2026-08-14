@@ -1,12 +1,21 @@
 """
-Check if a PNG screenshot contains a meaningful amount of green pixels.
-Samples the center region of the image (avoiding OS chrome like dock/taskbar).
+Measure what percentage of a PNG screenshot region matches a target color.
 
-Usage: python3 check-green.py <image.png> [crop_percent]
-  crop_percent: percentage to crop from each edge (default: 15)
+Used by the E2E test to verify *true* vibrancy: the desktop wallpaper is set to
+solid green and the vibrancy type to "transparent", so green pixels inside the
+VSCode window can only come from the desktop showing through the window. A
+solid magenta beacon painted by the custom-imports CSS proves CSS injection
+independently of transparency.
 
-Exit code 0 = enough green found, 1 = not enough green.
-Prints the green pixel percentage to stdout.
+Usage: python3 check-green.py <image.png> [crop_or_region] [color]
+  crop_or_region: either a crop percentage (e.g. "10" = crop 10% from each
+                  edge, the default is 15), or a region as four comma-separated
+                  fractions "x0,y0,x1,y1" of the image size (e.g.
+                  "0.06,0.25,0.14,0.75" for the sidebar strip)
+  color:          "green" (default) or "magenta"
+
+Prints the matching pixel percentage (0-100) to stdout. Exit code 0 on
+success, 2 on error — thresholds are applied by the caller (run-e2e.js).
 """
 
 import sys
@@ -95,19 +104,39 @@ def read_png(filepath):
     return width, height, bpp, rows
 
 
-def check_green(filepath, crop_pct=15):
-    width, height, bpp, rows = read_png(filepath)
+# Color predicates. The green threshold accounts for the theme's translucent
+# layers dimming the wallpaper: Default Dark at opacity 0.15 plus the sidebar's
+# rgba(37,37,38,0.3) leaves the green channel around 160-220 over a solid green
+# desktop, while an opaque dark UI sits near 30 on all channels. Channel
+# dominance (1.5x) rejects grays and whites regardless of brightness.
+def is_green(r, g, b):
+    return g > 60 and g > r * 1.5 and g > b * 1.5
 
-    # Crop to center region to avoid OS chrome (dock, taskbar, etc.)
-    x_margin = int(width * crop_pct / 100)
-    y_margin = int(height * crop_pct / 100)
-    x_start = x_margin
-    x_end = width - x_margin
-    y_start = y_margin
-    y_end = height - y_margin
+def is_magenta(r, g, b):
+    return r > 80 and b > 80 and r > g * 1.5 and b > g * 1.5
+
+PREDICATES = {'green': is_green, 'magenta': is_magenta}
+
+
+def check_pixels(filepath, spec='15', color='green'):
+    width, height, bpp, rows = read_png(filepath)
+    predicate = PREDICATES[color]
+
+    if ',' in spec:
+        # Explicit region as fractions of the image: "x0,y0,x1,y1"
+        fx0, fy0, fx1, fy1 = (float(v) for v in spec.split(','))
+        x_start, x_end = int(width * fx0), int(width * fx1)
+        y_start, y_end = int(height * fy0), int(height * fy1)
+    else:
+        # Crop N% from each edge to avoid OS chrome (menu bar, dock, taskbar)
+        crop_pct = float(spec)
+        x_margin = int(width * crop_pct / 100)
+        y_margin = int(height * crop_pct / 100)
+        x_start, x_end = x_margin, width - x_margin
+        y_start, y_end = y_margin, height - y_margin
 
     total = 0
-    green_count = 0
+    match_count = 0
 
     for y in range(y_start, y_end):
         row = rows[y]
@@ -115,28 +144,25 @@ def check_green(filepath, crop_pct=15):
             offset = x * bpp
             r, g, b = row[offset], row[offset + 1], row[offset + 2]
             total += 1
-            # A pixel is "green" if green channel dominates
-            if g > 80 and g > r * 1.5 and g > b * 1.5:
-                green_count += 1
+            if predicate(r, g, b):
+                match_count += 1
 
-    pct = (green_count / total * 100) if total > 0 else 0
-    return pct
+    return (match_count / total * 100) if total > 0 else 0
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Usage: python3 check-green.py <image.png> [crop_percent]', file=sys.stderr)
+        print('Usage: python3 check-green.py <image.png> [crop_pct|x0,y0,x1,y1] [green|magenta]', file=sys.stderr)
         sys.exit(2)
 
     filepath = sys.argv[1]
-    crop_pct = int(sys.argv[2]) if len(sys.argv) > 2 else 15
+    spec = sys.argv[2] if len(sys.argv) > 2 else '15'
+    color = sys.argv[3] if len(sys.argv) > 3 else 'green'
 
     try:
-        pct = check_green(filepath, crop_pct)
+        pct = check_pixels(filepath, spec, color)
         print(f'{pct:.1f}')
-        # 5% threshold — if more than 5% of the cropped center is green,
-        # vibrancy is likely applied
-        sys.exit(0 if pct >= 5.0 else 1)
+        sys.exit(0)
     except Exception as e:
         print(f'Error: {e}', file=sys.stderr)
         sys.exit(2)

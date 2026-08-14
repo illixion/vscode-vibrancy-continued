@@ -3,16 +3,29 @@
  *
  * Flow:
  *   1. Download VSCode via @vscode/test-electron
- *   2. Install extension via CLI (--install-extension)
- *   3. Create test-mode flag + settings in the vibrancy config dir
- *   4. Launch VSCode — extension activates, detects test mode, auto-installs
- *   5. Wait for extension to write a signal file (success/error)
- *   6. Take screenshot, kill VSCode
- *   7. Relaunch VSCode (post-restart), take second screenshot
- *   8. Report results
+ *   2. Set the desktop wallpaper to solid green (and start a compositor on
+ *      Linux) — with vibrancy type "transparent", green pixels inside the
+ *      VSCode window can only come from the desktop showing THROUGH the
+ *      window, so this verifies real end-to-end transparency rather than just
+ *      CSS injection. (An injection-only check passed right through the
+ *      VSCode 1.133 Modern UI regression, where injected CSS lost to the new
+ *      opaque !important panel backgrounds — issue #269.)
+ *   3. Install extension via CLI (--install-extension)
+ *   4. Create test-mode flag + settings in the vibrancy config dir. Settings
+ *      use the bundled "Default Dark" theme (so the shipped theme CSS is what
+ *      gets tested), force workbench.experimental.modernUI on (so the Modern
+ *      UI opaque backgrounds are exercised even outside the A/B cohort), and
+ *      import a solid magenta "beacon" CSS to prove injection independently.
+ *   5. Launch VSCode — extension activates, detects test mode, auto-installs
+ *   6. Wait for extension to write a signal file (success/error)
+ *   7. Relaunch VSCode (post-restart), screenshot, and verify: green shows
+ *      through the editor AND the sidebar (the region Modern UI painted
+ *      opaque), and the magenta beacon is present
+ *   8. Uninstall, relaunch, verify green/magenta are gone
  *
  * Usage:   node test/e2e/run-e2e.js
  * Linux:   xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node test/e2e/run-e2e.js
+ *          (requires openbox, picom, hsetroot for the transparency check)
  */
 
 const path = require('path');
@@ -35,11 +48,12 @@ async function main() {
   const screenshotDir = path.join(__dirname, '..', 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
-  const greenCssPath = path.join(__dirname, 'test-green.css');
+  const importCssPath = path.join(__dirname, 'test-import.css');
   const configDir = getConfigDir();
   const testModeFile = path.join(configDir, 'test-mode');
   const signalFile = path.join(configDir, 'test-result');
   let userDataDir, tmpWorkspace, vsixPath;
+  let desktopCleanup = null;
 
   try {
     console.log('=== E2E Test: VSCode Vibrancy Continued ===\n');
@@ -58,8 +72,9 @@ async function main() {
     console.log(`  VSCode commit:  ${versionInfo.commit}`);
     console.log(`  VSCode arch:    ${versionInfo.arch}`);
 
-    // --- Step 2: Enable test mode BEFORE extension ever runs ---
-    console.log('\n[2/9] Enabling test mode...');
+    // --- Step 2: Green wallpaper + test mode BEFORE extension ever runs ---
+    console.log('\n[2/9] Preparing desktop (green wallpaper) and test mode...');
+    desktopCleanup = setupDesktop();
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(testModeFile, `e2e-${Date.now()}`);
     try { fs.unlinkSync(signalFile); } catch {}
@@ -71,8 +86,23 @@ async function main() {
     const userSettingsDir = path.join(userDataDir, 'User');
     fs.mkdirSync(userSettingsDir, { recursive: true });
     fs.writeFileSync(path.join(userSettingsDir, 'settings.json'), JSON.stringify({
-      "vscode_vibrancy.theme": "Custom theme (use imports)",
-      "vscode_vibrancy.imports": [greenCssPath],
+      // Test the bundled theme (its CSS carries the Modern UI overrides), with
+      // the see-through "transparent" type so the green wallpaper is visible
+      // through the window — the only way the green checks can pass.
+      "vscode_vibrancy.theme": "Default Dark",
+      "vscode_vibrancy.type": "transparent",
+      // Low backdrop opacity so the wallpaper reads clearly through the html
+      // background layer; the theme's own per-part tints stay in effect.
+      "vscode_vibrancy.opacity": 0.15,
+      // Injection beacon: paints a solid magenta square at the window center.
+      "vscode_vibrancy.imports": [importCssPath],
+      // Force the 1.133+ Modern UI on (it's A/B flighted server-side, default
+      // off in CI) so its opaque !important panel backgrounds are exercised.
+      // Unknown on older VSCode versions, where it's ignored.
+      "workbench.experimental.modernUI": true,
+      // Maximize so screen captures are (almost) all window — region checks
+      // and the post-uninstall "no green" check rely on this.
+      "window.newWindowDimensions": "maximized",
       "workbench.colorTheme": "Default Dark+",
       // Pin dark theme so uninstall restores to dark (not system default which may be light)
       "window.systemColorTheme": "dark",
@@ -154,10 +184,27 @@ async function main() {
     });
     console.log(`  Exit code: ${secondResult.exitCode}`);
 
-    // Check green pixels in the post-restart screenshot
-    const greenPct = checkGreenPixels(screenshot2);
-    const greenOk = greenPct !== null && greenPct >= 5.0;
-    console.log(`  Green pixels: ${greenPct !== null ? greenPct.toFixed(1) + '%' : 'check failed'} (${greenOk ? 'PASS' : 'FAIL'})`);
+    // True-transparency checks on the post-restart screenshot. Green comes
+    // exclusively from the wallpaper behind the window, so each region proves
+    // the window is actually see-through there.
+    //
+    //  - center crop: overall transparency (mostly editor area)
+    //  - left strip (x 6-14%, y 25-75%): the sidebar — the region VSCode
+    //    1.133's Modern UI painted opaque (#269); would pass an editor-only
+    //    transparency but catch opaque panels
+    //  - window center: the magenta beacon from test-import.css — proves the
+    //    custom-imports CSS was injected, independent of transparency
+    const SIDEBAR_REGION = '0.06,0.25,0.14,0.75';
+    const BEACON_REGION = '0.45,0.45,0.55,0.55';
+    const greenPct = checkPixels(screenshot2, '10', 'green');
+    const greenOk = greenPct !== null && greenPct >= 30.0;
+    console.log(`  Green through window (center): ${fmtPct(greenPct)} (${greenOk ? 'PASS' : 'FAIL'})`);
+    const sidebarPct = checkPixels(screenshot2, SIDEBAR_REGION, 'green');
+    const sidebarOk = sidebarPct !== null && sidebarPct >= 50.0;
+    console.log(`  Green through sidebar: ${fmtPct(sidebarPct)} (${sidebarOk ? 'PASS' : 'FAIL'})`);
+    const beaconPct = checkPixels(screenshot2, BEACON_REGION, 'magenta');
+    const beaconOk = beaconPct !== null && beaconPct >= 60.0;
+    console.log(`  Import beacon (magenta): ${fmtPct(beaconPct)} (${beaconOk ? 'PASS' : 'FAIL'})`);
 
     // --- Step 7: Request uninstall ---
     console.log('\n[7/9] Third launch (uninstall vibrancy)...');
@@ -197,10 +244,15 @@ async function main() {
     });
     console.log(`  Exit code: ${fourthResult.exitCode}`);
 
-    // Verify green is gone after uninstall
-    const postUninstallGreen = checkGreenPixels(screenshot4);
-    const uninstallClean = postUninstallGreen === null || postUninstallGreen < 5.0;
-    console.log(`  Green pixels after uninstall: ${postUninstallGreen !== null ? postUninstallGreen.toFixed(1) + '%' : 'check failed'} (${uninstallClean ? 'PASS' : 'FAIL'})`);
+    // Verify transparency and the injected beacon are gone after uninstall.
+    // The wallpaper is still green, so this also proves the window is opaque
+    // again (a maximized opaque window leaves no wallpaper in the crop).
+    const postUninstallGreen = checkPixels(screenshot4, '10', 'green');
+    const postUninstallBeacon = checkPixels(screenshot4, BEACON_REGION, 'magenta');
+    const uninstallClean =
+      (postUninstallGreen === null || postUninstallGreen < 5.0) &&
+      (postUninstallBeacon === null || postUninstallBeacon < 5.0);
+    console.log(`  Green after uninstall: ${fmtPct(postUninstallGreen)}, beacon: ${fmtPct(postUninstallBeacon)} (${uninstallClean ? 'PASS' : 'FAIL'})`);
 
     // --- Step 9: Results ---
     console.log('\n[9/9] Results:');
@@ -210,26 +262,30 @@ async function main() {
     const uninstallOk = thirdResult.signal && thirdResult.signal.status === 'uninstalled';
     const uninstallSettingsOk = uninstallSettingsCheck.ok;
     const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
-    const success = installOk && nocrash && greenOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
+    const success = installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
 
     console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-install crash: ${nocrash ? 'PASS' : 'FAIL'}`);
-    console.log(`  Green visible: ${greenOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Transparency (center): ${greenOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Transparency (sidebar): ${sidebarOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  CSS import beacon: ${beaconOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Settings after install: ${installSettingsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Uninstall signal: ${uninstallOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Settings after uninstall: ${uninstallSettingsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-uninstall crash: ${postUninstallNocrash ? 'PASS' : 'FAIL'}`);
-    console.log(`  Green removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
+    console.log(`  Vibrancy removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
     console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
 
     writeGitHubSummary(success, screenshot2, {
-      installOk, nocrash, greenOk, greenPct, installSettingsOk,
-      uninstallOk, uninstallSettingsOk, postUninstallNocrash, uninstallClean, postUninstallGreen,
+      installOk, nocrash, greenOk, greenPct, sidebarOk, sidebarPct, beaconOk, beaconPct,
+      installSettingsOk, uninstallOk, uninstallSettingsOk, postUninstallNocrash,
+      uninstallClean, postUninstallGreen, postUninstallBeacon,
     }, { vscodeVersion, versionInfo });
 
     process.exit(success ? 0 : 1);
 
   } finally {
+    try { if (desktopCleanup) desktopCleanup(); } catch {}
     try { fs.unlinkSync(testModeFile); } catch {}
     try { fs.unlinkSync(signalFile); } catch {}
     try { fs.unlinkSync(path.join(configDir, 'test-uninstall')); } catch {}
@@ -305,8 +361,6 @@ function launchAndWaitForSignal(executablePath, userDataDir, extensionsDir, work
     if (screenshotDelay && screenshotPath) {
       setTimeout(() => {
         if (!exited) {
-          // No special pre-screenshot action needed — on Windows we capture
-          // the VSCode window directly via PrintWindow (not the whole screen)
           console.log('  Capturing screenshot...');
           captureScreenshot(screenshotPath);
         }
@@ -420,6 +474,144 @@ function getVSCodeVersionInfo(cliPath) {
   }
 }
 
+// --- Desktop setup: green wallpaper (+ compositor on Linux) ---
+
+/**
+ * Encode a small solid-color PNG (RGB, no interlace) for use as a wallpaper.
+ */
+function solidPng(r, g, b, size = 64) {
+  const zlib = require('zlib');
+  const chunk = (type, data) => {
+    const typeBuf = Buffer.from(type, 'ascii');
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(zlib.crc32(Buffer.concat([typeBuf, data])) >>> 0);
+    return Buffer.concat([len, typeBuf, data, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8;  // bit depth
+  ihdr[9] = 2;  // color type: RGB
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(size * 3).fill(Buffer.from([r, g, b]))]);
+  const raw = Buffer.concat(Array(size).fill(row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+const SET_WALLPAPER_PS = (imagePath) => [
+  `Add-Type @"`,
+  `using System.Runtime.InteropServices;`,
+  `public class WallpaperSetter {`,
+  `    [DllImport("user32.dll", SetLastError = true)]`,
+  `    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);`,
+  `}`,
+  `"@`,
+  // 20 = SPI_SETDESKWALLPAPER, 3 = SPIF_UPDATEINIFILE | SPIF_SENDCHANGE
+  `$r = [WallpaperSetter]::SystemParametersInfo(20, 0, '${imagePath.replace(/'/g, "''")}', 3)`,
+  `if ($r -eq 0) { throw "SystemParametersInfo failed" }`,
+].join('\r\n');
+
+/**
+ * Make the desktop behind the VSCode window solid green so transparency is
+ * measurable, and (on Linux) start a window manager + compositor — X11 shows
+ * nothing through a transparent window without a compositing manager, and
+ * window.newWindowDimensions=maximized needs a WM to honor it.
+ *
+ * Returns a cleanup function that restores the previous wallpaper (macOS,
+ * Windows) and stops the spawned processes (Linux).
+ */
+function setupDesktop() {
+  const cleanup = [];
+
+  if (process.platform === 'linux') {
+    for (const [cmd, args] of [['openbox', []], ['picom', ['--backend', 'xrender']]]) {
+      try {
+        const proc = spawn(cmd, args, { stdio: 'ignore' });
+        proc.on('error', (err) => console.log(`  ${cmd} failed to start: ${err.message}`));
+        cleanup.push(() => { try { proc.kill('SIGTERM'); } catch {} });
+        console.log(`  Started ${cmd} (pid ${proc.pid})`);
+      } catch (err) {
+        console.log(`  ${cmd} unavailable: ${err.message}`);
+      }
+    }
+    // hsetroot sets the root pixmap atoms compositors read for the wallpaper;
+    // xsetroot only recolors the root window (fine without a compositor).
+    try {
+      execSync('hsetroot -solid "#00FF00"', { timeout: 10000 });
+      console.log('  Wallpaper set via hsetroot');
+    } catch {
+      try {
+        execSync('xsetroot -solid "#00FF00"', { timeout: 10000 });
+        console.log('  Wallpaper set via xsetroot (hsetroot unavailable)');
+      } catch (err) {
+        console.log(`  Failed to set root color: ${err.message.split('\n')[0]}`);
+      }
+    }
+  } else if (process.platform === 'darwin') {
+    const pngPath = path.join(os.tmpdir(), 'vibrancy-e2e-green.png');
+    fs.writeFileSync(pngPath, solidPng(0, 255, 0));
+    let previous = null;
+    try {
+      previous = execSync(
+        `osascript -e 'tell application "System Events" to get picture of first desktop'`,
+        { encoding: 'utf-8', timeout: 15000 }
+      ).trim();
+    } catch {}
+    try {
+      execSync(
+        `osascript -e 'tell application "System Events" to set picture of every desktop to "${pngPath}"'`,
+        { timeout: 15000 }
+      );
+      console.log(`  Wallpaper set to ${pngPath}`);
+      if (previous) {
+        cleanup.push(() => {
+          try {
+            execSync(
+              `osascript -e 'tell application "System Events" to set picture of every desktop to "${previous.replace(/"/g, '\\"')}"'`,
+              { timeout: 15000 }
+            );
+          } catch {}
+        });
+      }
+    } catch (err) {
+      console.log(`  Failed to set wallpaper: ${err.message.split('\n')[0]}`);
+    }
+    cleanup.push(() => { try { fs.unlinkSync(pngPath); } catch {} });
+  } else if (process.platform === 'win32') {
+    const bmpPath = path.join(os.tmpdir(), 'vibrancy-e2e-green.bmp');
+    let previous = null;
+    try {
+      previous = runPsScript(`(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop').WallPaper`).trim();
+    } catch {}
+    try {
+      runPsScript([
+        `Add-Type -AssemblyName System.Drawing`,
+        `$bmp = New-Object System.Drawing.Bitmap(64, 64)`,
+        `$gfx = [System.Drawing.Graphics]::FromImage($bmp)`,
+        `$gfx.Clear([System.Drawing.Color]::FromArgb(0, 255, 0))`,
+        `$bmp.Save('${bmpPath.replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Bmp)`,
+        `$gfx.Dispose(); $bmp.Dispose()`,
+      ].join('\r\n'));
+      runPsScript(SET_WALLPAPER_PS(bmpPath));
+      console.log(`  Wallpaper set to ${bmpPath}`);
+      if (previous) {
+        cleanup.push(() => { try { runPsScript(SET_WALLPAPER_PS(previous)); } catch {} });
+      }
+    } catch (err) {
+      console.log(`  Failed to set wallpaper: ${err.message.split('\n')[0]}`);
+    }
+    cleanup.push(() => { try { fs.unlinkSync(bmpPath); } catch {} });
+  }
+
+  return () => { for (const fn of cleanup.reverse()) fn(); };
+}
+
 // --- Screenshot capture ---
 
 /**
@@ -450,37 +642,37 @@ function captureScreenshot(outputPath) {
   } else if (process.platform === 'win32') {
     const psPath = outputPath.replace(/'/g, "''");
 
-    // Method 1: Capture just the VSCode window via PrintWindow — avoids
-    // Start Menu, WSL terminal, or any other window covering it
+    // Method 1: Bring the VSCode window to the foreground and capture its
+    // screen rect via CopyFromScreen. This MUST be a screen capture, not
+    // PrintWindow: PrintWindow renders only the window's own content, so a
+    // transparent window comes out black and the see-through wallpaper check
+    // can never pass. Capturing the window rect (rather than the full screen)
+    // still excludes the taskbar and anything outside the window.
     methods.push(() => runPsScript([
       `Add-Type -AssemblyName System.Drawing`,
-      `Add-Type -ReferencedAssemblies System.Drawing @"`,
+      `Add-Type @"`,
       `using System;`,
       `using System.Runtime.InteropServices;`,
-      `using System.Drawing;`,
-      `using System.Drawing.Imaging;`,
-      `public class WindowCapture {`,
+      `public class WindowLocator {`,
+      `    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);`,
       `    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);`,
-      `    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);`,
       `    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }`,
-      `    public static void Capture(IntPtr hWnd, string path) {`,
-      `        RECT r; GetWindowRect(hWnd, out r);`,
-      `        int w = r.R - r.L, h = r.B - r.T;`,
-      `        if (w <= 0 || h <= 0) throw new Exception("Window " + w + "x" + h);`,
-      `        var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);`,
-      `        var g = Graphics.FromImage(bmp);`,
-      `        PrintWindow(hWnd, g.GetHdc(), 2);`,
-      `        g.ReleaseHdc();`,
-      `        g.Dispose();`,
-      `        bmp.Save(path, ImageFormat.Png);`,
-      `        bmp.Dispose();`,
-      `    }`,
       `}`,
       `"@`,
       `$p = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^Code( - Insiders)?$' -and $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1`,
       `if (-not $p) { throw "No Code process with a visible window" }`,
-      `Write-Host "Capturing Code window (PID $($p.Id), handle $($p.MainWindowHandle))"`,
-      `[WindowCapture]::Capture($p.MainWindowHandle, '${psPath}')`,
+      `Write-Host "Capturing Code window rect (PID $($p.Id), handle $($p.MainWindowHandle))"`,
+      `[WindowLocator]::SetForegroundWindow($p.MainWindowHandle) | Out-Null`,
+      `Start-Sleep -Milliseconds 800`,
+      `$r = New-Object 'WindowLocator+RECT'`,
+      `[WindowLocator]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null`,
+      `$w = $r.R - $r.L; $h = $r.B - $r.T`,
+      `if ($w -le 0 -or $h -le 0) { throw "Window $w x $h" }`,
+      `$bmp = New-Object System.Drawing.Bitmap($w, $h)`,
+      `$gfx = [System.Drawing.Graphics]::FromImage($bmp)`,
+      `$gfx.CopyFromScreen($r.L, $r.T, 0, 0, $bmp.Size)`,
+      `$bmp.Save('${psPath}', [System.Drawing.Imaging.ImageFormat]::Png)`,
+      `$gfx.Dispose(); $bmp.Dispose()`,
     ].join('\r\n')));
 
     // Method 2: Full screen capture as fallback
@@ -513,31 +705,34 @@ function captureScreenshot(outputPath) {
   console.log('  All screenshot methods exhausted');
 }
 
-// --- Green pixel check ---
+// --- Pixel color checks ---
 
 /**
- * Check what percentage of the screenshot center is green.
+ * Measure what percentage of a screenshot region matches a target color.
  * Uses a Python script for cross-platform PNG decoding without native deps.
- * Returns percentage (0-100) or null if the check failed.
+ *
+ * @param {string} screenshotPath
+ * @param {string} spec - Crop percentage ('10') or region fractions ('x0,y0,x1,y1')
+ * @param {string} color - 'green' or 'magenta'
+ * @returns {number|null} percentage (0-100), or null if the check failed
  */
-function checkGreenPixels(screenshotPath) {
+function checkPixels(screenshotPath, spec, color) {
   if (!screenshotPath || !fs.existsSync(screenshotPath)) return null;
   const checkScript = path.join(__dirname, 'check-green.py');
   try {
     const result = execSync(
-      `python3 "${checkScript}" "${screenshotPath}" 10`,
+      `python3 "${checkScript}" "${screenshotPath}" "${spec}" ${color}`,
       { timeout: 30000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
     return parseFloat(result.trim());
   } catch (err) {
-    // Exit code 1 = not enough green (still returns the percentage)
-    if (err.stdout) {
-      const pct = parseFloat(err.stdout.trim());
-      if (!isNaN(pct)) return pct;
-    }
-    console.log(`  Green check error: ${(err.stderr || err.message || '').slice(0, 200)}`);
+    console.log(`  Pixel check error (${color} ${spec}): ${(err.stderr || err.message || '').slice(0, 200)}`);
     return null;
   }
+}
+
+function fmtPct(pct) {
+  return pct !== null ? pct.toFixed(1) + '%' : 'check failed';
 }
 
 // --- Settings verification ---
@@ -660,14 +855,17 @@ function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   md += `| Check | Status |\n`;
   md += `|-------|--------|\n`;
   md += `| Overall | ${chk(success)} ${success ? 'PASS' : 'FAIL'} |\n`;
+  const pct = (v) => v !== null ? v.toFixed(1) + '%' : '?';
   md += `| Install signal | ${chk(checks.installOk)} |\n`;
   md += `| Post-install crash | ${chk(checks.nocrash)} |\n`;
-  md += `| Green visible (${checks.greenPct !== null ? checks.greenPct.toFixed(1) + '%' : '?'}) | ${chk(checks.greenOk)} |\n`;
+  md += `| Transparency: wallpaper through window (${pct(checks.greenPct)}) | ${chk(checks.greenOk)} |\n`;
+  md += `| Transparency: wallpaper through sidebar (${pct(checks.sidebarPct)}) | ${chk(checks.sidebarOk)} |\n`;
+  md += `| CSS import beacon (${pct(checks.beaconPct)}) | ${chk(checks.beaconOk)} |\n`;
   md += `| Settings after install | ${chk(checks.installSettingsOk)} |\n`;
   md += `| Uninstall signal | ${chk(checks.uninstallOk)} |\n`;
   md += `| Settings after uninstall | ${chk(checks.uninstallSettingsOk)} |\n`;
   md += `| Post-uninstall crash | ${chk(checks.postUninstallNocrash)} |\n`;
-  md += `| Green removed (${checks.postUninstallGreen !== null ? checks.postUninstallGreen.toFixed(1) + '%' : '?'}) | ${chk(checks.uninstallClean)} |\n`;
+  md += `| Vibrancy removed (green ${pct(checks.postUninstallGreen)}, beacon ${pct(checks.postUninstallBeacon)}) | ${chk(checks.uninstallClean)} |\n`;
   md += `\n`;
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
