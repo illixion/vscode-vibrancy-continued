@@ -18,6 +18,7 @@ var {
   getConfigDir,
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
+const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
 
 /**
  * @type {(info: string) => string}
@@ -250,7 +251,7 @@ function checkDarkLightMode(theme) {
   }
 }
 
-async function promptRestart(setControlsStyle) {
+async function promptRestart(setControlsStyle, globalState) {
   // Set/remove window.controlsStyle right before quit — deferred to here so it
   // doesn't trigger VSCode's built-in restart prompt during install/uninstall,
   // which would cause an in-process reload and break polkit elevation. On macOS
@@ -370,18 +371,21 @@ async function promptRestart(setControlsStyle) {
       stdio: 'ignore',
     }).unref();
   } else if (process.platform === 'darwin') {
-    // macOS: use VSCode's built-in restart prompt by toggling titleBarStyle
-    const titleBarStyle = vscode.workspace.getConfiguration().get("window.titleBarStyle");
-    await vscode.workspace.getConfiguration().update(
-      "window.titleBarStyle",
-      titleBarStyle === "native" ? "custom" : "native",
-      vscode.ConfigurationTarget.Global
-    );
-    await vscode.workspace.getConfiguration().update(
-      "window.titleBarStyle",
-      titleBarStyle,
-      vscode.ConfigurationTarget.Global
-    );
+    // macOS: use VSCode's built-in restart prompt by toggling titleBarStyle.
+    // The toggle briefly persists the flipped value, so the sequencing lives
+    // in mac-restart-toggle.js: the original is recorded in globalState
+    // before the first write and any interrupted toggle is healed on the
+    // next activation — otherwise a stranded "native" hides the window
+    // controls with no obvious user-facing fix.
+    const config = vscode.workspace.getConfiguration();
+    await toggleTitleBarForRestartPrompt({
+      settingsStore: {
+        inspect: (key) => config.inspect(key),
+        get: (key) => config.get(key),
+        update: (key, value) => config.update(key, value, vscode.ConfigurationTarget.Global),
+      },
+      globalState,
+    });
     return;
   } else {
     // Linux: use setsid + nohup to fully detach from VSCode's process tree
@@ -902,7 +906,7 @@ function activate(context) {
     }
     vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
-        msg && promptRestart(true);
+        msg && promptRestart(true, context.globalState);
       });
   }
 
@@ -910,7 +914,7 @@ function activate(context) {
     if (testMode) return;
     vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
       .then(function (msg) {
-        msg && promptRestart(false);
+        msg && promptRestart(false, context.globalState);
       });
   }
 
@@ -1427,6 +1431,24 @@ function activate(context) {
     }).catch((err) => {
       writeTestSignal('error', `Uninstall failed: ${err && err.message || err}`);
     });
+  }
+
+  // Heal a stranded macOS restart toggle: promptRestart briefly persists a
+  // flipped window.titleBarStyle to pop VSCode's built-in restart prompt, and
+  // an interruption (quit/reload mid-toggle, failed restore write) can leave
+  // the flipped value behind — hiding the window controls with no obvious
+  // user-facing fix. Restoring here re-pops VSCode's restart prompt, so one
+  // more restart puts the controls back without any manual settings surgery.
+  if (process.platform === 'darwin') {
+    const config = vscode.workspace.getConfiguration();
+    healStrandedTitleBarToggle({
+      settingsStore: {
+        inspect: (key) => config.inspect(key),
+        get: (key) => config.get(key),
+        update: (key, value) => config.update(key, value, vscode.ConfigurationTarget.Global),
+      },
+      globalState: context.globalState,
+    }).catch((err) => console.error('Vibrancy: failed to restore window.titleBarStyle:', err));
   }
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
