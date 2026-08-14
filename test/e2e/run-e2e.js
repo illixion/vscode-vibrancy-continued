@@ -10,6 +10,10 @@
  *      CSS injection. (An injection-only check passed right through the
  *      VSCode 1.133 Modern UI regression, where injected CSS lost to the new
  *      opaque !important panel backgrounds — issue #269.)
+ *      A baseline capture then confirms the desktop really is green, and fails
+ *      the run if not — an unusable desktop makes every downstream
+ *      transparency check meaningless, and skipping would silently drop the
+ *      coverage instead of telling anyone (see verifyDesktopBaseline).
  *   3. Install extension via CLI (--install-extension)
  *   4. Create test-mode flag + settings in the vibrancy config dir. Settings
  *      use the bundled "Default Dark" theme (so the shipped theme CSS is what
@@ -75,6 +79,7 @@ async function main() {
     // --- Step 2: Green wallpaper + test mode BEFORE extension ever runs ---
     console.log('\n[2/9] Preparing desktop (green wallpaper) and test mode...');
     desktopCleanup = setupDesktop();
+    const baseline = verifyDesktopBaseline(screenshotDir);
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(testModeFile, `e2e-${Date.now()}`);
     try { fs.unlinkSync(signalFile); } catch {}
@@ -192,19 +197,21 @@ async function main() {
     //  - left strip (x 6-14%, y 25-75%): the sidebar — the region VSCode
     //    1.133's Modern UI painted opaque (#269); would pass an editor-only
     //    transparency but catch opaque panels
-    //  - window center: the magenta beacon from test-import.css — proves the
+    //  - whole capture: the magenta frame from test-import.css — proves the
     //    custom-imports CSS was injected, independent of transparency
     const SIDEBAR_REGION = '0.06,0.25,0.14,0.75';
-    const BEACON_REGION = '0.45,0.45,0.55,0.55';
     const greenPct = checkPixels(screenshot2, '10', 'green');
     const greenOk = greenPct !== null && greenPct >= 30.0;
     console.log(`  Green through window (center): ${fmtPct(greenPct)} (${greenOk ? 'PASS' : 'FAIL'})`);
     const sidebarPct = checkPixels(screenshot2, SIDEBAR_REGION, 'green');
     const sidebarOk = sidebarPct !== null && sidebarPct >= 50.0;
     console.log(`  Green through sidebar: ${fmtPct(sidebarPct)} (${sidebarOk ? 'PASS' : 'FAIL'})`);
-    const beaconPct = checkPixels(screenshot2, BEACON_REGION, 'magenta');
-    const beaconOk = beaconPct !== null && beaconPct >= 60.0;
-    console.log(`  Import beacon (magenta): ${fmtPct(beaconPct)} (${beaconOk ? 'PASS' : 'FAIL'})`);
+    // The beacon frame hugs the window edges, so measure the whole capture
+    // rather than a region: a modal dialog can cover part of the frame but
+    // never all of it. ~5-8% of the capture is frame when it renders.
+    const beaconPct = checkPixels(screenshot2, '0', 'magenta');
+    const beaconOk = beaconPct !== null && beaconPct >= 1.5;
+    console.log(`  Import beacon (magenta frame): ${fmtPct(beaconPct)} (${beaconOk ? 'PASS' : 'FAIL'})`);
 
     // --- Step 7: Request uninstall ---
     console.log('\n[7/9] Third launch (uninstall vibrancy)...');
@@ -248,10 +255,10 @@ async function main() {
     // The wallpaper is still green, so this also proves the window is opaque
     // again (a maximized opaque window leaves no wallpaper in the crop).
     const postUninstallGreen = checkPixels(screenshot4, '10', 'green');
-    const postUninstallBeacon = checkPixels(screenshot4, BEACON_REGION, 'magenta');
+    const postUninstallBeacon = checkPixels(screenshot4, '0', 'magenta');
     const uninstallClean =
       (postUninstallGreen === null || postUninstallGreen < 5.0) &&
-      (postUninstallBeacon === null || postUninstallBeacon < 5.0);
+      (postUninstallBeacon === null || postUninstallBeacon < 0.5);
     console.log(`  Green after uninstall: ${fmtPct(postUninstallGreen)}, beacon: ${fmtPct(postUninstallBeacon)} (${uninstallClean ? 'PASS' : 'FAIL'})`);
 
     // --- Step 9: Results ---
@@ -262,8 +269,9 @@ async function main() {
     const uninstallOk = thirdResult.signal && thirdResult.signal.status === 'uninstalled';
     const uninstallSettingsOk = uninstallSettingsCheck.ok;
     const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
-    const success = installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
+    const success = baseline.supported && installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
 
+    console.log(`  Desktop baseline: ${baseline.supported ? 'PASS' : 'FAIL'}`);
     console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-install crash: ${nocrash ? 'PASS' : 'FAIL'}`);
     console.log(`  Transparency (center): ${greenOk ? 'PASS' : 'FAIL'}`);
@@ -276,10 +284,18 @@ async function main() {
     console.log(`  Vibrancy removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
     console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
 
+    if (!baseline.supported) {
+      console.log('');
+      console.log('  ^ ENVIRONMENT FAILURE, not a vibrancy regression: the desktop behind');
+      console.log(`  ^ VSCode was only ${fmtPct(baseline.pct)} green, so the transparency checks above`);
+      console.log('  ^ could not measure anything. Fix the harness, not the extension.');
+    }
+
     writeGitHubSummary(success, screenshot2, {
       installOk, nocrash, greenOk, greenPct, sidebarOk, sidebarPct, beaconOk, beaconPct,
       installSettingsOk, uninstallOk, uninstallSettingsOk, postUninstallNocrash,
       uninstallClean, postUninstallGreen, postUninstallBeacon,
+      baselineSupported: baseline.supported, baselinePct: baseline.pct,
     }, { vscodeVersion, versionInfo });
 
     process.exit(success ? 0 : 1);
@@ -553,6 +569,8 @@ function setupDesktop() {
         console.log(`  Failed to set root color: ${err.message.split('\n')[0]}`);
       }
     }
+    // Give openbox/picom a moment to map before anything is captured.
+    try { execSync('sleep 2'); } catch {}
   } else if (process.platform === 'darwin') {
     const pngPath = path.join(os.tmpdir(), 'vibrancy-e2e-green.png');
     fs.writeFileSync(pngPath, solidPng(0, 255, 0));
@@ -590,13 +608,24 @@ function setupDesktop() {
       previous = runPsScript(`(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop').WallPaper`).trim();
     } catch {}
     try {
+      // Write a screen-sized 24bpp BMP rather than a small 32bpp one: some
+      // Windows builds refuse a 32bpp wallpaper outright, and a tiny image is
+      // subject to the user's tile/center/fill style (an arm64 runner kept its
+      // default wallpaper this way). Setting the style explicitly and matching
+      // the screen size removes both variables.
       runPsScript([
         `Add-Type -AssemblyName System.Drawing`,
-        `$bmp = New-Object System.Drawing.Bitmap(64, 64)`,
+        `Add-Type -AssemblyName System.Windows.Forms`,
+        `$b = [System.Windows.Forms.SystemInformation]::VirtualScreen`,
+        `$w = [Math]::Max($b.Width, 640); $h = [Math]::Max($b.Height, 480)`,
+        `$bmp = New-Object System.Drawing.Bitmap($w, $h, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)`,
         `$gfx = [System.Drawing.Graphics]::FromImage($bmp)`,
         `$gfx.Clear([System.Drawing.Color]::FromArgb(0, 255, 0))`,
         `$bmp.Save('${bmpPath.replace(/'/g, "''")}', [System.Drawing.Imaging.ImageFormat]::Bmp)`,
         `$gfx.Dispose(); $bmp.Dispose()`,
+        `Set-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name WallpaperStyle -Value '10'`,
+        `Set-ItemProperty 'HKCU:\\Control Panel\\Desktop' -Name TileWallpaper -Value '0'`,
+        `Write-Host "Wallpaper bitmap: ${'$'}w x ${'$'}h"`,
       ].join('\r\n'));
       runPsScript(SET_WALLPAPER_PS(bmpPath));
       console.log(`  Wallpaper set to ${bmpPath}`);
@@ -610,6 +639,105 @@ function setupDesktop() {
   }
 
   return () => { for (const fn of cleanup.reverse()) fn(); };
+}
+
+/**
+ * Windows only: minimize every visible top-level window that doesn't belong to
+ * VSCode, then raise VSCode.
+ *
+ * Without this the check measures the wrong thing entirely. A transparent
+ * window shows whatever is *behind* it, and on hosted runners that is not the
+ * desktop: the x64 runner keeps the Actions agent console maximized behind
+ * VSCode (so the "see-through" pixels were black console text, reading as 0%
+ * green even though transparency worked perfectly), and the arm64 runner puts
+ * the Windows OOBE privacy wizard on top of everything.
+ *
+ * Shell windows (Progman/WorkerW/Shell_TrayWnd) are skipped — Progman *is* the
+ * desktop, and minimizing the taskbar isn't useful. VSCode is matched by PID so
+ * its dialogs and secondary windows are left alone too.
+ */
+function minimizeOtherWindows() {
+  if (process.platform !== 'win32') return;
+  try {
+    const out = runPsScript([
+      `Add-Type @"`,
+      `using System;`,
+      `using System.Text;`,
+      `using System.Runtime.InteropServices;`,
+      `public class WinMgr {`,
+      `    public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);`,
+      `    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr lParam);`,
+      `    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);`,
+      `    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);`,
+      `    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);`,
+      `    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, StringBuilder s, int max);`,
+      `    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);`,
+      `    public static string ClassOf(IntPtr h) { var sb = new StringBuilder(256); GetClassName(h, sb, 256); return sb.ToString(); }`,
+      `}`,
+      `"@`,
+      // Only the shell itself is exempt. UWP window classes are deliberately
+      // NOT skipped — the arm64 runner's OOBE privacy wizard is one.
+      `$skipClasses = @('Progman', 'WorkerW', 'Shell_TrayWnd')`,
+      `$codeProcs = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^Code( - Insiders)?$' })`,
+      `$codePids = @($codeProcs | ForEach-Object { $_.Id })`,
+      `$targets = New-Object System.Collections.ArrayList`,
+      `$cb = [WinMgr+EnumProc]{ param($h, $l)`,
+      `  if ([WinMgr]::IsWindowVisible($h)) {`,
+      `    $cls = [WinMgr]::ClassOf($h)`,
+      `    if ($skipClasses -notcontains $cls) {`,
+      `      $owner = 0`,
+      `      [WinMgr]::GetWindowThreadProcessId($h, [ref]$owner) | Out-Null`,
+      `      if ($codePids -notcontains [int]$owner) { [void]$targets.Add($h) }`,
+      `    }`,
+      `  }`,
+      `  return $true`,
+      `}`,
+      `[WinMgr]::EnumWindows($cb, [IntPtr]::Zero) | Out-Null`,
+      // 6 = SW_MINIMIZE
+      `foreach ($t in $targets) { [WinMgr]::ShowWindow($t, 6) | Out-Null }`,
+      `Write-Host "Minimized $($targets.Count) non-VSCode window(s)"`,
+      `$main = $codeProcs | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero } | Select-Object -First 1`,
+      `if ($main) { [WinMgr]::SetForegroundWindow($main.MainWindowHandle) | Out-Null }`,
+      `Start-Sleep -Milliseconds 600`,
+    ].join('\r\n'));
+    if (out && out.trim()) console.log(`  ${out.trim()}`);
+  } catch (err) {
+    console.log(`  Could not minimize other windows: ${(err.message || '').split('\n')[0]}`);
+  }
+}
+
+/**
+ * Confirm the desktop really is green before the transparency checks depend on
+ * it. Runs with no VSCode open, so the capture should be almost entirely
+ * wallpaper.
+ *
+ * This is a check in its own right, and a failing one fails the run. If a
+ * runner can't give us a green desktop (wallpaper API refused, an OOBE wizard
+ * covering the screen), the transparency checks downstream are measuring the
+ * environment rather than the product — but silently skipping them would
+ * quietly delete the coverage that catches regressions like #269, and a green
+ * CI run is exactly when nobody looks. Failing loudly means a runner-image
+ * change surfaces immediately; this message is here to make clear that the fix
+ * belongs in the harness, not in the extension.
+ *
+ * @returns {{ supported: boolean, pct: number|null }}
+ */
+function verifyDesktopBaseline(screenshotDir) {
+  minimizeOtherWindows();
+  const baselinePath = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-0-desktop.png`);
+  captureScreenshot(baselinePath, { fullScreen: true });
+  const pct = checkPixels(baselinePath, '10', 'green');
+  const supported = pct !== null && pct >= 90.0;
+  console.log(`  Desktop baseline green: ${fmtPct(pct)} (${supported ? 'PASS' : 'FAIL'})`);
+  if (!supported) {
+    console.log('  !! The desktop behind VSCode is not green, so nothing downstream can');
+    console.log('  !! attribute see-through pixels to vibrancy. This is an ENVIRONMENT');
+    console.log('  !! failure, not a vibrancy regression — the runner could not provide');
+    console.log('  !! a clean green desktop. Check the *-0-desktop.png artifact: expect a');
+    console.log('  !! new wallpaper API restriction, or a window this harness failed to');
+    console.log('  !! minimize (a setup wizard, an installer, an agent console).');
+  }
+  return { supported, pct };
 }
 
 // --- Screenshot capture ---
@@ -630,8 +758,13 @@ function runPsScript(script) {
   }
 }
 
-function captureScreenshot(outputPath) {
+function captureScreenshot(outputPath, opts = {}) {
+  const { fullScreen = false } = opts;
   const methods = [];
+
+  // On Windows, whatever sits behind the transparent window is what the green
+  // check sees, so clear the screen of other windows first.
+  if (process.platform === 'win32' && !fullScreen) minimizeOtherWindows();
 
   if (process.platform === 'darwin') {
     methods.push(() => execSync(`screencapture -x "${outputPath}"`, { timeout: 10000 }));
@@ -648,7 +781,8 @@ function captureScreenshot(outputPath) {
     // transparent window comes out black and the see-through wallpaper check
     // can never pass. Capturing the window rect (rather than the full screen)
     // still excludes the taskbar and anything outside the window.
-    methods.push(() => runPsScript([
+    // Skipped for the baseline capture, where no VSCode window exists yet.
+    if (!fullScreen) methods.push(() => runPsScript([
       `Add-Type -AssemblyName System.Drawing`,
       `Add-Type @"`,
       `using System;`,
@@ -856,6 +990,7 @@ function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   md += `|-------|--------|\n`;
   md += `| Overall | ${chk(success)} ${success ? 'PASS' : 'FAIL'} |\n`;
   const pct = (v) => v !== null ? v.toFixed(1) + '%' : '?';
+  md += `| Desktop baseline is green (${pct(checks.baselinePct)}) | ${chk(checks.baselineSupported)} |\n`;
   md += `| Install signal | ${chk(checks.installOk)} |\n`;
   md += `| Post-install crash | ${chk(checks.nocrash)} |\n`;
   md += `| Transparency: wallpaper through window (${pct(checks.greenPct)}) | ${chk(checks.greenOk)} |\n`;
@@ -867,6 +1002,15 @@ function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   md += `| Post-uninstall crash | ${chk(checks.postUninstallNocrash)} |\n`;
   md += `| Vibrancy removed (green ${pct(checks.postUninstallGreen)}, beacon ${pct(checks.postUninstallBeacon)}) | ${chk(checks.uninstallClean)} |\n`;
   md += `\n`;
+
+  if (!checks.baselineSupported) {
+    md += `> ⚠️ **This is an environment failure, not a vibrancy regression.** The\n`;
+    md += `> desktop behind VSCode measured only ${pct(checks.baselinePct)} green, so the transparency\n`;
+    md += `> checks could not measure anything — expect a new wallpaper API\n`;
+    md += `> restriction, or a window the harness failed to minimize (setup wizard,\n`;
+    md += `> installer, agent console). Check the \`*-0-desktop.png\` artifact; the fix\n`;
+    md += `> belongs in \`test/e2e/run-e2e.js\`, not in the extension.\n\n`;
+  }
 
   if (screenshotPath && fs.existsSync(screenshotPath)) {
     md += `📸 Screenshots captured — see **screenshots** artifact.\n`;

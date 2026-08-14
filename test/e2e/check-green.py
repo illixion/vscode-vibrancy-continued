@@ -112,8 +112,12 @@ def read_png(filepath):
 def is_green(r, g, b):
     return g > 60 and g > r * 1.5 and g > b * 1.5
 
+# Deliberately strict — near-pure #ff00ff only. The beacon is a solid magenta
+# frame, so it matches easily, while colorful OS chrome that happens to be in
+# the capture (macOS dock icons, Windows taskbar) does not: a loose "pink-ish"
+# predicate put those close to the post-uninstall "beacon is gone" threshold.
 def is_magenta(r, g, b):
-    return r > 80 and b > 80 and r > g * 1.5 and b > g * 1.5
+    return r > 200 and b > 200 and g < 80
 
 PREDICATES = {'green': is_green, 'magenta': is_magenta}
 

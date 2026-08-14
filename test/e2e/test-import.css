@@ -1,18 +1,21 @@
 /*
  * E2E import beacon — proves the custom-imports CSS pipeline is injected,
- * independently of window transparency. The solid magenta square at the
- * window center is checked for by run-e2e.js; nothing in VSCode or the
- * bundled themes paints magenta, so its presence can only come from this
- * file having been imported and injected.
+ * independently of window transparency. run-e2e.js checks the screenshot for
+ * magenta; nothing in VSCode or the bundled themes paints pure magenta, so its
+ * presence can only come from this file having been imported and injected.
+ *
+ * Drawn as a frame around the workbench edges rather than a solid square in
+ * the middle: CI runners routinely throw OS modal dialogs (macOS permission
+ * prompts, the Windows OOBE wizard) into the center of the screen, which would
+ * hide a centered beacon and produce a false failure. A frame can only be
+ * fully hidden by something covering the entire window.
  */
 .monaco-workbench::after {
   content: '';
   position: fixed;
-  top: 42%;
-  left: 42%;
-  width: 16%;
-  height: 16%;
-  background: #ff00ff;
+  inset: 0;
+  border: 16px solid #ff00ff;
+  background: transparent;
   z-index: 100000;
   pointer-events: none;
 }
