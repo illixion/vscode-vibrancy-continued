@@ -1,3 +1,9 @@
+# 1.1.89
+
+* Core:
+  * Fix vibrancy turning opaque under VSCode 1.133's experimental Modern UI (`workbench.experimental.modernUI`, server-side A/B tested). Modern UI repaints the sidebar, panel, auxiliary bar and every pane with higher-specificity `!important` backgrounds; all bundled themes now re-assert their vibrancy backgrounds to match, so editor, sidebar, panel and shell stay translucent whether or not you're in the experiment (issues [#269](https://github.com/illixion/vscode-vibrancy-continued/issues/269), [#270](https://github.com/illixion/vscode-vibrancy-continued/issues/270), [#271](https://github.com/illixion/vscode-vibrancy-continued/issues/271))
+  * Fix floating (tear-out) editor windows never getting vibrancy — they're opened as `about:blank` popups that didn't match the runtime's injection gate, and VSCode also blocks `document.createElement` in these windows in a way that would have broken injection anyway (issue [#115](https://github.com/illixion/vscode-vibrancy-continued/issues/115))
+
 # 1.1.88
 
 * Core:
