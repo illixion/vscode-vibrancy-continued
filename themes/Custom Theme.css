@@ -1,1 +1,23 @@
 /* this is a dummy theme */
+
+/*
+ * VSCode 1.133+ experimental "Modern UI" (workbench.experimental.modernUI) renders the
+ * sidebar, panel and auxiliary bar as floating cards and repaints them and the shell
+ * backdrop with higher-specificity !important backgrounds (floatingPanels.css), turning
+ * the workbench opaque (#269, #270, #271). Re-assert this theme's backgrounds at the
+ * same specificity; this stylesheet is injected after VSCode's, so it wins the tie.
+ */
+.monaco-workbench.floating-panels,
+.monaco-workbench.floating-panels > .monaco-grid-view,
+.monaco-workbench.floating-panels .part.sidebar,
+.monaco-workbench.floating-panels .part.auxiliarybar,
+.monaco-workbench.floating-panels .part.panel {
+  background: transparent !important;
+}
+
+/* Modern UI's companion "style overrides" (.style-override, same experiment) also
+   repaint every pane and pane header with an !important sideBar-background. */
+.monaco-workbench.style-override .monaco-pane-view .pane,
+.monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
+  background: transparent !important;
+}
