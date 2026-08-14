@@ -716,6 +716,18 @@ function minimizeOtherWindows() {
 }
 
 /**
+ * Minimum green share of the bare desktop for the transparency checks to mean
+ * anything. Not higher, because the macOS runner permanently parks a
+ * screen-recording permission prompt in the middle of the screen (the first
+ * `screencapture` call triggers it and nothing dismisses it), which costs
+ * about 17% — a healthy desktop measures ~83% there and ~100% elsewhere. The
+ * failures this needs to catch are not marginal: a desktop that never got
+ * painted measures 0%, so 70% still separates them by a wide margin while
+ * tolerating a couple of stacked modal dialogs.
+ */
+const BASELINE_MIN_GREEN = 70.0;
+
+/**
  * Confirm the desktop really is green before the transparency checks depend on
  * it. Runs with no VSCode open, so the capture should be almost entirely
  * wallpaper.
@@ -745,7 +757,7 @@ function verifyDesktopBaseline(screenshotDir, attempts = 10) {
     minimizeOtherWindows();
     captureScreenshot(baselinePath, { fullScreen: true });
     pct = checkPixels(baselinePath, '10', 'green');
-    supported = pct !== null && pct >= 90.0;
+    supported = pct !== null && pct >= BASELINE_MIN_GREEN;
     if (supported) break;
     if (attempt < attempts) {
       console.log(`  Desktop not green yet (${fmtPct(pct)}) — waiting for the wallpaper to settle (${attempt}/${attempts})`);
