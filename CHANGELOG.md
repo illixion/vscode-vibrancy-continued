@@ -1,3 +1,14 @@
+# 1.1.91
+
+* Core:
+  * Fix sticky scroll being unreadable over the vibrancy. The editor, explorer and panel sticky scroll backgrounds were written at the same opacity as the surfaces around them, but sticky scroll floats on top of the content it pins — so at the macOS default opacity of `0.3` the pinned lines and the code scrolling past behind them were legible on top of each other. Sticky scroll now gets its own opacity floor of `max(opacity, 0.75)`, so it always has enough body to hide what's behind it; if you already run a more opaque vibrancy, your own value is kept (issues [#14](https://github.com/illixion/vscode-vibrancy-continued/issues/14), [#132](https://github.com/illixion/vscode-vibrancy-continued/issues/132), [#152](https://github.com/illixion/vscode-vibrancy-continued/issues/152), [#204](https://github.com/illixion/vscode-vibrancy-continued/issues/204))
+  * Fix the terminal's sticky scroll being invisible: it has no colour of its own and inherited `terminal.background`, which Vibrancy sets to fully transparent
+  * Note: run **Reload Vibrancy** once after updating so the new colour values are written to your settings
+* Themes:
+  * Atom One Dark: drop its hardcoded sticky scroll surface so the widget follows the same opacity floor as every other theme
+* Documentation:
+  * Explain when the effect can't work in full screen. It's a macOS-only limitation — a full-screen window moves to its own Space with no desktop rendered behind it, so there's nothing for the vibrancy to sample. Windows is unaffected. Zen Mode is only caught by this because it enables full screen by default, so `"zenMode.fullScreen": false` keeps the effect on macOS (issues [#47](https://github.com/illixion/vscode-vibrancy-continued/issues/47), [#67](https://github.com/illixion/vscode-vibrancy-continued/issues/67))
+
 # 1.1.90
 
 * Core:
