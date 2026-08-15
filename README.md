@@ -317,6 +317,20 @@ If everything in the diagnostic looks correct, check the following in order:
 
 5. **Reinstall VSCode** — As a last resort, reinstall VSCode. This won't affect your settings or extensions, but ensures your installation is consistent.
 
+### macOS: why does the effect disappear in full screen or Zen Mode?
+
+This is a macOS-specific limitation. Native full screen moves the window to its own Space, and macOS renders no desktop behind it — so the vibrancy material has nothing left to sample and the workbench goes flat. There is nothing the extension can do about it.
+
+**On Windows this doesn't apply** — full screen there is just a borderless window over the desktop, so the wallpaper is still behind it and the effect keeps working. Linux should behave like Windows, since the effect there comes from plain window transparency, though we haven't verified it.
+
+Zen Mode is caught by this only because it turns full screen on by default, not because of anything Zen Mode does itself. If you're on macOS and want Zen Mode with vibrancy intact, turn that off:
+
+```json
+"zenMode.fullScreen": false
+```
+
+Zen Mode then stays in a normal window and keeps the effect, centered layout included. There's no equivalent workaround for actual full screen on macOS — use a maximized window instead.
+
 ### Linux: Why is the background transparent but not blurred?
 
 Currently, we do not support native blur effects on Linux. While transparency can work on its own, blur usually depends on additional support from the system compositor. To achieve a blur effect, use transparent mode together with a compositor such as KWin, Hyprland, or Picom.
