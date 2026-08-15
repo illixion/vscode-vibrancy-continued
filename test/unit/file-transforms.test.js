@@ -17,6 +17,7 @@ const {
   VIBRANCY_END,
   TRANSPARENT_BG_KEYS,
   SEMITRANSPARENT_BG_KEYS,
+  STICKY_SCROLL_BG_KEYS,
   OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
 } = require('../../extension/file-transforms');
@@ -531,14 +532,34 @@ describe('computeTransparentHex', () => {
 
 describe('ALL_VIBRANCY_BG_KEYS', () => {
   it('contains expected number of keys', () => {
-    // 9 transparent + 9 semi-transparent + 8 opaque = 26
-    expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(26);
+    // 8 transparent + 6 semi-transparent + 5 sticky scroll + 8 opaque = 27
+    expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(27);
   });
 
   it('includes key representative keys', () => {
     expect(ALL_VIBRANCY_BG_KEYS).toContain('editor.background');
     expect(ALL_VIBRANCY_BG_KEYS).toContain('sideBar.background');
     expect(ALL_VIBRANCY_BG_KEYS).toContain('editorPane.background');
+    expect(ALL_VIBRANCY_BG_KEYS).toContain('editorStickyScroll.background');
+  });
+
+  it('has no key in more than one bucket', () => {
+    expect(new Set(ALL_VIBRANCY_BG_KEYS).size).toBe(ALL_VIBRANCY_BG_KEYS.length);
+  });
+
+  it('matches the uninstall hook\'s own copy of the key list', () => {
+    // uninstallHook.js runs without the extension host and can't require this
+    // module, so it hardcodes the same list. Drift there means keys left behind
+    // in settings.json after uninstall.
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'extension', 'uninstallHook.js'),
+      'utf-8'
+    );
+    const block = /const vibrancyBgKeys = \[([\s\S]*?)\];/.exec(src);
+    expect(block).not.toBeNull();
+    const hookKeys = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+    expect(new Set(hookKeys)).toEqual(new Set(ALL_VIBRANCY_BG_KEYS));
   });
 });
 
@@ -603,10 +624,53 @@ describe('computeVibrancyColors', () => {
     for (const key of SEMITRANSPARENT_BG_KEYS) {
       expect(result[key]).toBe('#1e1e1e80');
     }
+    // Sticky scroll keys get the legibility floor (0.75) since it beats 0.5
+    for (const key of STICKY_SCROLL_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1ebf');
+    }
     // Opaque keys get 0.9 opacity
     for (const key of OPAQUE_BG_KEYS) {
       expect(result[key]).toBe('#1e1e1ee6');
     }
+  });
+
+  it('never makes sticky scroll more transparent than the floor', () => {
+    // macOS default opacity — sticky scroll would be unreadable at 0.3
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity: 0.3,
+      originalColors: {},
+    });
+
+    expect(result['sideBar.background']).toBe('#1e1e1e4d');
+    for (const key of STICKY_SCROLL_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1ebf');
+    }
+  });
+
+  it('keeps the user opacity for sticky scroll when it is above the floor', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity: 0.95,
+      originalColors: {},
+    });
+
+    // 0.95 * 255 = 242 -> 0xf2
+    for (const key of STICKY_SCROLL_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1ef2');
+    }
+  });
+
+  it('uses user original color for sticky scroll keys', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {
+        'editorStickyScroll.background': '#fdf6e3',
+      },
+    });
+
+    expect(result['editorStickyScroll.background']).toBe('#fdf6e3bf');
   });
 
   it('uses user original color when available', () => {

@@ -504,6 +504,10 @@ function computeVibrancyColors({ themeBackground, opacity, originalColors = {} }
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
     result[key] = computeTransparentHex(base, opacity);
   }
+  for (const key of STICKY_SCROLL_BG_KEYS) {
+    const base = extractBaseColor(originalColors[key]) ?? themeBackground;
+    result[key] = computeTransparentHex(base, Math.max(opacity, STICKY_SCROLL_MIN_OPACITY));
+  }
   for (const key of OPAQUE_BG_KEYS) {
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
     result[key] = computeTransparentHex(base, 0.9);
@@ -520,7 +524,6 @@ const TRANSPARENT_BG_KEYS = [
   "breadcrumb.background",
   "editorGutter.background",
   "panel.background",
-  "panelStickyScroll.background",
   "tab.activeBackground",
   "tab.unfocusedActiveBackground",
 ];
@@ -528,13 +531,31 @@ const TRANSPARENT_BG_KEYS = [
 const SEMITRANSPARENT_BG_KEYS = [
   "sideBar.background",
   "sideBarTitle.background",
-  "sideBarStickyScroll.background",
   "activityBar.background",
   "editor.background",
-  "editorStickyScroll.background",
-  "editorStickyScrollGutter.background",
   "tab.inactiveBackground",
   "tab.unfocusedInactiveBackground",
+];
+
+/**
+ * Sticky scroll floats on top of the content it pins — the pinned editor lines
+ * sit over the code that scrolled past them, and the pinned tree rows sit over
+ * the rows below them. At the surrounding surface's opacity that content shows
+ * straight through and neither is readable (issues #14, #132, #152, #204), so
+ * these get a legibility floor instead. A user who has already chosen a more
+ * opaque vibrancy keeps their own value.
+ *
+ * terminalStickyScroll.background is included because it otherwise inherits
+ * terminal.background, which vibrancy sets to fully transparent.
+ */
+const STICKY_SCROLL_MIN_OPACITY = 0.75;
+
+const STICKY_SCROLL_BG_KEYS = [
+  "editorStickyScroll.background",
+  "editorStickyScrollGutter.background",
+  "sideBarStickyScroll.background",
+  "panelStickyScroll.background",
+  "terminalStickyScroll.background",
 ];
 
 const OPAQUE_BG_KEYS = [
@@ -548,7 +569,12 @@ const OPAQUE_BG_KEYS = [
   "quickInput.background",
 ];
 
-const ALL_VIBRANCY_BG_KEYS = [...TRANSPARENT_BG_KEYS, ...SEMITRANSPARENT_BG_KEYS, ...OPAQUE_BG_KEYS];
+const ALL_VIBRANCY_BG_KEYS = [
+  ...TRANSPARENT_BG_KEYS,
+  ...SEMITRANSPARENT_BG_KEYS,
+  ...STICKY_SCROLL_BG_KEYS,
+  ...OPAQUE_BG_KEYS,
+];
 
 module.exports = {
   VIBRANCY_START,
@@ -568,6 +594,8 @@ module.exports = {
   computeVibrancyColors,
   TRANSPARENT_BG_KEYS,
   SEMITRANSPARENT_BG_KEYS,
+  STICKY_SCROLL_BG_KEYS,
+  STICKY_SCROLL_MIN_OPACITY,
   OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
   deepEqual,

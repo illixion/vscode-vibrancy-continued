@@ -2,7 +2,6 @@
   --atom-one-dark-base: rgba(27, 32, 39, 0.01) !important;
   --atom-one-dark-surface: rgba(27, 32, 39, 0.10) !important;
   --atom-one-dark-surface-strong: rgba(27, 32, 39, 0.08) !important;
-  --atom-one-dark-sticky: rgba(35, 41, 50, 0.10) !important;
   --atom-one-dark-border: rgba(171, 178, 191, 0.18) !important;
   --atom-one-dark-selection: rgba(97, 175, 239, 0.24) !important;
   --atom-one-dark-selection-strong: rgba(198, 120, 221, 0.24) !important;
@@ -194,11 +193,13 @@ body {
   background-color: var(--atom-one-dark-selection-strong) !important;
 }
 
-.monaco-editor .sticky-widget,
-.monaco-editor .sticky-widget .monaco-editor-background,
-.monaco-editor .sticky-widget .sticky-line-content,
-.monaco-editor .sticky-widget .sticky-line-number {
-  background: var(--atom-one-dark-sticky) !important;
+/* Sticky scroll takes its surface from editorStickyScroll.background, which
+   vibrancy writes with a legibility floor so the pinned lines don't show the
+   code they overlap (#14, #132, #152, #204). Only the editor background
+   bleeding through from inside the widget needs clearing here — overriding the
+   surface itself would undo that floor. */
+.monaco-editor .sticky-widget .monaco-editor-background {
+  background: transparent !important;
 }
 
 /*
