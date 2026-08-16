@@ -319,7 +319,9 @@ If everything in the diagnostic looks correct, check the following in order:
 
 ### macOS: why does the effect disappear in full screen or Zen Mode?
 
-This is a macOS-specific limitation. Native full screen moves the window to its own Space, and macOS renders no desktop behind it — so the vibrancy material has nothing left to sample and the workbench goes flat. There is nothing the extension can do about it.
+This is a macOS-specific limitation. Native full screen moves the window to its own Space, and macOS renders no desktop behind it — so the vibrancy material has nothing left to sample and the workbench goes flat. The extension can't change that.
+
+What macOS *does* offer in full screen is **wallpaper tinting**: with **System Settings → Appearance → "Allow wallpaper tinting in windows"** enabled (it is by default), the system tints the vibrancy material with your wallpaper's average color instead of leaving it flat grey — the same treatment Safari and Finder get. This applies to VSCode automatically, no extension setting needed; if you just toggled it, restart VSCode for it to take effect.
 
 **On Windows this doesn't apply** — full screen there is just a borderless window over the desktop, so the wallpaper is still behind it and the effect keeps working. Linux should behave like Windows, since the effect there comes from plain window transparency, though we haven't verified it.
 
@@ -329,7 +331,7 @@ Zen Mode is caught by this only because it turns full screen on by default, not 
 "zenMode.fullScreen": false
 ```
 
-Zen Mode then stays in a normal window and keeps the effect, centered layout included. There's no equivalent workaround for actual full screen on macOS — use a maximized window instead.
+Zen Mode then stays in a normal window and keeps the effect, centered layout included. There's no equivalent workaround for actual full screen on macOS — use a maximized window (or wallpaper tinting, above) instead.
 
 ### Linux: Why is the background transparent but not blurred?
 
