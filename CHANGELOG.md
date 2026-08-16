@@ -1,3 +1,9 @@
+# 1.1.92
+
+* Themes:
+  * Full screen no longer forces an opaque background. Every theme carried a `.monaco-workbench.fullscreen` rule dating back to 2021 that painted a solid colour in full screen; testing on VSCode 1.133 showed the selector no longer matches anything, so the rule had quietly stopped doing its job. It's now removed rather than left to rot. Where the platform allows it, full screen simply keeps the vibrancy: on Windows and Linux the desktop is still behind the window, so the effect works. On macOS full screen moves the window to its own Space with nothing rendered behind it, so the effect can't work there regardless — use `"zenMode.fullScreen": false` if you want Zen Mode with vibrancy intact (issues [#47](https://github.com/illixion/vscode-vibrancy-continued/issues/47), [#67](https://github.com/illixion/vscode-vibrancy-continued/issues/67))
+  * Anyone who worked around this with a `.monaco-workbench.fullscreen { background-color: transparent }` override in `vscode_vibrancy.imports` can now drop it
+
 # 1.1.91
 
 * Core:
