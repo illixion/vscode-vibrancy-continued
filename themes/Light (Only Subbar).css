@@ -19,11 +19,6 @@ body {
   border-left-color: #616161 !important;
 }
 
-.monaco-workbench.fullscreen {
-	background-color: #ffffff !important;
-}
-
-
 .notebookOverlay.notebook-editor,
 .cell-statusbar-container,
 .margin-view-overlays,

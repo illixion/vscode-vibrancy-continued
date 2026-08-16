@@ -179,10 +179,6 @@ body {
   background-image: none !important;
 }
 
-.monaco-workbench.fullscreen {
-  background-color: rgb(27, 32, 39) !important;
-}
-
 .notebookOverlay.notebook-editor,
 .cell-statusbar-container {
   background: transparent !important;

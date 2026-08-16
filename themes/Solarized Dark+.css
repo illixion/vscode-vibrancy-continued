@@ -98,10 +98,6 @@ body {
   background-color: transparent !important;
 }
 
-.monaco-workbench.fullscreen {
-	background-color: #002b36 !important;
-}
-
 .monaco-editor .margin {
   background-color: rgba(0, 53, 69, 0.3) !important;
 }

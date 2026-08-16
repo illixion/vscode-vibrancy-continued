@@ -210,10 +210,6 @@ body {
   background-color: transparent !important;
 }
 
-.monaco-workbench.fullscreen {
-	background-color: #ffffff !important;
-}
-
 .notebookOverlay.notebook-editor,
 .cell-statusbar-container,
 .margin-view-overlays,

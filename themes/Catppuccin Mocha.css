@@ -133,10 +133,6 @@ body {
   background-color: var(--base-background) !important;
 }
 
-.monaco-workbench.fullscreen {
-  background-color: #1e1e2e !important;
-}
-
 .notebookOverlay.notebook-editor,
 .cell-statusbar-container,
 .margin-view-overlays,

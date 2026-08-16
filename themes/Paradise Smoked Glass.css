@@ -197,19 +197,6 @@ body {
     border-radius: 100px !important;
 }
 
-/* Fullscreen */
-
-.monaco-workbench.fullscreen {
-    --primary-bg: #151515 !important;
-    --editor-bg: var(--primary-bg) !important;
-
-    background-color: var(--secondary-bg) !important;
-
-    .part.panel.bottom > .content {
-        background-color: transparent !important;
-    }
-}
-
 .label-container .label {
   color: white !important;
 }

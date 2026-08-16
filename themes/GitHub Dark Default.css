@@ -120,10 +120,6 @@ body {
   background-color: var(--base-background) !important;
 }
 
-.monaco-workbench.fullscreen {
-  background-color: rgb(14, 17, 22) !important;
-}
-
 .notebookOverlay.notebook-editor,
 .cell-statusbar-container,
 .margin-view-overlays,

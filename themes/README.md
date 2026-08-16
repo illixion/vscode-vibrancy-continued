@@ -17,3 +17,16 @@ Once you are satisfied with your theme, you can submit it to this repository by 
 ### Step 4: Updating your theme
 
 If you need to make changes to your theme, you can do so by forking this repository and creating a new pull request. Your changes will be published with the next Vibrancy release, although you can request a hotfix release if necessary.
+## Don't add a full-screen fallback
+
+Themes used to carry a `.monaco-workbench.fullscreen { background-color: … }`
+rule that painted an opaque background in full screen. It was removed in 1.1.92
+after testing showed the selector no longer matches anything — a probe colour
+set on that rule produced no change on screen, while a marker rule in the same
+stylesheet applied normally.
+
+It also isn't wanted any more. On Windows and Linux a full-screen window still
+has the desktop behind it, so the effect works there and an opaque fallback
+would be a regression. On macOS full screen moves the window to its own Space
+with nothing rendered behind it, so the effect can't work regardless of what the
+CSS says.
