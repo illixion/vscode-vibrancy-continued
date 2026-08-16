@@ -21,6 +21,23 @@ All screenshots use an opacity value of 0, whereas the default value in most the
 | HUD | <img src="../images/types/hud.png" alt="HUD UI Type" width="1024"> |
 | Tooltip | <img src="../images/types/tooltip.png" alt="Tooltip UI Type" width="1024"> |
 
+# Wallpaper tinting in full screen (macOS)
+
+In native macOS full screen there is no desktop behind the window, so instead of transparency the system applies **wallpaper tinting**: it blends your wallpaper's average color into the vibrancy material. This requires **System Settings → Appearance → "Allow wallpaper tinting in windows"** (on by default); the setting is read at app launch, so restart VSCode after toggling it.
+
+How much tint each material receives varies a lot. Measured per type on macOS 26 in dark mode:
+
+| Tint strength | Types |
+|---|---|
+| Strong | `hud`, `fullscreen-ui`, `menu`, `popover` |
+| Moderate | `under-window`, `sidebar`, `tooltip`, `selection` |
+| Subtle | `titlebar`, `header` |
+| Barely visible | `window`, `content`, `sheet`, `under-page` |
+
+`auto` resolves to `under-window` on macOS for every bundled theme (Tokyo Night Storm (Outer) uses `fullscreen-ui`), so default configurations show a clearly visible tint. If full screen looks flat grey despite tinting being enabled, check whether you've explicitly set one of the barely-visible types.
+
+The deprecated types below also tint when used — they appear to map onto modern materials internally (`appearance-based` renders identically to `under-window`) — but they remain deprecated either way.
+
 # Deprecated types
 
 The following types have been deprecated in latest macOS and result in no transparency:
