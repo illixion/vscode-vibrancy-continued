@@ -66,12 +66,15 @@ function psEscape(str) {
  * Check whether a command exists on PATH.
  */
 function hasCommand(name) {
-  try {
-    cp.execSync(`command -v ${name}`, { shell: '/bin/sh', stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
+  const pathDirs = (process.env.PATH || '').split(path.delimiter);
+  return pathDirs.some(dir => {
+    try {
+      fs.accessSync(path.join(dir, name), fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 // Privilege-escalation commands to try in the terminal fallback, in order.
