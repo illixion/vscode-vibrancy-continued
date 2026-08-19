@@ -445,6 +445,37 @@ function resolveVSCodeExecutable(rawExe) {
 }
 
 /**
+ * Wall-clock bound for a single VSCode download attempt. The bundle is ~150 MB
+ * and lands in well under a minute on a healthy runner, so this is pure headroom.
+ */
+const VSCODE_DOWNLOAD_TIMEOUT_MS = 6 * 60 * 1000;
+
+/**
+ * Reject if `promise` hasn't settled within `ms`.
+ *
+ * Needed because @vscode/test-electron's download has no wall-clock bound of its
+ * own: a CDN connection that stalls mid-transfer leaves its promise pending
+ * forever, so the retry loop below never gets a turn and the whole CI job hangs
+ * until the runner is killed. Racing each attempt against a deadline turns a
+ * stalled download into an ordinary retryable error.
+ */
+function withDeadline(promise, ms, label) {
+  // The losing download keeps running in the background; we abandon it and wipe
+  // its cache before retrying. Swallow its eventual rejection so it can't
+  // resurface as an unhandled rejection and take the process down.
+  promise.catch(() => {});
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms}ms with no result`)), ms);
+  });
+  // Deliberately NOT unref'd: a stalled download may hold no live handle, and an
+  // unref'd deadline would then let node exit 0 mid-test — a false pass, which
+  // is worse than the hang this guard exists to break. clearTimeout in the
+  // `finally` is what stops the timer from outliving a race we won.
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
+/**
  * Download VSCode with retries.
  *
  * Returns the resolved executable path (see resolveVSCodeExecutable). Also
@@ -457,7 +488,11 @@ async function downloadVSCodeWithRetry(downloadFn, version, cachePath, attempts 
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      const rawExe = await downloadFn({ version, cachePath });
+      const rawExe = await withDeadline(
+        downloadFn({ version, cachePath }),
+        VSCODE_DOWNLOAD_TIMEOUT_MS,
+        `VSCode download attempt ${attempt}/${attempts}`
+      );
       const vscodeExe = resolveVSCodeExecutable(rawExe);
       if (fs.existsSync(vscodeExe)) return vscodeExe;
       lastErr = new Error(`VSCode executable not found after download: ${vscodeExe}`);

@@ -19,6 +19,10 @@ permissions:
 jobs:
   build-native:
     runs-on: ${{ matrix.os }}
+    # Explicit caps so a stalled network step can't ride GitHub's 6h ceiling —
+    # the Tests workflow lost a full runner-day to exactly that (run 32232380930).
+    # Baseline for this job: ~3-4m.
+    timeout-minutes: 30
     strategy:
       # Don't cancel the other arch when one fails — we want to see both results.
       fail-fast: false
@@ -58,6 +62,9 @@ jobs:
   publish:
     needs: build-native
     runs-on: ubuntu-latest
+    # Baseline ~2-3m. Deliberately not generous: this job pushes to the
+    # Marketplace and Open VSX, so a wedged upload should surface fast.
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
