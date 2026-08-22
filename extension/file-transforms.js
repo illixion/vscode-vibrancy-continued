@@ -674,6 +674,40 @@ const ALL_VIBRANCY_BG_KEYS = [
   ...OPAQUE_BG_KEYS,
 ];
 
+/**
+ * Does this colour value look like something Vibrancy wrote?
+ *
+ * Every tier above produces an 8-digit `#RRGGBBAA` with an alpha below `ff` —
+ * `00` for the transparent keys, `e6` for the opaque ones, and something derived
+ * from the user's opacity in between. So under a key Vibrancy manages, a
+ * translucent 8-digit hex is Vibrancy's own output rather than a value belonging
+ * to the user.
+ *
+ * This deliberately does *not* check the RGB against the current theme
+ * background, which is how it used to identify its own writes. That test fails
+ * the moment the colours and the theme come from different places — VSCode's
+ * "copy from profile" option duplicates `settings.json` into the new profile but
+ * not the extension's backup, so a copied profile starts out holding 28 of
+ * Vibrancy's colours with no record of what they replaced. Switch the colour
+ * theme there and every one of them was adopted as if the user had chosen it,
+ * which meant disabling Vibrancy *restored* fully transparent backgrounds with
+ * no vibrancy left behind them. That is the issue
+ * [#183](https://github.com/illixion/vscode-vibrancy-continued/issues/183)
+ * symptom, reachable without ever touching a second profile's settings by hand.
+ *
+ * The trade-off: someone who deliberately sets a translucent background on a
+ * managed key no longer has it preserved. That costs little, because Vibrancy
+ * overwrites those keys while it is active anyway — so the value would not have
+ * survived regardless — whereas restoring a translucent colour once the effect
+ * is gone always looks broken.
+ *
+ * @param {any} value - The value currently in settings.json
+ * @returns {boolean}
+ */
+function looksLikeVibrancyValue(value) {
+  return typeof value === 'string' && /^#[0-9a-f]{6}(?![fF]{2}$)[0-9a-f]{2}$/i.test(value);
+}
+
 module.exports = {
   VIBRANCY_START,
   VIBRANCY_END,
@@ -698,6 +732,7 @@ module.exports = {
   STICKY_SCROLL_MIN_OPACITY,
   OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
+  looksLikeVibrancyValue,
   deepEqual,
   isPrimitive,
   checkRuntimeUpdate,

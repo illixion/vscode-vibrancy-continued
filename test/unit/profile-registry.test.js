@@ -3,6 +3,7 @@ const {
   listProfiles,
   groupBySettingsFile,
   findProfileByGlobalStorage,
+  profileHasExtension,
 } = require('../../extension/profile-registry');
 
 const USER = path.join('/Users/x/Library/Application Support/Code/User');
@@ -31,6 +32,7 @@ describe('listProfiles', () => {
       isDefault: true,
       settingsPath: path.join(USER, 'settings.json'),
       sharesDefaultSettings: true,
+      extensionsPath: null,
     });
   });
 
@@ -135,5 +137,41 @@ describe('findProfileByGlobalStorage', () => {
     for (const value of [undefined, null, '', '/']) {
       expect(findProfileByGlobalStorage(profiles, value)).toBeNull();
     }
+  });
+});
+
+describe('profileHasExtension', () => {
+  const VIBRANCY = 'illixion.vscode-vibrancy-continued';
+
+  it('finds an extension in a profile that narrows its set', () => {
+    expect(profileHasExtension([
+      { identifier: { id: 'other.thing' } },
+      { identifier: { id: VIBRANCY }, version: '1.1.92' },
+    ], VIBRANCY)).toBe(true);
+  });
+
+  it('reports absence when the profile has a set that excludes it', () => {
+    // "Copy from profile" without extensions: settings came across, Vibrancy
+    // did not, so nothing there can clean up the copied colours.
+    expect(profileHasExtension([{ identifier: { id: 'other.thing' } }], VIBRANCY)).toBe(false);
+  });
+
+  it('treats a missing extensions.json as "uses everything installed"', () => {
+    // A profile only writes that file once it has narrowed the set, so its
+    // absence means the global set applies — not that nothing is installed.
+    expect(profileHasExtension(null, VIBRANCY)).toBe(true);
+    expect(profileHasExtension(undefined, VIBRANCY)).toBe(true);
+    expect(profileHasExtension('not an array', VIBRANCY)).toBe(true);
+  });
+
+  it('is not confused by malformed entries', () => {
+    expect(profileHasExtension([null, {}, { identifier: null }], VIBRANCY)).toBe(false);
+  });
+});
+
+describe('per-profile extension list location', () => {
+  it('points each named profile at its own extensions.json', () => {
+    const claudeTest = listProfiles(USER, STORAGE).find((p) => p.name === 'ClaudeTest');
+    expect(claudeTest.extensionsPath).toBe(path.join(USER, 'profiles', '-5a4fcfb6', 'extensions.json'));
   });
 });

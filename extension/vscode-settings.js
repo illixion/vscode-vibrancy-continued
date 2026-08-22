@@ -2,18 +2,8 @@ const {
   computeVibrancyColors,
   parseThemeColorCustomizations,
   resolveManagedBgKeys,
+  looksLikeVibrancyValue,
 } = require('./file-transforms');
-
-// A value is treated as "vibrancy-applied, not user-set" when it is an
-// 8-char `#RRGGBBAA` hex whose RGB matches the current theme background.
-// This protects the initial backup from being poisoned when settings.json
-// still contains vibrancy values from a previous install (issue #247).
-function looksLikeVibrancyValue(value, themeBackground) {
-  if (typeof value !== 'string') return false;
-  const m = /^#([0-9a-f]{6})([0-9a-f]{2})$/i.exec(value);
-  if (!m) return false;
-  return !!themeBackground && m[1].toLowerCase() === themeBackground.toLowerCase();
-}
 
 /**
  * Apply vibrancy-related VSCode settings (color customizations, gpu acceleration, auto theme).
@@ -77,17 +67,18 @@ async function applySettings(deps) {
      *
      * The reliable answer is the record of what we last wrote. Falling back to
      * recognising vibrancy's output by shape only matters when that record is
-     * missing (a first install, or globalState was lost) — see issue #247,
-     * where leftover values from a previous install got backed up as if the
-     * user had chosen them. A theme's literal colours don't derive from
-     * themeBackground, so they're matched per-key rather than by shape.
+     * missing — a first install, globalState was lost (issue #247), or the
+     * profile was created with VSCode's "copy from profile" option, which
+     * duplicates settings.json but not the extension's backup. A theme's
+     * literal colours can be fully opaque and so aren't recognisable by shape;
+     * those are matched per-key instead.
      */
     const isOwnOutput = (key, value) => {
       if (lastWritten && key in lastWritten) {
         return lastWritten[key] === null ? value === undefined : value === lastWritten[key];
       }
 
-      if (looksLikeVibrancyValue(value, themeBackground)) return true;
+      if (looksLikeVibrancyValue(value)) return true;
 
       const literal = themeOverrides[key]?.literal;
       return !!(literal && typeof value === 'string' && value.toLowerCase() === literal.toLowerCase());

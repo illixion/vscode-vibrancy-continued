@@ -39,6 +39,9 @@ function listProfiles(userDir, storage) {
     isDefault: true,
     settingsPath: defaultSettingsPath,
     sharesDefaultSettings: true,
+    // The default profile never narrows the extension set, so there is no
+    // per-profile file to consult.
+    extensionsPath: null,
   }];
 
   const entries = Array.isArray(storage?.userDataProfiles) ? storage.userDataProfiles : [];
@@ -63,10 +66,35 @@ function listProfiles(userDir, storage) {
       isDefault: false,
       settingsPath: sharesDefaultSettings ? defaultSettingsPath : path.join(profileDir, 'settings.json'),
       sharesDefaultSettings,
+      // Only profiles with their own extension set get this file; without it a
+      // profile simply uses whatever is installed globally.
+      extensionsPath: path.join(profileDir, 'extensions.json'),
     });
   }
 
   return profiles;
+}
+
+/**
+ * Is an extension enabled in a profile?
+ *
+ * Profiles choose which of the globally-installed extensions they enable, and a
+ * profile that has made a choice records it in its own `extensions.json`. A
+ * profile without that file has not narrowed anything down, so it sees the whole
+ * global set — which is why `null` means yes rather than no.
+ *
+ * This is what separates the two shapes of "copy from profile": copying with
+ * extensions gives a profile that carries Vibrancy's colours *and* Vibrancy,
+ * which can clean up after itself; copying without them leaves the colours
+ * behind with nothing there to remove them.
+ *
+ * @param {Array|null} extensionList - Parsed extensions.json, or null if absent
+ * @param {string} extensionId - e.g. 'illixion.vscode-vibrancy-continued'
+ * @returns {boolean}
+ */
+function profileHasExtension(extensionList, extensionId) {
+  if (!Array.isArray(extensionList)) return true;
+  return extensionList.some((entry) => entry?.identifier?.id === extensionId);
 }
 
 /** Is `child` at or below `parent`? */
@@ -82,8 +110,12 @@ function isInside(parent, child) {
  * default's settings.json would otherwise be visited twice, and the second
  * visit would be working from a stale read of what the first one just wrote.
  *
- * @param {Array} profiles - Result of listProfiles
- * @returns {Array<{settingsPath: string, profileNames: string[]}>}
+ * A `hasVibrancy` flag on the input profiles is carried through as an OR: if any
+ * profile reading a file has Vibrancy, that file's colours can be cleaned up
+ * from inside VSCode. It stays undefined when nothing is known either way.
+ *
+ * @param {Array} profiles - Result of listProfiles, optionally with `hasVibrancy`
+ * @returns {Array<{settingsPath: string, profileNames: string[], hasVibrancy: boolean|undefined}>}
  */
 function groupBySettingsFile(profiles) {
   const byPath = new Map();
@@ -92,8 +124,15 @@ function groupBySettingsFile(profiles) {
     const existing = byPath.get(profile.settingsPath);
     if (existing) {
       existing.profileNames.push(profile.name);
+      if (profile.hasVibrancy !== undefined) {
+        existing.hasVibrancy = existing.hasVibrancy || profile.hasVibrancy;
+      }
     } else {
-      byPath.set(profile.settingsPath, { settingsPath: profile.settingsPath, profileNames: [profile.name] });
+      byPath.set(profile.settingsPath, {
+        settingsPath: profile.settingsPath,
+        profileNames: [profile.name],
+        hasVibrancy: profile.hasVibrancy,
+      });
     }
   }
 
@@ -153,4 +192,5 @@ module.exports = {
   listProfiles,
   groupBySettingsFile,
   findProfileByGlobalStorage,
+  profileHasExtension,
 };

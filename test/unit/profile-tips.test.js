@@ -120,3 +120,45 @@ describe('assessProfileSituation', () => {
     expect(assessProfileSituation({ profiles: null, leftovers: null }).kind).toBe('none');
   });
 });
+
+describe('reachability of stranded colours', () => {
+  const withProfiles = listProfiles(USER, {
+    userDataProfiles: [{ location: 'abc', name: 'Work' }, { location: 'def', name: 'Copy' }],
+  });
+
+  it('flags a profile that has the colours but not Vibrancy as unreachable', () => {
+    // "Copy from profile" without extensions: nothing in that profile can run
+    // Disable, so "switch there and disable it" would be useless advice.
+    const situation = assessProfileSituation({
+      profiles: withProfiles,
+      leftovers: [{ profileNames: ['Copy'], keys: ['editor.background'], hasVibrancy: false }],
+    });
+
+    expect(situation.kind).toBe('unreachable');
+    expect(situation.profileNames).toEqual(['Copy']);
+  });
+
+  it('prefers the unreachable case when both kinds are present', () => {
+    // The reachable one resolves itself when the user visits that profile; the
+    // unreachable one never will, so it is the one worth saying.
+    const situation = assessProfileSituation({
+      profiles: withProfiles,
+      leftovers: [
+        { profileNames: ['Work'], keys: ['panel.background'], hasVibrancy: true },
+        { profileNames: ['Copy'], keys: ['editor.background'], hasVibrancy: false },
+      ],
+    });
+
+    expect(situation.kind).toBe('unreachable');
+    expect(situation.profileNames).toEqual(['Copy']);
+  });
+
+  it('treats an unknown answer as reachable', () => {
+    // The softer message: send the user somewhere to look rather than telling
+    // them to edit settings.json by hand on a guess.
+    expect(assessProfileSituation({
+      profiles: withProfiles,
+      leftovers: [{ profileNames: ['Work'], keys: ['editor.background'] }],
+    }).kind).toBe('stranded');
+  });
+});

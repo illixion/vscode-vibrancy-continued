@@ -1125,3 +1125,86 @@ describe('settings.json changing underneath us', () => {
     expect(store.data[C]['editor.background']).toBe('#abcdef');
   });
 });
+
+// --- profiles created with "copy from profile" ---
+//
+// VSCode can initialise a new profile by copying an existing one. Settings are
+// copied; extension state is not. So the new profile starts out holding all of
+// Vibrancy's colour customizations with no backup of what they replaced, and the
+// extension activates there as if it had never run.
+describe('profile copied from another profile', () => {
+  // What a copied profile's settings.json actually contains: vibrancy's output
+  // for the *origin* profile's theme.
+  const copiedColors = {
+    'terminal.background': '#00000000',
+    'editor.background': '#1e1e1e4d',
+    'sideBar.background': '#1e1e1e4d',
+    'panel.background': '#1e1e1e00',
+  };
+
+  it('does not adopt the copied colours as the user\'s own', async () => {
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...copiedColors } });
+    const globalState = createGlobalState();
+
+    const result = await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    for (const key of ['editor.background', 'sideBar.background', 'panel.background']) {
+      expect(result.vibrancyBackgrounds[key]).toBeNull();
+    }
+    expect(result.terminalBackground).toBeNull();
+  });
+
+  it('still does not adopt them when the profile uses a different theme', async () => {
+    // Regression: identifying vibrancy's own writes by matching their RGB
+    // against the active theme background failed here, because the copied
+    // colours came from the origin profile's theme. All of them were recorded
+    // as user originals, so disabling *restored* transparent backgrounds with
+    // no vibrancy left behind them — the issue #183 symptom, reached without
+    // anyone hand-editing a second profile's settings.
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...copiedColors } });
+    const globalState = createGlobalState();
+
+    const result = await applySettings(buildApplyDeps({
+      settingsStore: store,
+      globalState,
+      themeBackground: '24283b',
+    }));
+
+    for (const key of ['editor.background', 'sideBar.background', 'panel.background']) {
+      expect(result.vibrancyBackgrounds[key]).toBeNull();
+    }
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+
+    // Nothing of vibrancy's survives the disable, whatever theme is active.
+    expect(store.data['workbench.colorCustomizations']).toEqual({});
+  });
+
+  it('keeps a genuinely opaque colour the copied profile carries', async () => {
+    // A copied profile can also carry the user's own colours. Those are opaque,
+    // so they are still distinguishable and must still be preserved.
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': { ...copiedColors, 'editor.background': '#282c34' },
+    });
+    const globalState = createGlobalState();
+
+    const result = await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    expect(result.vibrancyBackgrounds['editor.background']).toBe('#282c34');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#282c34');
+  });
+
+  it('leaves a blank profile with nothing to reconcile', async () => {
+    // The other shape of new profile: no settings copied, so no colours and no
+    // backup. Nothing to mistake for the user's own.
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    const result = await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    for (const value of Object.values(result.vibrancyBackgrounds)) {
+      expect(value).toBeNull();
+    }
+  });
+});

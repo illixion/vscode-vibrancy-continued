@@ -931,3 +931,38 @@ describe('resolveManagedBgKeys', () => {
       .toContain('statusBar.background');
   });
 });
+
+describe('looksLikeVibrancyValue', () => {
+  const { looksLikeVibrancyValue } = require('../../extension/file-transforms');
+
+  it('recognises every tier vibrancy writes', () => {
+    // transparent, user-opacity, sticky-scroll floor, opaque tier
+    for (const value of ['#1e1e1e00', '#1e1e1e4d', '#1e1e1ebf', '#1e1e1ee6']) {
+      expect(looksLikeVibrancyValue(value)).toBe(true);
+    }
+  });
+
+  it('does not depend on the colour matching the current theme', () => {
+    // This is the whole point. It used to require the RGB to equal the active
+    // theme background, which failed for a profile created with VSCode's "copy
+    // from profile": settings.json is duplicated but the extension's backup is
+    // not, so a copied profile holds vibrancy's colours from the *origin*
+    // profile's theme. Switch theme there and all of them were adopted as the
+    // user's own, so disabling restored transparent backgrounds with no
+    // vibrancy behind them.
+    expect(looksLikeVibrancyValue('#1e1e1e4d')).toBe(true);
+    expect(looksLikeVibrancyValue('#24283b4d')).toBe(true);
+  });
+
+  it("leaves the user's own opaque colours alone", () => {
+    for (const value of ['#1e1e1eff', '#2d2d2dFF', '#282c34', '#abc', 'red', '']) {
+      expect(looksLikeVibrancyValue(value)).toBe(false);
+    }
+  });
+
+  it('is false for anything that is not a string', () => {
+    for (const value of [undefined, null, 42, {}, []]) {
+      expect(looksLikeVibrancyValue(value)).toBe(false);
+    }
+  });
+});

@@ -14,21 +14,16 @@
  * situation is detectable.
  */
 
-// Vibrancy only ever writes translucent colours: the transparent tier is alpha
-// `00`, the opaque tier `e6`, and every tier in between is derived from the
-// user's opacity. So an 8-digit hex with a non-`ff` alpha under a key Vibrancy
-// manages is very likely ours.
-//
-// The alpha check is what keeps this from flagging the user's own colours: a
-// hand-picked `#1e1e1eff` is a perfectly ordinary thing to have under
-// `editor.background`, and calling that a leftover would send people hunting
-// for a problem they don't have. A theme's `colorCustomizations` block can
-// name a fully opaque literal, which this will miss — under-reporting is the
-// right way to be wrong here.
-const TRANSLUCENT_HEX = /^#[0-9a-f]{6}(?![fF]{2}$)[0-9a-f]{2}$/i;
+const { looksLikeVibrancyValue } = require('./file-transforms');
 
 /**
  * Find colour keys in a profile's settings that look like Vibrancy's output.
+ *
+ * Only keys Vibrancy actually manages are considered, so a translucent colour
+ * the user set on some unrelated key is never mistaken for a leftover. A theme
+ * can name a fully opaque literal through its `colorCustomizations` block, which
+ * this will miss — under-reporting is the right way to be wrong here, since the
+ * alternative is telling someone their own colour is a leftover.
  *
  * @param {Object} colors - A profile's `workbench.colorCustomizations`
  * @param {string[]} managedKeys - Keys Vibrancy writes (from resolveManagedBgKeys)
@@ -42,7 +37,7 @@ function findVibrancyLeftovers(colors, managedKeys) {
 
   for (const [key, value] of Object.entries(colors)) {
     if (!candidates.has(key)) continue;
-    if (typeof value === 'string' && TRANSLUCENT_HEX.test(value)) found.push(key);
+    if (looksLikeVibrancyValue(value)) found.push(key);
   }
 
   return found.sort();
@@ -51,13 +46,22 @@ function findVibrancyLeftovers(colors, managedKeys) {
 /**
  * Work out which profile tip, if any, is worth showing.
  *
- * Three outcomes, in descending order of how much the user needs to hear it:
+ * Four outcomes, in descending order of how much the user needs to hear it:
  *
- *   - `stranded`: another profile is carrying Vibrancy's colours with no way to
- *     revert them from here. Actionable, and worth repeating.
+ *   - `unreachable`: another profile carries Vibrancy's colours and does not
+ *     have Vibrancy enabled, so nothing there can ever clean them up. The worst
+ *     case, and the one "copy from profile" produces when extensions are left
+ *     behind: the colours are copied, the extension is not.
+ *   - `stranded`: another profile carries the colours but does have Vibrancy, so
+ *     the user can go there and disable it. Actionable, and worth repeating.
  *   - `introduction`: profiles exist and Vibrancy is active, but nothing is
  *     stranded yet. Worth saying once, before it becomes a problem.
  *   - `none`: a single-profile setup, where none of this applies. Most users.
+ *
+ * Splitting the first two matters because the advice differs completely. Telling
+ * someone to "switch to that profile and disable Vibrancy" is useless when
+ * Vibrancy isn't installed there — they would go looking for a command that
+ * doesn't exist.
  *
  * The tip is deliberately not scoped to whichever profile happens to be active.
  * Sitting in the default profile does not make the others any less likely to
@@ -65,22 +69,28 @@ function findVibrancyLeftovers(colors, managedKeys) {
  *
  * @param {Object} opts
  * @param {Array} opts.profiles - Result of listProfiles
- * @param {Array<{profileNames: string[], keys: string[]}>} [opts.leftovers] - Per-file scan results
+ * @param {Array<{profileNames: string[], keys: string[], hasVibrancy?: boolean}>} [opts.leftovers]
  * @param {boolean} [opts.introductionShown] - Has the introduction already been shown here?
- * @returns {{kind: 'none'|'introduction'|'stranded', profileNames: string[], keys: string[]}}
+ * @returns {{kind: 'none'|'introduction'|'stranded'|'unreachable', profileNames: string[], keys: string[]}}
  */
 function assessProfileSituation({ profiles, leftovers, introductionShown }) {
   const all = Array.isArray(profiles) ? profiles : [];
   const usesProfiles = all.some((profile) => !profile.isDefault);
 
+  const summarise = (kind, entries) => ({
+    kind,
+    profileNames: [...new Set(entries.flatMap((entry) => entry.profileNames))].sort(),
+    keys: [...new Set(entries.flatMap((entry) => entry.keys))].sort(),
+  });
+
   const stranded = (leftovers || []).filter((entry) => entry.keys?.length > 0);
-  if (stranded.length > 0) {
-    return {
-      kind: 'stranded',
-      profileNames: [...new Set(stranded.flatMap((entry) => entry.profileNames))].sort(),
-      keys: [...new Set(stranded.flatMap((entry) => entry.keys))].sort(),
-    };
-  }
+
+  // `hasVibrancy: undefined` means we couldn't tell. Treat that as reachable —
+  // the softer message, since it sends the user somewhere to look rather than
+  // telling them their settings need editing by hand.
+  const unreachable = stranded.filter((entry) => entry.hasVibrancy === false);
+  if (unreachable.length > 0) return summarise('unreachable', unreachable);
+  if (stranded.length > 0) return summarise('stranded', stranded);
 
   // Not "profiles exist" but "profiles exist *and* there is more than one
   // settings.json in play": profiles that share the default's settings file

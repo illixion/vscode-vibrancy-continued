@@ -29,6 +29,7 @@ const {
   listProfiles,
   groupBySettingsFile,
   findProfileByGlobalStorage,
+  profileHasExtension,
 } = require('./profile-registry');
 const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tips');
 const { readColorCustomizations } = require('./jsonc-settings');
@@ -1094,7 +1095,15 @@ function activate(context) {
       const themeConfig = getCurrentThemeConfig();
       const managedKeys = resolveManagedBgKeys(themeConfig?.colorCustomizations);
 
-      return groupBySettingsFile(getProfiles())
+      // Whether each profile can clean up after itself. A profile created by
+      // "copy from profile" without its extensions carries Vibrancy's colours
+      // but not Vibrancy, so there is nothing there to run Disable.
+      const profiles = getProfiles().map((profile) => ({
+        ...profile,
+        hasVibrancy: profileHasExtension(readExtensionList(profile), 'illixion.vscode-vibrancy-continued'),
+      }));
+
+      return groupBySettingsFile(profiles)
         .filter((target) => target.settingsPath !== currentSettingsPath)
         .map((target) => {
           let keys = [];
@@ -1104,11 +1113,21 @@ function activate(context) {
           } catch {
             // Missing file: a profile that has never had a setting changed.
           }
-          return { profileNames: target.profileNames, keys };
+          return { profileNames: target.profileNames, keys, hasVibrancy: target.hasVibrancy };
         });
     } catch (error) {
       console.warn('Vibrancy: could not scan other profiles:', error);
       return [];
+    }
+  }
+
+  /** A profile's own extensions.json, or null when it doesn't narrow the set. */
+  function readExtensionList(profile) {
+    if (!profile.extensionsPath) return null;
+    try {
+      return JSON.parse(require('fs').readFileSync(profile.extensionsPath, 'utf-8'));
+    } catch {
+      return null;
     }
   }
 
@@ -1127,9 +1146,11 @@ function activate(context) {
         introductionShown: context.globalState.get('profileTipShown') === true,
       });
 
-      if (situation.kind === 'stranded') {
+      if (situation.kind === 'stranded' || situation.kind === 'unreachable') {
         vscode.window.showWarningMessage(
-          localize('messages.profileLeftovers')
+          localize(situation.kind === 'unreachable'
+            ? 'messages.profileLeftoversUnreachable'
+            : 'messages.profileLeftovers')
             .replace('{0}', situation.profileNames.join(', '))
             .replace('{1}', String(situation.keys.length)),
         );
