@@ -198,21 +198,81 @@ function stageDeferredRestore(settingsPath, plan) {
     }
 }
 
+/** Single-quote a value for PowerShell, where doubling escapes the quote. */
+function psQuote(value) {
+    return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+/**
+ * Build the deferred-cleanup PowerShell script.
+ *
+ * Pure, and exported, so the riskiest part of the uninstall can be inspected and
+ * run somewhere other than a real uninstall. It used to be an inline template
+ * string, which is how it stayed untested long enough for its two regex lists to
+ * drift from the POSIX ones.
+ *
+ * The division of labour: PowerShell waits for VSCode to exit, then hands the
+ * actual edit to the staged node bundle, so Windows and POSIX revert through the
+ * same code. VSCode's own binary is the interpreter — Electron runs as plain node
+ * given ELECTRON_RUN_AS_NODE, and it is the one runtime guaranteed to be present
+ * on the machine. Launching it only *after* the wait loop matters: started any
+ * earlier it would itself count as a running instance and the loop would spin
+ * forever.
+ *
+ * @param {Object} opts
+ * @param {string} opts.exeName - VSCode's process name, e.g. "Code - Insiders"
+ * @param {string} opts.nodePath - Interpreter (VSCode's own executable)
+ * @param {string} opts.entry - Staged restore script
+ * @param {string} opts.stageDir - Staged bundle directory, removed afterwards
+ * @param {string} opts.cliCommand - How to relaunch VSCode
+ * @param {string} opts.logPath - Where to append progress
+ * @returns {string} the script, CRLF-joined
+ */
+function buildDeferredScript({ exeName, nodePath, entry, stageDir, cliCommand, logPath }) {
+    return [
+        `$log = ${psQuote(logPath)}`,
+        `function Log($msg) { Add-Content -Path $log -Value "$(Get-Date -Format o) $msg" }`,
+        `Log "Vibrancy cleanup started"`,
+        `$proc = ${psQuote(exeName)}`,
+        `$node = ${psQuote(nodePath)}`,
+        `$script = ${psQuote(entry)}`,
+        `$stage = ${psQuote(stageDir)}`,
+        `$out = "$stage.out"`,
+        `$err = "$stage.err"`,
+        `Log "Waiting for $proc to exit..."`,
+        // Wait for all instances of the VSCode exe to exit
+        `while (Get-Process -Name $proc -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }`,
+        `Start-Sleep -Seconds 2`,
+        `Log "Process exited, reverting settings via $script"`,
+        `$env:ELECTRON_RUN_AS_NODE = '1'`,
+        // Start-Process -Wait, deliberately, and not `& $node $script`. Code.exe
+        // is a GUI-subsystem binary, so PowerShell neither waits for it nor
+        // connects its stdout: measured on a real Windows box, that form
+        // returned in 8ms with the restore not having run at all. Everything
+        // below would then race it — deleting the staged bundle out from under
+        // a process still starting up, and relaunching VSCode in time to
+        // re-cache the very settings we were about to edit, which is the exact
+        // race this whole deferral exists to avoid.
+        `try {`,
+        `  $p = Start-Process -FilePath $node -ArgumentList @($script) -Wait -NoNewWindow -RedirectStandardOutput $out -RedirectStandardError $err -PassThru`,
+        `  Log "Restore exit $($p.ExitCode): $(((Get-Content $out, $err -Raw -ErrorAction SilentlyContinue) -join ' ').Trim())"`,
+        `} catch {`,
+        `  Log "Restore failed: $_"`,
+        `}`,
+        `Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue`,
+        `Remove-Item $out, $err -Force -ErrorAction SilentlyContinue`,
+        // Relaunch VSCode
+        `Log "Relaunching: $(${psQuote(cliCommand)})"`,
+        `Start-Process ${psQuote(cliCommand)}`,
+        `Log "Cleanup complete, removing script"`,
+        `Remove-Item $MyInvocation.MyCommand.Path -Force`,
+    ].join('\r\n');
+}
+
 // On Windows, VSCode caches settings.json in memory at startup and writes it back later,
 // overwriting any changes the hook makes directly. Instead, spawn a detached PowerShell
 // script that waits for the VSCode process to fully exit, then cleans up settings.json.
-//
-// PowerShell only does the waiting now. The edit itself is handed to the staged
-// node script above, so Windows and POSIX revert through the same code instead
-// of through two hand-written regex lists that drifted apart. VSCode's own
-// binary is the interpreter — Electron runs as plain node given
-// ELECTRON_RUN_AS_NODE, and it is the one runtime guaranteed to be present.
-// Launching it only after the wait loop matters: started any earlier it would
-// show up as a running instance and the loop would never finish.
 function deferSettingsRestoreWindows(settingsPath, cliCommand, previousCustomizations) {
-    const exeName = path.basename(process.execPath, '.exe'); // e.g. "Code - Insiders"
-    const logPath = path.join(os.tmpdir(), 'vibrancy-cleanup.log').replace(/\\/g, '\\\\');
-
     const staged = stageDeferredRestore(settingsPath, buildRestorePlan(previousCustomizations));
     if (!staged) {
         // Best-effort fallback: write now and accept that VSCode may overwrite
@@ -221,36 +281,14 @@ function deferSettingsRestoreWindows(settingsPath, cliCommand, previousCustomiza
         return;
     }
 
-    const cli = (cliCommand || 'code').replace(/'/g, "''");
-    const quote = (value) => `'${String(value).replace(/'/g, "''")}'`;
-
-    const psScript = [
-        `$log = '${logPath}'`,
-        `function Log($msg) { Add-Content -Path $log -Value "$(Get-Date -Format o) $msg" }`,
-        `Log "Vibrancy cleanup started"`,
-        `$proc = ${quote(exeName)}`,
-        `$node = ${quote(process.execPath)}`,
-        `$script = ${quote(staged.entry)}`,
-        `$stage = ${quote(staged.dir)}`,
-        `Log "Waiting for $proc to exit..."`,
-        // Wait for all instances of the VSCode exe to exit
-        `while (Get-Process -Name $proc -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }`,
-        `Start-Sleep -Seconds 2`,
-        `Log "Process exited, reverting settings via $script"`,
-        `$env:ELECTRON_RUN_AS_NODE = '1'`,
-        `try {`,
-        `  $out = & $node $script 2>&1`,
-        `  Log "Restore output: $out"`,
-        `} catch {`,
-        `  Log "Restore failed: $_"`,
-        `}`,
-        `Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue`,
-        // Relaunch VSCode
-        `Log "Relaunching: ${cli}"`,
-        `Start-Process '${cli}'`,
-        `Log "Cleanup complete, removing script"`,
-        `Remove-Item $MyInvocation.MyCommand.Path -Force`,
-    ].join('\r\n');
+    const psScript = buildDeferredScript({
+        exeName: path.basename(process.execPath, '.exe'), // e.g. "Code - Insiders"
+        nodePath: process.execPath,
+        entry: staged.entry,
+        stageDir: staged.dir,
+        cliCommand: cliCommand || 'code',
+        logPath: path.join(os.tmpdir(), 'vibrancy-cleanup.log'),
+    });
 
     const scriptPath = path.join(os.tmpdir(), `vibrancy-cleanup-${Date.now()}.ps1`);
     fsSync.writeFileSync(scriptPath, psScript, 'utf-8');
@@ -280,6 +318,7 @@ module.exports = {
     resolveHookBgKeys,
     buildRestorePlan,
     stageDeferredRestore,
+    buildDeferredScript,
 };
 
 // Only run uninstall logic when invoked directly as a script (not when required by tests)

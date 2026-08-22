@@ -695,3 +695,58 @@ describe('stageDeferredRestore', () => {
     expect(run()).toContain('not found');
   });
 });
+
+describe('buildDeferredScript', () => {
+  const { buildDeferredScript } = require('../../extension/uninstallHook');
+  const script = () => buildDeferredScript({
+    exeName: "Code - Insid'ers",
+    nodePath: 'C:\\Programs\\Code.exe',
+    entry: 'C:\\Temp\\stage\\restore.js',
+    stageDir: 'C:\\Temp\\stage',
+    cliCommand: "C:\\bin\\o'brien.cmd",
+    logPath: 'C:\\Temp\\cleanup.log',
+  });
+
+  it('waits for the restore instead of firing and forgetting it', () => {
+    // Measured on a real Windows box: `& $node $script` returns in 8ms without
+    // waiting and without connecting stdout, because Code.exe is a GUI-subsystem
+    // binary. Everything after it then races the restore — deleting the staged
+    // bundle out from under a process still starting, and relaunching VSCode in
+    // time to re-cache the settings being edited, which is the exact race the
+    // deferral exists to prevent.
+    const text = script();
+
+    expect(text).toContain('-Wait -NoNewWindow');
+    expect(text).toContain('-PassThru');
+    expect(text).not.toMatch(/&\s+\$node\s+\$script/);
+  });
+
+  it('escapes single quotes in every interpolated path', () => {
+    // A path with an apostrophe would otherwise end the PowerShell string and
+    // turn the rest of the line into commands.
+    const text = script();
+
+    expect(text).toContain("$proc = 'Code - Insid''ers'");
+    expect(text).toContain("Start-Process 'C:\\bin\\o''brien.cmd'");
+  });
+
+  it('launches the interpreter only after the wait loop', () => {
+    // VSCode's own binary is the interpreter, so starting it any earlier would
+    // make the wait loop see a running instance and spin forever.
+    const lines = script().split('\r\n');
+    const waitLine = lines.findIndex((line) => line.startsWith('while (Get-Process'));
+    const startLine = lines.findIndex((line) => line.includes('Start-Process -FilePath $node'));
+
+    expect(waitLine).toBeGreaterThan(-1);
+    expect(startLine).toBeGreaterThan(waitLine);
+  });
+
+  it('cleans up the staged bundle and its capture files', () => {
+    expect(script()).toContain('Remove-Item $stage -Recurse -Force');
+    expect(script()).toContain('Remove-Item $out, $err -Force');
+  });
+
+  it('is CRLF, as a .ps1 written for Windows should be', () => {
+    expect(script()).not.toMatch(/[^\r]\n/);
+  });
+});

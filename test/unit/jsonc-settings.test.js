@@ -195,3 +195,29 @@ describe('applySettingsRestore', () => {
     expect(text).not.toMatch(/[^\r]\n/);
   });
 });
+
+describe('inserting a restored top-level setting', () => {
+  // Asymmetric with the colour keys above, on purpose. A colour key is only
+  // touched when it is already present, because writing one into a profile that
+  // never had it would invent a customization. A top-level backup value is
+  // different: `null` means "the user had nothing here" and non-null means the
+  // backup recorded an explicit value, so putting it back is the whole point of
+  // having taken it. The regex approach could not insert at all, so this case
+  // silently did nothing.
+  it('adds a recorded setting that is no longer in the file', () => {
+    const { text, changed } = applySettingsRestore('{\n  "editor.fontSize": 13\n}\n', {
+      settings: { 'terminal.integrated.gpuAcceleration': 'auto' },
+    });
+
+    expect(changed).toBe(true);
+    expect(parseSettings(text).value['terminal.integrated.gpuAcceleration']).toBe('auto');
+    expect(parseSettings(text).errors).toEqual([]);
+  });
+
+  it('does not add a key whose backup says the user had nothing', () => {
+    const clean = '{\n  "editor.fontSize": 13\n}\n';
+    expect(applySettingsRestore(clean, {
+      settings: { 'terminal.integrated.gpuAcceleration': null, 'window.systemColorTheme': null },
+    })).toEqual({ text: clean, changed: false, errors: [] });
+  });
+});
