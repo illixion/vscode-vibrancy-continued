@@ -1347,6 +1347,19 @@ function activate(context) {
       electronJsPath: ElectronJSFile,
     }, await changeVSCodeSettings());
 
+    // Every successful enable and update funnels through here, which is what
+    // this needs: the people the profile tip is written for are existing users
+    // upgrading, and they never call Enable. It used to sit in Install() behind
+    // an `if (!sharedWriter)` guard copied from the ownership-takeover warning
+    // above it — but Update() always passes a shared writer, so the one
+    // population that needed the tip was the only one that never saw it.
+    //
+    // Here also means it only fires after the install has actually succeeded;
+    // in Install() it ran before the file work, so a failed install announced
+    // profile advice anyway. Not awaited: it reads other profiles' settings off
+    // disk, and a slow or unreadable file must not hold up the install.
+    showProfileTip();
+
     // In mirror mode the enable flow never goes through promptRestart (the
     // user relaunches via the desktop entry instead of the Restart button),
     // so the custom window controls needed over a transparent window must be
@@ -1384,12 +1397,6 @@ function activate(context) {
       currentProfile: getProfileIdentity(),
     })) {
       vscode.window.showWarningMessage(localize('messages.profileTakeover'));
-    }
-
-    // Deliberately not awaited: it reads other profiles' settings off disk, and
-    // a slow or unreadable file must not hold up the install.
-    if (!sharedWriter) {
-      showProfileTip();
     }
 
     // BUG: prevent installation on macOS with Electron 32.2.6 used in VSCode 1.96 (#178)
