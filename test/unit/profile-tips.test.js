@@ -163,49 +163,5 @@ describe('reachability of stranded colours', () => {
   });
 });
 
-// --- wiring guard ---
-//
-// index.js is one large activate() with side effects, so the tip's call site
-// can't be reached by a unit test. It still needs a guard, because the bug here
-// was entirely in the wiring: the logic above was correct and tested, while the
-// call sat in Install() behind an `if (!sharedWriter)` copied from the
-// ownership-takeover warning next to it. Update() always passes a shared writer,
-// so the tip never fired for existing users upgrading — precisely the people it
-// is written for, and the only ones who never run Enable.
-describe('showProfileTip call site', () => {
-  const fs = require('fs');
-  const source = fs.readFileSync(require.resolve('../../extension/index.js'), 'utf-8');
-
-  /** Body of a named function declared at activate()'s indent level. */
-  const bodyOf = (name) => {
-    const lines = source.split('\n');
-    const start = lines.findIndex((l) => new RegExp(`^\\s*(async )?function ${name}\\b`).test(l));
-    expect(start).toBeGreaterThan(-1);
-    const rest = lines.slice(start + 1);
-    const end = rest.findIndex((l) => /^  (async )?function \w+/.test(l));
-    return rest.slice(0, end === -1 ? undefined : end).join('\n');
-  };
-
-  it('is called from the shared post-install path, so updates trigger it too', () => {
-    // Every successful enable and update goes through applyPostInstallSettings;
-    // Install() alone does not, because Update() calls Install() with a writer.
-    expect(bodyOf('applyPostInstallSettings')).toContain('showProfileTip()');
-  });
-
-  it('is called exactly once, and not from Install()', () => {
-    // Install() runs again on the elevated-retry path, so a call there would
-    // announce profile advice twice — and, sitting before the file work, would
-    // announce it for an install that then failed.
-    const calls = source.match(/(?<!function )showProfileTip\(\)/g) || [];
-    expect(calls).toHaveLength(1);
-    expect(bodyOf('Install')).not.toContain('showProfileTip');
-  });
-
-  it('is not gated on sharedWriter', () => {
-    const body = bodyOf('applyPostInstallSettings');
-    const line = body.split('\n').find((l) => l.includes('showProfileTip()'));
-    expect(line).not.toMatch(/sharedWriter/);
-    // and nothing wraps it in such a condition within that function
-    expect(body).not.toMatch(/if\s*\(\s*!?\s*sharedWriter\s*\)[^\n]*\n[^\n]*showProfileTip/);
-  });
-});
+// The tip's call site is guarded in index-wiring.test.js — the bug there was
+// in the wiring, not in the logic above.

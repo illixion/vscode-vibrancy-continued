@@ -1465,13 +1465,10 @@ function activate(context) {
   }
 
   async function Uninstall(promptRestart = true, sharedWriter) {
-    // Defer settings restore when part of Update flow — Update handles it after flush
     if (!sharedWriter) {
       // Check before touching anything: unpatching is machine-wide, but only
       // this profile's colour customizations can be reverted from here.
       if (!await confirmUninstallFromOwningProfile()) return;
-
-      await restorePreviousSettings();
     }
 
     // Standalone disable when the mirror was never created: nothing to
@@ -1480,6 +1477,7 @@ function activate(context) {
       await nixMirror.removeDesktopEntry();
       await nixMirror.removeAllMirrors();
       await removeControlsStyle();
+      await restorePreviousSettings();
       await setLocalConfig(false);
       if (promptRestart) {
         disabledRestart();
@@ -1507,6 +1505,15 @@ function activate(context) {
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {
         await writer.flush();
+
+        // Revert the colour customizations only now that the files really are
+        // unpatched. Doing it up front meant every abandoned uninstall — a
+        // declined elevation prompt, a failed write, a declined elevated retry
+        // — left VSCode still patched with its vibrancy colours already gone:
+        // a visibly broken editor, with no hint that re-running Disable is the
+        // fix. (Update passes a shared writer and skips this entirely; it
+        // re-installs in place, so there is nothing to revert.)
+        await restorePreviousSettings();
         await setLocalConfig(false);
 
         // Standalone disable removes the whole shadow install: the mirror
@@ -1534,6 +1541,7 @@ function activate(context) {
         try {
           await Uninstall(promptRestart, elevatedWriter);
           await elevatedWriter.flush();
+          await restorePreviousSettings();
           await setLocalConfig(false);
           if (promptRestart) {
             disabledRestart();
