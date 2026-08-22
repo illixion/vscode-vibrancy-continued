@@ -233,3 +233,161 @@ describe('Reload', () => {
     expect(read(jsPath).match(/VSCODE-VIBRANCY-START/g)).toHaveLength(1);
   });
 });
+
+// --- the recorded settings.json path ---
+//
+// Up to 1.1.92 the uninstall hook was always pointed at the *default* profile's
+// settings.json, whatever profile installed Vibrancy. The fix landed in the
+// install path, so it only takes hold when config.json is rewritten — and a
+// patch release never triggers that. activate() therefore heals it in place.
+//
+// Correcting it wrongly is the same bug pointed somewhere new, so these cover
+// the refusals as carefully as the correction.
+describe('healing a stale settings.json path', () => {
+  const EXT_ID = 'illixion.vscode-vibrancy-continued';
+
+  /** The User directory index.js derives its profile registry from. */
+  const userDir = () => path.dirname(extension._test.getEditorSettingsPath('Visual Studio Code'));
+
+  /** Register a non-default profile and return where its files live. */
+  function addProfile({ location = 'abc', name = 'Work' } = {}) {
+    const dir = userDir();
+    fs.mkdirSync(path.join(dir, 'globalStorage'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'globalStorage', 'storage.json'),
+      JSON.stringify({ userDataProfiles: [{ location, name }] }),
+    );
+    const profileDir = path.join(dir, 'profiles', location);
+    fs.mkdirSync(path.join(profileDir, 'globalStorage'), { recursive: true });
+    return {
+      settingsPath: path.join(profileDir, 'settings.json'),
+      globalStoragePath: path.join(profileDir, 'globalStorage', EXT_ID),
+      defaultSettingsPath: path.join(dir, 'settings.json'),
+    };
+  }
+
+  const configPath = () => path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json');
+
+  function writeConfig(contents) {
+    fs.mkdirSync(path.dirname(configPath()), { recursive: true });
+    fs.writeFileSync(configPath(), JSON.stringify(contents, null, 2));
+  }
+
+  const readConfig = () => JSON.parse(read(configPath()));
+
+  /** activate() does not await the heal, so give it a moment to land. */
+  async function activateAndSettle(globalStoragePath) {
+    makeInstall();
+    vscode.__reset({ settings: { 'workbench.colorTheme': 'Default Dark+' },
+      globalState: { lastVersion: require('../../package.json').version } });
+    extension.activate({
+      subscriptions: [],
+      globalStorageUri: { fsPath: globalStoragePath },
+      globalState: {
+        get: (k) => vscode.__state.globalState.get(k),
+        update: async (k, v) => { vscode.__state.globalState.set(k, v); },
+      },
+      extension: { packageJSON: require('../../package.json') },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  it('corrects it when this profile is holding the colours', async () => {
+    const profile = addProfile();
+    // What 1.1.92 wrote: the default profile's path, and no owner recorded.
+    writeConfig({ settingsJsonPath: profile.defaultSettingsPath, previousCustomizations: { saved: true } });
+    // The evidence: Vibrancy's translucent colours really are in this profile.
+    fs.writeFileSync(profile.settingsPath, JSON.stringify({
+      'workbench.colorCustomizations': { 'editor.background': '#1e1e1ecc' },
+    }));
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(readConfig().settingsJsonPath).toBe(profile.settingsPath);
+  });
+
+  it('keeps the backup the hook needs while correcting the path', async () => {
+    // The rewrite has to patch one field. Losing previousCustomizations would
+    // leave the hook with a correct path and nothing to restore into it.
+    const profile = addProfile();
+    const backup = { saved: true, vibrancyBackgrounds: { 'editor.background': null } };
+    writeConfig({
+      settingsJsonPath: profile.defaultSettingsPath,
+      jsPath: '/somewhere/main.js',
+      previousCustomizations: backup,
+    });
+    fs.writeFileSync(profile.settingsPath, JSON.stringify({
+      'workbench.colorCustomizations': { 'editor.background': '#1e1e1ecc' },
+    }));
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(readConfig()).toMatchObject({
+      settingsJsonPath: profile.settingsPath,
+      jsPath: '/somewhere/main.js',
+      previousCustomizations: backup,
+    });
+  });
+
+  it('leaves it alone when this profile holds no vibrancy colours', async () => {
+    // Without a recorded owner there is nothing to say this profile installed
+    // Vibrancy, so a correction here would just move the bug.
+    const profile = addProfile();
+    writeConfig({ settingsJsonPath: profile.defaultSettingsPath });
+    fs.writeFileSync(profile.settingsPath, JSON.stringify({
+      'workbench.colorCustomizations': { 'editor.foreground': '#ffffff' },
+    }));
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(readConfig().settingsJsonPath).toBe(profile.defaultSettingsPath);
+  });
+
+  it('leaves another profile\'s record alone', async () => {
+    // A recorded owner means the path was recorded correctly at the same time,
+    // so a mismatch just means we are looking from somewhere else.
+    const profile = addProfile();
+    writeConfig({
+      settingsJsonPath: profile.defaultSettingsPath,
+      ownerProfileKey: 'someoneelse',
+    });
+    fs.writeFileSync(profile.settingsPath, JSON.stringify({
+      'workbench.colorCustomizations': { 'editor.background': '#1e1e1ecc' },
+    }));
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(readConfig().settingsJsonPath).toBe(profile.defaultSettingsPath);
+  });
+
+  it('corrects it for the recorded owner without needing the colours as evidence', async () => {
+    const profile = addProfile();
+    const { deriveProfileIdentity } = require('../../extension/profile-ownership');
+    writeConfig({
+      settingsJsonPath: profile.defaultSettingsPath,
+      ownerProfileKey: deriveProfileIdentity(profile.globalStoragePath).key,
+    });
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(readConfig().settingsJsonPath).toBe(profile.settingsPath);
+  });
+
+  it('rewrites nothing when the record is already right', async () => {
+    const profile = addProfile();
+    writeConfig({ settingsJsonPath: profile.settingsPath, previousCustomizations: { saved: true } });
+    const before = read(configPath());
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(read(configPath())).toBe(before);
+  });
+
+  it('does not create a config for an install that is not there', async () => {
+    const profile = addProfile();
+
+    await activateAndSettle(profile.globalStoragePath);
+
+    expect(fs.existsSync(configPath())).toBe(false);
+  });
+});

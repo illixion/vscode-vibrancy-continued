@@ -1087,6 +1087,60 @@ function activate(context) {
    * machine-wide while its colour settings are per profile, so the first
    * encounter with it looks like a Vibrancy bug rather than a scoping artefact.
    */
+  /**
+   * Re-record which profile's settings.json holds Vibrancy's colours, when the
+   * install predates Vibrancy knowing about profiles.
+   *
+   * Up to 1.1.92 this was always written as the *default* profile's file, so an
+   * install made from any other profile left the uninstall hook pointed at a
+   * settings.json that may never have held a vibrancy colour — stripping keys
+   * out of the wrong file and leaving the real ones behind. The fix only takes
+   * effect when config.json is rewritten, which happens on install or update,
+   * and a patch release doesn't trigger one. So heal it here instead of waiting
+   * for the user to reload Vibrancy.
+   *
+   * Only ever corrects it towards *this* profile, and only on evidence that
+   * this is the profile concerned — pointing the hook at the wrong file is the
+   * bug being fixed, so a guess would just move it somewhere else.
+   */
+  async function healStaleSettingsPath() {
+    const config = await readLocalConfig();
+    if (!config) return; // not installed
+
+    const currentSettingsPath = getCurrentSettingsPath();
+    if (config.settingsJsonPath === currentSettingsPath) return;
+
+    if (config.ownerProfileKey) {
+      // Recorded by a version that tracks ownership, so it also recorded the
+      // owner's settings path correctly. A mismatch here just means we're
+      // looking from a different profile, which is not ours to correct.
+      if (config.ownerProfileKey !== getProfileIdentity()?.key) return;
+    } else {
+      // Pre-ownership config: nothing says which profile installed. Only claim
+      // the path if this profile's settings.json actually holds the colours the
+      // hook would have to revert.
+      const managedKeys = resolveManagedBgKeys(getCurrentThemeConfig()?.colorCustomizations);
+      let leftovers = [];
+      try {
+        const text = require('fs').readFileSync(currentSettingsPath, 'utf-8');
+        leftovers = findVibrancyLeftovers(readColorCustomizations(text), managedKeys);
+      } catch {
+        // Unreadable or absent: no evidence, so leave the record alone.
+      }
+      if (!leftovers.length) return;
+    }
+
+    // Patch the one field rather than rewriting through setLocalConfig, which
+    // would need the install paths and would drop previousCustomizations.
+    const configFilePath = await getLocalConfigPath();
+    await fs.writeFile(
+      configFilePath,
+      JSON.stringify({ ...config, settingsJsonPath: currentSettingsPath }, null, 2),
+      'utf-8',
+    );
+    console.log(`Vibrancy: corrected the recorded settings.json path to ${currentSettingsPath}`);
+  }
+
   async function showProfileTip() {
     try {
       const situation = assessProfileSituation({
@@ -1654,6 +1708,11 @@ function activate(context) {
     }).catch((err) => console.error('Vibrancy: failed to restore window.titleBarStyle:', err));
   }
 
+  // Not awaited: it only reads and rewrites Vibrancy's own record of which
+  // settings.json to revert, and nothing in activation depends on the outcome.
+  healStaleSettingsPath()
+    .catch((err) => console.error('Vibrancy: failed to correct the recorded settings.json path:', err));
+
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 
   vscode.workspace.onDidChangeConfiguration(() => {
@@ -1708,4 +1767,4 @@ function deactivate() { }
 exports.deactivate = deactivate;
 
 // Exported for testing
-exports._test = { getCurrentTheme };
+exports._test = { getCurrentTheme, getEditorSettingsPath };
