@@ -10,6 +10,17 @@ body {
   background: transparent !important;
 }
 
+/*
+ * "Outer" means only the chrome around the editor shows vibrancy — the editor pane
+ * itself is meant to stay fully opaque. That used to be true for free, because the
+ * editor part painted its own opaque background regardless of what the workbench
+ * root did. Current VSCode no longer does that, so it now inherits the transparency
+ * set above unless it's reasserted here (same root cause as issue #273).
+ */
+.monaco-workbench .part.editor {
+  background: var(--vscode-editor-background) !important;
+}
+
 .editor-group-container > .tabs {
   background-color: transparent !important;
 }

@@ -7,6 +7,19 @@ body {
   background: transparent !important;
 }
 
+/*
+ * "Only Subbar" means only the title bar, activity bar and side bar show vibrancy —
+ * the editor, status bar and panel are meant to stay fully opaque. That used to be
+ * true for free, because those parts painted their own opaque background regardless
+ * of what the workbench root did. Current VSCode no longer does that, so they now
+ * inherit the transparency set above unless it's reasserted here (issue #273).
+ */
+.monaco-workbench .part.editor,
+.monaco-workbench .part.statusbar,
+.monaco-workbench .part.panel {
+  background: var(--vscode-editor-background) !important;
+}
+
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon {
   color: #616161 !important;
 }
