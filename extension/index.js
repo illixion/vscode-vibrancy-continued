@@ -950,29 +950,6 @@ function activate(context) {
       });
   }
 
-  function isVSCodeThisVersionOrNewer(requiredVersion) {
-    const currentVersion = vscode.version; // e.g., "1.96.0"
-
-    // Extract only the numeric parts of the version string (e.g., "1.95.0-insider" -> "1.95.0")
-    const currentVersionCleaned = currentVersion.match(/^\d+\.\d+\.\d+/)[0];
-
-    // Split the version strings into major, minor, and patch numbers
-    const currentParts = currentVersionCleaned.split('.').map(Number);
-    const requiredParts = requiredVersion.split('.').map(Number);
-
-    // Compare each part of the version
-    for (let i = 0; i < requiredParts.length; i++) {
-        if ((currentParts[i] || 0) > requiredParts[i]) {
-            return true;
-        } else if ((currentParts[i] || 0) < requiredParts[i]) {
-            return false;
-        }
-    }
-
-    // If all parts are equal, return true
-    return true;
-  }
-
   // Fix UI rendering by modifying VSCode settings
   async function changeVSCodeSettings() {
     const vibrancyConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
@@ -1616,15 +1593,17 @@ function activate(context) {
     }
   }
 
-  var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', () => {
-    runExclusive(() => Install());
-  });
-  var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', () => {
-    runExclusive(() => Uninstall());
-  });
-  var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', () => {
-    runExclusive(() => Update());
-  });
+  // Returned rather than fired and forgotten, so VSCode knows the command is
+  // still running — and so a caller can wait for it.
+  var installVibrancy = vscode.commands.registerCommand('extension.installVibrancy', () => (
+    runExclusive(() => Install())
+  ));
+  var uninstallVibrancy = vscode.commands.registerCommand('extension.uninstallVibrancy', () => (
+    runExclusive(() => Uninstall())
+  ));
+  var updateVibrancy = vscode.commands.registerCommand('extension.updateVibrancy', () => (
+    runExclusive(() => Update())
+  ));
 
   context.subscriptions.push(installVibrancy);
   context.subscriptions.push(uninstallVibrancy);
@@ -1699,7 +1678,7 @@ function activate(context) {
 
   vscode.workspace.onDidChangeConfiguration(() => {
     if (operationInProgress) return;
-    newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    const newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
     if (!deepEqual(lastConfig, newConfig)) {
       lastConfig = newConfig;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
