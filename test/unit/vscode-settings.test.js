@@ -1054,3 +1054,74 @@ describe('applySettings reinstall poisoning protection for theme literals', () =
     expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
   });
 });
+
+// --- settings.json changing underneath us ---
+
+describe('settings.json changing underneath us', () => {
+  // The recorded backup can disagree with what is actually in settings.json:
+  // the user edited it by hand, or Settings Sync brought a value from another
+  // machine. Whatever is there belongs to the user and must be adopted, not
+  // overwritten from a stale backup.
+  const C = 'workbench.colorCustomizations';
+
+  it('adopts a value the backup never captured', async () => {
+    const globalState = createGlobalState();
+    const store = createSettingsStore({ [C]: { 'editor.background': '#123456' } });
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    // Settings Sync replaces the whole object with another machine's values
+    store.data[C] = { 'editor.background': '#ff0000' };
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    expect(store.data[C]['editor.background']).toBe('#ff000080');
+    expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBe('#ff0000');
+  });
+
+  it('restores the adopted value rather than the stale one on disable', async () => {
+    const globalState = createGlobalState();
+    const store = createSettingsStore({ [C]: { 'editor.background': '#123456' } });
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    store.data[C] = { 'editor.background': '#ff0000' };
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    await restoreSettings({
+      settingsStore: store,
+      globalState,
+      disableColorCustomizations: false,
+      themeConfig: defaultThemeConfig,
+    });
+
+    expect(store.data[C]['editor.background']).toBe('#ff0000');
+  });
+
+  it('recognises its own output as its own across repeated applies', async () => {
+    // The reconciliation must not mistake vibrancy's own value for a user value
+    // and start layering alpha onto alpha.
+    const store = createSettingsStore({ [C]: { 'editor.background': '#123456' } });
+    const globalState = createGlobalState();
+
+    for (let i = 0; i < 3; i++) {
+      await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+      expect(store.data[C]['editor.background']).toBe('#12345680');
+      expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBe('#123456');
+    }
+  });
+
+  it('picks up a hand-edited color rather than silently overwriting it', async () => {
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    // User edits settings.json directly while vibrancy is active
+    store.data[C]['editor.background'] = '#abcdef';
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBe('#abcdef');
+    expect(store.data[C]['editor.background']).toBe('#abcdef80');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+    expect(store.data[C]['editor.background']).toBe('#abcdef');
+  });
+});

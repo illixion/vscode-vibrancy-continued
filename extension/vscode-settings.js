@@ -68,73 +68,73 @@ async function applySettings(deps) {
     const currentBackground = currentColorCustomizations?.["terminal.background"];
     const currentApplyToAllProfiles = applyToAllProfilesConfig?.globalValue;
 
-    // Store original values if not already saved.
-    // Sanitise against vibrancy's own output: when settings.json still holds
-    // vibrancy values from a previous install (e.g. user removed the extension
-    // without disabling first, then reinstalled — issue #247), treating those
-    // values as "user originals" would poison the backup so disable later
-    // re-applies them. Drop them to null so disable cleanly removes the keys.
-    // A theme's literal colours don't derive from themeBackground, so
-    // looksLikeVibrancyValue can't recognise them as vibrancy's own output.
-    // Match them per-key as well, otherwise reinstalling without disabling
-    // first would back up a theme's literal as if the user had chosen it
-    // (the same poisoning issue #247 describes, via a different route).
     const { overrides: themeOverrides } = parseThemeColorCustomizations(themeConfig?.colorCustomizations);
+    const lastWritten = previousCustomizations.lastWritten;
 
-    const captureOriginal = (key) => {
-      const v = currentColorCustomizations[key];
-      if (looksLikeVibrancyValue(v, themeBackground)) return null;
-
-      const literal = themeOverrides[key]?.literal;
-      if (literal && typeof v === 'string' && v.toLowerCase() === literal.toLowerCase()) return null;
-
-      return v ?? null;
-    };
-
-    const cleanTerminalBg =
-      currentBackground === "#00000000" || looksLikeVibrancyValue(currentBackground, themeBackground)
-        ? null
-        : currentBackground;
-
-    if (!previousCustomizations.saved) {
-      const vibrancyBackgrounds = {};
-      for (const key of managedKeys) {
-        vibrancyBackgrounds[key] = captureOriginal(key);
+    /**
+     * Is the value sitting in settings.json something vibrancy put there, as
+     * opposed to a value that belongs to the user?
+     *
+     * The reliable answer is the record of what we last wrote. Falling back to
+     * recognising vibrancy's output by shape only matters when that record is
+     * missing (a first install, or globalState was lost) — see issue #247,
+     * where leftover values from a previous install got backed up as if the
+     * user had chosen them. A theme's literal colours don't derive from
+     * themeBackground, so they're matched per-key rather than by shape.
+     */
+    const isOwnOutput = (key, value) => {
+      if (lastWritten && key in lastWritten) {
+        return lastWritten[key] === null ? value === undefined : value === lastWritten[key];
       }
 
+      if (looksLikeVibrancyValue(value, themeBackground)) return true;
+
+      const literal = themeOverrides[key]?.literal;
+      return !!(literal && typeof value === 'string' && value.toLowerCase() === literal.toLowerCase());
+    };
+
+    /**
+     * Work out the user's own value for a key, given whatever we already
+     * recorded for it. Re-checked on every run rather than only on first
+     * install, because settings.json can hold a value we never captured:
+     *
+     *   - the user hand-edited it, or settings sync brought a different one;
+     *   - disableColorCustomizations was switched on and then off again, so the
+     *     backup was handed back and dropped;
+     *   - a *different profile* is active. globalState is shared machine-wide
+     *     while settings.json is per-profile (issue #183), so the recorded
+     *     original can belong to a profile other than the one being written.
+     *
+     * In all of those cases the value in front of us is the user's and has to
+     * be adopted, or applying vibrancy would overwrite it with nothing left to
+     * restore it from.
+     */
+    const reconcileOriginal = (key, recorded) => {
+      const current = currentColorCustomizations[key];
+      if (isOwnOutput(key, current)) return recorded ?? null;
+      return current ?? null;
+    };
+
+    if (!previousCustomizations.saved) {
       previousCustomizations = {
         saved: true,
-        terminalBackground: cleanTerminalBg,
-        vibrancyBackgrounds: vibrancyBackgrounds,
         gpuAcceleration: currentGpuAcceleration,
         removedFromApplyToAllProfiles: previousCustomizations.removedFromApplyToAllProfiles || false,
         systemColorTheme: currentSystemColorTheme,
         autoDetectColorScheme: currentAutoDetectColorScheme,
       };
-    } else if (!previousCustomizations.vibrancyBackgrounds) {
-      // Saved, but the colour backup is gone: a previous run handed the colours
-      // back and dropped it — either disableColorCustomizations was switched on
-      // and has now been switched off again, or the very first install happened
-      // while it was on. settings.json currently holds the user's own colours,
-      // so the backup has to be re-taken before we overwrite them. Without
-      // this, toggling that setting on and off silently destroyed any custom
-      // background colours the user had.
-      const vibrancyBackgrounds = {};
-      for (const key of managedKeys) {
-        vibrancyBackgrounds[key] = captureOriginal(key);
-      }
-      previousCustomizations.vibrancyBackgrounds = vibrancyBackgrounds;
-      previousCustomizations.terminalBackground = cleanTerminalBg;
-    } else {
-      // Backfill keys this theme names that the existing backup never captured
-      // (the user switched to a theme whose `colorCustomizations` reaches keys
-      // the previous theme left alone). Without this their pre-vibrancy values
-      // would be lost and disable couldn't restore them.
-      for (const key of managedKeys) {
-        if (key in previousCustomizations.vibrancyBackgrounds) continue;
-        previousCustomizations.vibrancyBackgrounds[key] = captureOriginal(key);
-      }
     }
+
+    const vibrancyBackgrounds = previousCustomizations.vibrancyBackgrounds || {};
+    for (const key of managedKeys) {
+      vibrancyBackgrounds[key] = reconcileOriginal(key, vibrancyBackgrounds[key]);
+    }
+    previousCustomizations.vibrancyBackgrounds = vibrancyBackgrounds;
+
+    previousCustomizations.terminalBackground =
+      currentBackground === "#00000000" || isOwnOutput("terminal.background", currentBackground)
+        ? (previousCustomizations.terminalBackground ?? null)
+        : (currentBackground ?? null);
 
     try {
       // Remove "workbench.colorCustomizations" from applyToAllProfiles if it's there
@@ -177,6 +177,16 @@ async function applySettings(deps) {
       }
 
       await settingsStore.update("workbench.colorCustomizations", newColorCustomization);
+
+      // Record exactly what we wrote, so the next run can tell our own output
+      // apart from a value the user provides — or from another profile's
+      // settings.json, since this record is shared machine-wide (issue #183).
+      // `null` records a key we deliberately removed.
+      const written = {};
+      for (const key of [...managedKeys, "terminal.background"]) {
+        written[key] = key in newColorCustomization ? newColorCustomization[key] : null;
+      }
+      previousCustomizations.lastWritten = written;
     } catch (error) {
       console.error("Error updating color customizations:", error);
     }
@@ -219,6 +229,8 @@ async function applySettings(deps) {
         // settings.json with nothing left to restore them from.
         delete previousCustomizations.vibrancyBackgrounds;
         delete previousCustomizations.terminalBackground;
+        // We no longer own anything in settings.json.
+        delete previousCustomizations.lastWritten;
       } catch (error) {
         console.error("Error restoring color customizations:", error);
       }
