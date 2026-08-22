@@ -33,6 +33,7 @@ const {
 } = require('./profile-registry');
 const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tips');
 const { readColorCustomizations } = require('./jsonc-settings');
+const { resolveInstallPaths, rebaseInstallPaths } = require('./install-paths');
 
 /**
  * @type {(info: string) => string}
@@ -544,34 +545,16 @@ function activate(context) {
   } catch {
     appDir = _VSCODE_FILE_ROOT;
   }
-  let useEsmRuntime = false;
-  var JSFile = path.join(appDir, '/main.js');
-  var ElectronJSFile = path.join(appDir, '/vs/code/electron-main/main.js');
+  // Which files get patched, and which runtime flavour they need. Probed
+  // against appDir — the directory VSCode is really running from — before any
+  // NixOS mirror retargeting below; install-paths.js explains why that order
+  // is load-bearing and how it is enforced.
+  var installPaths = resolveInstallPaths({ appDir, exists: (p) => fs.existsSync(p) });
 
-  // VSC 1.95 merges these main.js files
-  if (!fs.existsSync(ElectronJSFile)) {
-    ElectronJSFile = JSFile;
-  }
-
-  var runtimeVersion = 'v6';
-  var runtimeDir = path.join(appDir, '/vscode-vibrancy-runtime-' + runtimeVersion);
-  var runtimeSrcDir = "../runtime-pre-esm"
-
-  // VSC 1.94 used ESM, 1.95 dropped it
-  const workbenchHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.html');
-  const workbenchEsmHtmlPath = path.join(appDir, 'vs/code/electron-sandbox/workbench/workbench.esm.html');
-  // VSC 1.102.0 and later renamed electron-sandbox to electron-browser
-  const workbenchHtmlPath102 = path.join(appDir, 'vs/code/electron-browser/workbench/workbench.html');
-  var HTMLFile;
-  if (fs.existsSync(workbenchHtmlPath)) {
-    HTMLFile = workbenchHtmlPath;
-  } else if (fs.existsSync(workbenchHtmlPath102)) {
-    HTMLFile = workbenchHtmlPath102;
-  } else {
-    HTMLFile = workbenchEsmHtmlPath;
-    useEsmRuntime = true;
-    runtimeSrcDir = "../runtime"
-  }
+  // Separate bindings for the ~40 read sites downstream. retargetToMirror is
+  // the only thing that moves them, and it reassigns them as a group.
+  var { jsFile: JSFile, electronJsFile: ElectronJSFile, htmlFile: HTMLFile, runtimeDir } = installPaths;
+  const { runtimeSrcDir, useEsmRuntime } = installPaths;
 
   // ####  NixOS shadow install  ##############################################
   // On NixOS the install dir is a read-only /nix/store path where elevation
@@ -582,28 +565,17 @@ function activate(context) {
   const nixMirror = process.platform === 'linux' ? require('./nix-mirror') : null;
   var usingMirror = false;
   var mirrorStoreRoot = null;
-  var targetAppDir = appDir;
   const launchedFromMirror = nixMirror ? nixMirror.isMirrorPath(appDir) : false;
 
   function retargetToMirror(storeRoot, fromDir) {
-    const mirrorRoot = nixMirror.mirrorRootFor(storeRoot);
-    // appDir's position inside the package is identical in the store and in
-    // any mirror (the mirror is a verbatim copy), so derive it from whichever
-    // root fromDir currently lives under.
-    let relFromRoot;
-    if (fromDir.startsWith('/nix/store/')) {
-      relFromRoot = path.relative(nixMirror.deriveStoreRoot(fromDir), fromDir);
-    } else {
-      const parts = path.relative(nixMirror.mirrorBase(), fromDir).split(path.sep);
-      relFromRoot = parts.slice(1).join(path.sep);
-    }
-    const toDir = path.join(mirrorRoot, relFromRoot);
-    const rebase = (p) => path.join(toDir, path.relative(fromDir, p));
-    JSFile = rebase(JSFile);
-    ElectronJSFile = rebase(ElectronJSFile);
-    HTMLFile = rebase(HTMLFile);
-    runtimeDir = rebase(runtimeDir);
-    targetAppDir = toDir;
+    // rebaseInstallPaths returns a new object and rejects paths that aren't
+    // under fromDir, so retargeting twice — a nixos-rebuild moving the store
+    // path under a running mirror — can't quietly double-rebase.
+    installPaths = rebaseInstallPaths(installPaths, {
+      fromDir,
+      toDir: nixMirror.mirrorTargetDir(storeRoot, fromDir),
+    });
+    ({ jsFile: JSFile, electronJsFile: ElectronJSFile, htmlFile: HTMLFile, runtimeDir } = installPaths);
     mirrorStoreRoot = storeRoot;
     usingMirror = true;
   }
@@ -1243,7 +1215,7 @@ function activate(context) {
   async function resolveElevation(forceElevation) {
     if (testMode) return false;
     // In mirror mode all writes land under $HOME — never elevate. The probe
-    // must not run against targetAppDir either: the mirror may not exist yet
+    // must not run against installPaths.appDir either: the mirror may not exist yet
     // at this point (it's created by ensureMirrorIfNeeded during the op).
     if (usingMirror) return false;
     let needsElevation = forceElevation || checkNeedsElevation(appDir);
@@ -1473,7 +1445,7 @@ function activate(context) {
 
     // Standalone disable when the mirror was never created: nothing to
     // revert — just clean up any leftover shadow-install artifacts.
-    if (usingMirror && !sharedWriter && !require('fs').existsSync(targetAppDir)) {
+    if (usingMirror && !sharedWriter && !require('fs').existsSync(installPaths.appDir)) {
       await nixMirror.removeDesktopEntry();
       await nixMirror.removeAllMirrors();
       await removeControlsStyle();
@@ -1638,7 +1610,7 @@ function activate(context) {
           ? require('fs').readdirSync(runtimeDir).join(', ')
           : 'DIR NOT FOUND';
         const pendingCopies = typeof pendingNodeCopies !== 'undefined' ? pendingNodeCopies.length : 0;
-        writeTestSignal('success', `Install completed. Runtime: [${runtimeFiles}]. Pending .node copies: ${pendingCopies}. appDir: ${appDir}. targetAppDir: ${targetAppDir}. usingMirror: ${usingMirror}`);
+        writeTestSignal('success', `Install completed. Runtime: [${runtimeFiles}]. Pending .node copies: ${pendingCopies}. appDir: ${appDir}. targetAppDir: ${installPaths.appDir}. usingMirror: ${usingMirror}`);
       }).catch((err) => {
         writeTestSignal('error', String(err && err.message || err));
       });

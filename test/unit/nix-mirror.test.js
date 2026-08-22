@@ -7,6 +7,8 @@ const {
   mirrorRootFor,
   isMirrorPath,
   rebasePath,
+  packageRootOf,
+  mirrorTargetDir,
   repointContent,
   ensureMirror,
   currentSymlinkPath,
@@ -54,6 +56,55 @@ describe('rebasePath', () => {
     const mirrorRoot = mirrorRootFor(STORE_ROOT);
     expect(rebasePath(APP_DIR, STORE_ROOT, mirrorRoot))
       .toBe(path.join(mirrorRoot, 'lib/vscode/resources/app/out'));
+  });
+});
+
+describe('packageRootOf', () => {
+  it('finds the package root of a store path', () => {
+    expect(packageRootOf(APP_DIR)).toBe(STORE_ROOT);
+  });
+
+  it('finds the mirror root of a mirrored path', () => {
+    const mirrorRoot = mirrorRootFor(STORE_ROOT);
+    expect(packageRootOf(path.join(mirrorRoot, 'lib/vscode/resources/app/out'))).toBe(mirrorRoot);
+  });
+
+  it('throws for a path in neither', () => {
+    expect(() => packageRootOf('/usr/lib/code')).toThrow(/Not a Nix store path/);
+  });
+});
+
+describe('mirrorTargetDir', () => {
+  // Where patching gets redirected to. Getting this wrong writes the patched
+  // files somewhere VSCode never loads them, so the install reports success and
+  // nothing changes — the failure mode with no error message.
+  const APP_REL = 'lib/vscode/resources/app/out';
+
+  it('maps a store app dir into that store root\'s mirror', () => {
+    expect(mirrorTargetDir(STORE_ROOT, APP_DIR))
+      .toBe(path.join(mirrorRootFor(STORE_ROOT), APP_REL));
+  });
+
+  it('maps an older mirror onto the new store root\'s mirror', () => {
+    // The NixOS staleness path: a rebuild moved the system VSCode, and the
+    // running instance was launched from the mirror of the *previous* store
+    // path. Both roots have to be recognised, because the app dir's position
+    // inside the package is what carries over — not its absolute path.
+    const NEW_STORE_ROOT = '/nix/store/aaaabbbbccccddddeeeeffff11112222-vscode-1.120.0';
+    const oldMirrorAppDir = path.join(mirrorRootFor(STORE_ROOT), APP_REL);
+
+    expect(mirrorTargetDir(NEW_STORE_ROOT, oldMirrorAppDir))
+      .toBe(path.join(mirrorRootFor(NEW_STORE_ROOT), APP_REL));
+  });
+
+  it('is a no-op when the mirror is already the right one', () => {
+    const appDir = path.join(mirrorRootFor(STORE_ROOT), APP_REL);
+    expect(mirrorTargetDir(STORE_ROOT, appDir)).toBe(appDir);
+  });
+
+  it('refuses a source that is neither a store path nor a mirror', () => {
+    expect(() => mirrorTargetDir(STORE_ROOT, '/usr/lib/code/resources/app/out'))
+      .toThrow(/Not a Nix store path/);
   });
 });
 

@@ -95,6 +95,33 @@ function rebasePath(p, storeRoot, mirrorRoot) {
 }
 
 /**
+ * The root of the package `p` lives in, whether that is a /nix/store path or a
+ * mirror of one. Throws for anything that is neither.
+ */
+function packageRootOf(p) {
+  if (isMirrorPath(p)) {
+    // mirrorBase()/mirror-<hash>-name/lib/vscode/... -> mirrorBase()/mirror-<hash>-name
+    const [mirrorDirName] = path.relative(mirrorBase(), p).split(path.sep);
+    return path.join(mirrorBase(), mirrorDirName);
+  }
+  return deriveStoreRoot(p);
+}
+
+/**
+ * The directory inside `storeRoot`'s mirror that corresponds to `fromDir`,
+ * where `fromDir` is the app directory VSCode is currently running from.
+ *
+ * A mirror is a verbatim copy of the store package, so a path's position
+ * within the package is identical in both and only the root differs. `fromDir`
+ * is a store path on a first install; it is an *older mirror* when a
+ * nixos-rebuild has moved the system VSCode and we are re-mirroring from the
+ * new store path, so both roots have to be recognised.
+ */
+function mirrorTargetDir(storeRoot, fromDir) {
+  return rebasePath(fromDir, packageRootOf(fromDir), mirrorRootFor(storeRoot));
+}
+
+/**
  * Repoint wrapper script content from the store root to the mirror root.
  * Only the package's own root is replaced — references to other store
  * paths (GTK/GIO env, LD_LIBRARY_PATH deps) stay valid and are kept.
@@ -401,6 +428,8 @@ module.exports = {
   mirrorRootFor,
   isMirrorPath,
   rebasePath,
+  packageRootOf,
+  mirrorTargetDir,
   repointContent,
   readMirrorMeta,
   ensureMirror,

@@ -122,3 +122,28 @@ describe('Uninstall settings restore', () => {
     expect(mirrorOnly.slice(0, mirrorOnly.indexOf('return;'))).toContain('restorePreviousSettings()');
   });
 });
+
+// --- install path resolution ---
+//
+// install-paths.js resolves the layout by probing the filesystem, and refuses
+// to rebase paths it did not resolve. That makes the ordering mistake it exists
+// to prevent — probing a NixOS mirror that has not been created yet, missing
+// every file, and installing the 1.94 ESM runtime into a current VSCode — a
+// throw rather than a wrongly patched editor. This guards the one part the
+// module cannot check for itself: that there is only ever one probe.
+describe('install path resolution', () => {
+  it('probes the install layout exactly once', () => {
+    // A second probe is the mistake: whatever prompted it would be running
+    // against a directory that has already been retargeted.
+    expect(source.match(/resolveInstallPaths\(/g) || []).toHaveLength(1);
+  });
+
+  it('moves paths only through rebaseInstallPaths', () => {
+    const body = bodyOf('retargetToMirror');
+
+    expect(body).toContain('rebaseInstallPaths(');
+    expect(body).not.toContain('resolveInstallPaths(');
+    // The result has to be kept, or the next retarget rebases stale paths.
+    expect(body).toMatch(/installPaths = rebaseInstallPaths\(installPaths,/);
+  });
+});
