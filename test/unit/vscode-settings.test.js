@@ -726,3 +726,151 @@ describe('full round-trip', () => {
     }
   });
 });
+
+// --- theme colorCustomizations enrichment ---
+
+describe('applySettings with a theme colorCustomizations block', () => {
+  /** "Only Subbar"-style theme: editor region handed back to the color theme */
+  const subbarThemeConfig = {
+    ...defaultThemeConfig,
+    colorCustomizations: {
+      'editor.background': null,
+      'panel.background': null,
+      'terminal.background': null,
+      'statusBar.background': 1,
+    },
+  };
+
+  it('does not write keys the theme opts out of', async () => {
+    const store = createSettingsStore();
+    await applySettings(buildApplyDeps({ settingsStore: store, themeConfig: subbarThemeConfig }));
+
+    const colors = store.data['workbench.colorCustomizations'];
+    expect(colors).not.toHaveProperty('editor.background');
+    expect(colors).not.toHaveProperty('panel.background');
+    // Sidebar vibrancy is untouched by the opt-outs
+    expect(colors['sideBar.background']).toBe('#1e1e1e80');
+  });
+
+  it('lets a theme opt out of the forced transparent terminal background', async () => {
+    const store = createSettingsStore();
+    await applySettings(buildApplyDeps({ settingsStore: store, themeConfig: subbarThemeConfig }));
+
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('terminal.background');
+  });
+
+  it('still forces the transparent terminal background for a theme that stays quiet', async () => {
+    const store = createSettingsStore();
+    await applySettings(buildApplyDeps({ settingsStore: store }));
+
+    expect(store.data['workbench.colorCustomizations']['terminal.background']).toBe('#00000000');
+  });
+
+  it('writes a theme-introduced key outside the built-in tiers', async () => {
+    const store = createSettingsStore();
+    await applySettings(buildApplyDeps({ settingsStore: store, themeConfig: subbarThemeConfig }));
+
+    expect(store.data['workbench.colorCustomizations']['statusBar.background']).toBe('#1e1e1eff');
+  });
+
+  it('restores the user own value for an opted-out key instead of dropping it', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': {
+        'editor.background': '#123456',
+        'terminal.background': '#654321',
+      },
+    });
+
+    await applySettings(buildApplyDeps({ settingsStore: store, themeConfig: subbarThemeConfig }));
+
+    const colors = store.data['workbench.colorCustomizations'];
+    expect(colors['editor.background']).toBe('#123456');
+    expect(colors['terminal.background']).toBe('#654321');
+  });
+
+  it('backs up a theme-introduced key so disable can clean it up', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': { 'statusBar.background': '#abcdef' },
+    });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+
+    expect(globalState.data.customizations.vibrancyBackgrounds['statusBar.background']).toBe('#abcdef');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+
+    expect(store.data['workbench.colorCustomizations']['statusBar.background']).toBe('#abcdef');
+  });
+
+  it('removes a theme-introduced key on disable when the user had none', async () => {
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+    expect(store.data['workbench.colorCustomizations']).toHaveProperty('statusBar.background');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('statusBar.background');
+  });
+
+  it('backfills a key when switching to a theme that reaches further than the first one', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': { 'statusBar.background': '#abcdef' },
+    });
+    const globalState = createGlobalState();
+
+    // First install with a theme that never touches statusBar.background
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    expect(globalState.data.customizations.vibrancyBackgrounds)
+      .not.toHaveProperty('statusBar.background');
+
+    // Switching themes must capture the still-pristine user value
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+    expect(globalState.data.customizations.vibrancyBackgrounds['statusBar.background']).toBe('#abcdef');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+    expect(store.data['workbench.colorCustomizations']['statusBar.background']).toBe('#abcdef');
+  });
+
+  it('does not treat its own previous output as a user value when backfilling', async () => {
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    // Vibrancy wrote its own value for this key under the first theme
+    store.data['workbench.colorCustomizations']['statusBar.background'] = '#1e1e1e80';
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+
+    expect(globalState.data.customizations.vibrancyBackgrounds['statusBar.background']).toBeNull();
+  });
+
+  it('re-applies vibrancy to a key when switching back to a theme that manages it', async () => {
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('editor.background');
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#1e1e1e80');
+  });
+
+  it('cleans up theme-introduced keys when disableColorCustomizations is turned on', async () => {
+    const store = createSettingsStore();
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, themeConfig: subbarThemeConfig }));
+    expect(store.data['workbench.colorCustomizations']).toHaveProperty('statusBar.background');
+
+    await applySettings(buildApplyDeps({
+      settingsStore: store,
+      globalState,
+      themeConfig: subbarThemeConfig,
+      disableColorCustomizations: true,
+    }));
+
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('statusBar.background');
+  });
+});

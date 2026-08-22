@@ -1,4 +1,9 @@
-const { computeVibrancyColors, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
+const {
+  computeVibrancyColors,
+  parseThemeColorCustomizations,
+  resolveManagedBgKeys,
+  ALL_VIBRANCY_BG_KEYS,
+} = require('./file-transforms');
 
 // A value is treated as "vibrancy-applied, not user-set" when it is an
 // 8-char `#RRGGBBAA` hex whose RGB matches the current theme background.
@@ -53,6 +58,10 @@ async function applySettings(deps) {
   const currentSystemColorTheme = systemColorTheme?.globalValue;
   const currentAutoDetectColorScheme = autoDetectColorScheme?.globalValue;
 
+  // Keys vibrancy owns under this theme: its own defaults plus anything the
+  // theme's `colorCustomizations` enrichment names.
+  const managedKeys = resolveManagedBgKeys(themeConfig?.colorCustomizations);
+
   if (!disableColorCustomizations) {
     const terminalColorConfig = settingsStore.inspect("workbench.colorCustomizations");
     const applyToAllProfilesConfig = settingsStore.inspect("workbench.settings.applyToAllProfiles");
@@ -68,7 +77,7 @@ async function applySettings(deps) {
     // re-applies them. Drop them to null so disable cleanly removes the keys.
     if (!previousCustomizations.saved) {
       const vibrancyBackgrounds = {};
-      for (const key of ALL_VIBRANCY_BG_KEYS) {
+      for (const key of managedKeys) {
         const v = currentColorCustomizations[key];
         vibrancyBackgrounds[key] = looksLikeVibrancyValue(v, themeBackground) ? null : (v ?? null);
       }
@@ -87,6 +96,17 @@ async function applySettings(deps) {
         systemColorTheme: currentSystemColorTheme,
         autoDetectColorScheme: currentAutoDetectColorScheme,
       };
+    } else if (previousCustomizations.vibrancyBackgrounds) {
+      // Backfill keys this theme names that the original backup never captured
+      // (the user switched to a theme whose `colorCustomizations` reaches keys
+      // the previous theme left alone). Without this their pre-vibrancy values
+      // would be lost and disable couldn't restore them.
+      for (const key of managedKeys) {
+        if (key in previousCustomizations.vibrancyBackgrounds) continue;
+        const v = currentColorCustomizations[key];
+        previousCustomizations.vibrancyBackgrounds[key] =
+          looksLikeVibrancyValue(v, themeBackground) ? null : (v ?? null);
+      }
     }
 
     try {
@@ -103,6 +123,7 @@ async function applySettings(deps) {
         themeBackground,
         opacity,
         originalColors: previousCustomizations.vibrancyBackgrounds || {},
+        themeColorCustomizations: themeConfig?.colorCustomizations,
       });
 
       const newColorCustomization = {
@@ -110,6 +131,23 @@ async function applySettings(deps) {
         "terminal.background": "#00000000",
         ...vibrancyColors,
       };
+
+      // Keys the theme opted out of (spec `null`): hand them back to the colour
+      // theme by restoring the user's own value, or removing the key entirely.
+      // `terminal.background` is included so a theme can opt out of the forced
+      // transparency above and let the panel render opaque.
+      const { unmanaged } = parseThemeColorCustomizations(themeConfig?.colorCustomizations);
+      for (const key of unmanaged) {
+        const original = key === "terminal.background"
+          ? previousCustomizations.terminalBackground
+          : previousCustomizations.vibrancyBackgrounds?.[key];
+
+        if (original != null) {
+          newColorCustomization[key] = original;
+        } else {
+          delete newColorCustomization[key];
+        }
+      }
 
       await settingsStore.update("workbench.colorCustomizations", newColorCustomization);
     } catch (error) {
@@ -130,7 +168,15 @@ async function applySettings(deps) {
           }
         }
 
-        for (const key of ALL_VIBRANCY_BG_KEYS) {
+        // Union with whatever was actually backed up, so keys introduced by a
+        // theme's `colorCustomizations` (this theme's or a previously active
+        // one) are cleaned up too rather than left orphaned.
+        const keysToRestore = new Set([
+          ...managedKeys,
+          ...Object.keys(previousCustomizations.vibrancyBackgrounds),
+        ]);
+
+        for (const key of keysToRestore) {
           const originalValue = previousCustomizations.vibrancyBackgrounds[key];
           if (originalValue != null) {
             restoredColorCustomizations[key] = originalValue;

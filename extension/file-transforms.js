@@ -492,9 +492,12 @@ function extractBaseColor(value) {
  * @param {Object<string, string|null>} opts.originalColors - Backed-up per-key
  *   color values from the user's settings (before vibrancy was applied).
  *   Keys not present or null fall back to themeBackground.
+ * @param {Object<string, number|string|null>} [opts.themeColorCustomizations] -
+ *   The active theme's `colorCustomizations` block, applied on top of the tiers
+ *   above. See parseThemeColorCustomizations.
  * @returns {Object<string, string>} Map of color key → "#RRGGBBAA" value
  */
-function computeVibrancyColors({ themeBackground, opacity, originalColors = {} }) {
+function computeVibrancyColors({ themeBackground, opacity, originalColors = {}, themeColorCustomizations }) {
   const result = {};
   for (const key of TRANSPARENT_BG_KEYS) {
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
@@ -512,7 +515,102 @@ function computeVibrancyColors({ themeBackground, opacity, originalColors = {} }
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
     result[key] = computeTransparentHex(base, 0.9);
   }
+
+  // Theme enrichment wins over the tier defaults above.
+  const { overrides, unmanaged } = parseThemeColorCustomizations(themeColorCustomizations);
+  for (const [key, spec] of Object.entries(overrides)) {
+    if (spec.literal !== undefined) {
+      result[key] = spec.literal;
+    } else {
+      const base = extractBaseColor(originalColors[key]) ?? themeBackground;
+      result[key] = computeTransparentHex(base, spec.alpha);
+    }
+  }
+  // Keys the theme opted out of must not be written at all — the caller is
+  // responsible for restoring/removing them from the user's settings.
+  for (const key of unmanaged) {
+    delete result[key];
+  }
+
   return result;
+}
+
+/**
+ * A theme-declared literal colour: #RGB, #RGBA, #RRGGBB or #RRGGBBAA.
+ */
+const THEME_COLOR_LITERAL_REGEX = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+/**
+ * Parse a theme's optional `colorCustomizations` block.
+ *
+ * Themes use this to enrich (or opt out of) vibrancy's default per-key
+ * treatment, so a theme whose look only calls for *part* of the workbench to be
+ * translucent doesn't have to fight the global defaults in CSS. Three spec
+ * forms are accepted per colour key:
+ *
+ *   - `number` 0–1 — alpha applied to the key's base colour (the user's own
+ *     value for that key if they had one, else the theme background).
+ *   - `"#RRGGBB"` / `"#RRGGBBAA"` / `"#RGB"` / `"#RGBA"` — written verbatim.
+ *   - `null` — unmanaged: vibrancy writes nothing for this key, so the active
+ *     colour theme's own value applies. This is what "only subbar"-style themes
+ *     want for the editor region: an alpha of 1 would flatten every key to the
+ *     same theme background, whereas opting out keeps each key's real colour and
+ *     the region renders exactly like stock VSCode.
+ *
+ * Invalid specs are skipped with a warning rather than corrupting the user's
+ * settings with a bad colour value.
+ *
+ * @param {Object<string, number|string|null>} [themeColorCustomizations]
+ * @returns {{overrides: Object<string, {alpha?: number, literal?: string}>, unmanaged: string[]}}
+ */
+function parseThemeColorCustomizations(themeColorCustomizations) {
+  const overrides = {};
+  const unmanaged = [];
+
+  if (
+    !themeColorCustomizations ||
+    typeof themeColorCustomizations !== 'object' ||
+    Array.isArray(themeColorCustomizations)
+  ) {
+    return { overrides, unmanaged };
+  }
+
+  for (const [key, spec] of Object.entries(themeColorCustomizations)) {
+    if (spec === null) {
+      unmanaged.push(key);
+    } else if (typeof spec === 'number') {
+      if (!Number.isFinite(spec) || spec < 0 || spec > 1) {
+        console.warn(`Vibrancy: theme colorCustomizations["${key}"] must be an alpha between 0 and 1, got ${spec} — ignoring.`);
+        continue;
+      }
+      overrides[key] = { alpha: spec };
+    } else if (typeof spec === 'string' && THEME_COLOR_LITERAL_REGEX.test(spec)) {
+      overrides[key] = { literal: spec };
+    } else {
+      console.warn(`Vibrancy: theme colorCustomizations["${key}"] must be an alpha 0–1, a #hex colour, or null — ignoring ${JSON.stringify(spec)}.`);
+    }
+  }
+
+  return { overrides, unmanaged };
+}
+
+/**
+ * Every colour key vibrancy takes responsibility for under a given theme: its
+ * own defaults plus anything the theme's `colorCustomizations` names. Used to
+ * decide what to back up, and what to clean out again on disable — a theme that
+ * introduces a key outside the built-in tiers (or opts one out) still needs that
+ * key restored rather than left orphaned in the user's settings.
+ *
+ * @param {Object<string, number|string|null>} [themeColorCustomizations]
+ * @returns {string[]}
+ */
+function resolveManagedBgKeys(themeColorCustomizations) {
+  const keys = new Set(ALL_VIBRANCY_BG_KEYS);
+  const { overrides, unmanaged } = parseThemeColorCustomizations(themeColorCustomizations);
+  for (const key of [...Object.keys(overrides), ...unmanaged]) {
+    keys.add(key);
+  }
+  return [...keys];
 }
 
 // --- Background Key Constants ---
@@ -592,6 +690,8 @@ module.exports = {
   computeTransparentHex,
   extractBaseColor,
   computeVibrancyColors,
+  parseThemeColorCustomizations,
+  resolveManagedBgKeys,
   TRANSPARENT_BG_KEYS,
   SEMITRANSPARENT_BG_KEYS,
   STICKY_SCROLL_BG_KEYS,

@@ -13,6 +13,8 @@ const {
   computeTransparentHex,
   extractBaseColor,
   computeVibrancyColors,
+  parseThemeColorCustomizations,
+  resolveManagedBgKeys,
   VIBRANCY_START,
   VIBRANCY_END,
   TRANSPARENT_BG_KEYS,
@@ -753,5 +755,167 @@ describe('computeVibrancyColors', () => {
     for (const key of ALL_VIBRANCY_BG_KEYS) {
       expect(result[key]).toBeDefined();
     }
+  });
+
+  // --- theme colorCustomizations enrichment ---
+
+  it('applies a theme alpha override on top of the tier default', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+      themeColorCustomizations: { 'editor.background': 1 },
+    });
+
+    expect(result['editor.background']).toBe('#1e1e1eff');
+    // Untouched keys keep their tier default
+    expect(result['sideBar.background']).toBe('#1e1e1e80');
+  });
+
+  it('uses the user original color as the base for a theme alpha override', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: { 'editor.background': '#fdf6e3' },
+      themeColorCustomizations: { 'editor.background': 1 },
+    });
+
+    expect(result['editor.background']).toBe('#fdf6e3ff');
+  });
+
+  it('writes a theme literal color verbatim', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+      themeColorCustomizations: { 'editor.background': '#ff0000cc' },
+    });
+
+    expect(result['editor.background']).toBe('#ff0000cc');
+  });
+
+  it('omits keys a theme opts out of with null', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+      themeColorCustomizations: { 'editor.background': null, 'panel.background': null },
+    });
+
+    expect(result).not.toHaveProperty('editor.background');
+    expect(result).not.toHaveProperty('panel.background');
+    expect(result['sideBar.background']).toBe('#1e1e1e80');
+  });
+
+  it('lets a theme introduce a key outside the built-in tiers', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+      themeColorCustomizations: { 'statusBar.background': 0.5 },
+    });
+
+    expect(result['statusBar.background']).toBe('#1e1e1e80');
+  });
+
+  it('ignores invalid theme specs rather than writing a bad color', () => {
+    const result = computeVibrancyColors({
+      themeBackground: fallback,
+      opacity,
+      originalColors: {},
+      themeColorCustomizations: {
+        'editor.background': 2,            // out of range
+        'sideBar.background': 'red',       // not a #hex literal
+        'activityBar.background': true,    // wrong type
+        'panel.background': NaN,           // not finite
+      },
+    });
+
+    // Every one falls back to its tier default
+    expect(result['editor.background']).toBe('#1e1e1e80');
+    expect(result['sideBar.background']).toBe('#1e1e1e80');
+    expect(result['activityBar.background']).toBe('#1e1e1e80');
+    expect(result['panel.background']).toBe('#1e1e1e00');
+  });
+
+  it('is unchanged when the theme declares no colorCustomizations', () => {
+    const base = computeVibrancyColors({ themeBackground: fallback, opacity, originalColors: {} });
+
+    for (const spec of [undefined, null, {}, [], 'nonsense']) {
+      const result = computeVibrancyColors({
+        themeBackground: fallback,
+        opacity,
+        originalColors: {},
+        themeColorCustomizations: spec,
+      });
+      expect(result).toEqual(base);
+    }
+  });
+});
+
+// --- parseThemeColorCustomizations ---
+
+describe('parseThemeColorCustomizations', () => {
+  it('sorts specs into overrides and opt-outs', () => {
+    const { overrides, unmanaged } = parseThemeColorCustomizations({
+      'a.background': 0.25,
+      'b.background': '#abcdef',
+      'c.background': null,
+    });
+
+    expect(overrides).toEqual({
+      'a.background': { alpha: 0.25 },
+      'b.background': { literal: '#abcdef' },
+    });
+    expect(unmanaged).toEqual(['c.background']);
+  });
+
+  it('accepts every hex literal length VSCode allows', () => {
+    const { overrides } = parseThemeColorCustomizations({
+      three: '#abc',
+      four: '#abcd',
+      six: '#aabbcc',
+      eight: '#aabbccdd',
+    });
+
+    expect(Object.keys(overrides)).toEqual(['three', 'four', 'six', 'eight']);
+  });
+
+  it('accepts the alpha range boundaries', () => {
+    const { overrides } = parseThemeColorCustomizations({ zero: 0, one: 1 });
+    expect(overrides).toEqual({ zero: { alpha: 0 }, one: { alpha: 1 } });
+  });
+
+  it('returns empty results for a missing or malformed block', () => {
+    for (const spec of [undefined, null, [], 'nope', 42]) {
+      expect(parseThemeColorCustomizations(spec)).toEqual({ overrides: {}, unmanaged: [] });
+    }
+  });
+});
+
+// --- resolveManagedBgKeys ---
+
+describe('resolveManagedBgKeys', () => {
+  it('returns the built-in keys when a theme adds nothing', () => {
+    expect(resolveManagedBgKeys(undefined).sort()).toEqual([...ALL_VIBRANCY_BG_KEYS].sort());
+  });
+
+  it('includes theme-introduced keys without duplicating built-ins', () => {
+    const keys = resolveManagedBgKeys({
+      'statusBar.background': 1,       // new key
+      'editor.background': null,       // existing key, opted out
+    });
+
+    expect(keys).toContain('statusBar.background');
+    expect(keys).toContain('editor.background');
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys).toHaveLength(ALL_VIBRANCY_BG_KEYS.length + 1);
+  });
+
+  it('still tracks opted-out keys so they can be restored', () => {
+    // A key vibrancy never manages by default, opted out by a theme, must still
+    // be tracked — otherwise a stale value could not be cleaned up.
+    expect(resolveManagedBgKeys({ 'statusBar.background': null }))
+      .toContain('statusBar.background');
   });
 });

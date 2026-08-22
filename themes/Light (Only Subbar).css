@@ -13,11 +13,20 @@ body {
  * true for free, because those parts painted their own opaque background regardless
  * of what the workbench root did. Current VSCode no longer does that, so they now
  * inherit the transparency set above unless it's reasserted here (issue #273).
+ *
+ * These resolve to opaque colours because the companion .json opts these keys out
+ * of vibrancy's colorCustomizations, so the active colour theme owns them.
  */
-.monaco-workbench .part.editor,
-.monaco-workbench .part.statusbar,
-.monaco-workbench .part.panel {
+.monaco-workbench .part.editor {
   background: var(--vscode-editor-background) !important;
+}
+
+.monaco-workbench .part.statusbar {
+  background: var(--vscode-statusBar-background) !important;
+}
+
+.monaco-workbench .part.panel {
+  background: var(--vscode-panel-background) !important;
 }
 
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon {

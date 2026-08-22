@@ -1,3 +1,11 @@
+# Unreleased
+
+* Core:
+  * Themes can now enrich `workbench.colorCustomizations` from their JSON config. Vibrancy derives a translucent colour for a fixed set of background keys, and those values are what `var(--vscode-editor-background)` and friends resolve to — so a theme could not previously make a surface opaque again from CSS alone. A theme's optional `colorCustomizations` block can now set a per-key alpha, a literal colour, or `null` to hand the key back to the active colour theme entirely. Theme-introduced keys are backed up and cleaned out on disable like the built-in ones, and `vscode_vibrancy.disableColorCustomizations` still switches the whole mechanism off (see `themes/README.md`)
+* Themes:
+  * Fix the "Only Subbar" themes not looking like "only subbar" any more: the editor, tabs, panel and terminal were translucent along with the chrome, so the whole window went see-through instead of just the title bar, activity bar and side bar. Those keys are now opted out of vibrancy's colour customizations, so the editor region renders exactly like stock VSCode while the chrome keeps its vibrancy (issue [#273](https://github.com/illixion/vscode-vibrancy-continued/issues/273))
+  * Tokyo Night Storm (Outer): same fix, so "outer" once again means only the chrome around the editor is translucent
+
 # 1.1.92
 
 * Themes:

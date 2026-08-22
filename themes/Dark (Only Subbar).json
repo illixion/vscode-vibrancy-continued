@@ -11,5 +11,23 @@
     "linux": 0.8
   },
   "colorTheme": "Default Dark+",
-  "systemColorTheme": "dark"
+  "systemColorTheme": "dark",
+  "colorCustomizations": {
+    "editor.background": null,
+    "editorPane.background": null,
+    "editorGroupHeader.tabsBackground": null,
+    "editorGroupHeader.noTabsBackground": null,
+    "breadcrumb.background": null,
+    "editorGutter.background": null,
+    "tab.activeBackground": null,
+    "tab.inactiveBackground": null,
+    "tab.unfocusedActiveBackground": null,
+    "tab.unfocusedInactiveBackground": null,
+    "editorStickyScroll.background": null,
+    "editorStickyScrollGutter.background": null,
+    "panel.background": null,
+    "panelStickyScroll.background": null,
+    "terminal.background": null,
+    "terminalStickyScroll.background": null
+  }
 }
