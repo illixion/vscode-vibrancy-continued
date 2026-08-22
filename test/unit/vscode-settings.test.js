@@ -498,24 +498,24 @@ describe('restoreSettings', () => {
   });
 
   it('skips color customizations restore when disableColorCustomizations is true', async () => {
-    const vibrancyColors = {};
-    for (const key of ALL_VIBRANCY_BG_KEYS) {
-      vibrancyColors[key] = '#1e1e1ecc';
-    }
+    // No colour backup means vibrancy never wrote any colours, so whatever is
+    // in settings.json belongs to the user and must be left exactly as-is.
+    // (When a backup *does* survive, vibrancy has outstanding writes and has to
+    // clean them up regardless of this setting — see the lifecycle tests below.)
+    const userColors = {
+      'editor.background': '#123456',
+      'sideBar.background': '#abcdef',
+      'terminal.background': '#1a1b26',
+    };
 
     const store = createSettingsStore({
-      'workbench.colorCustomizations': {
-        'terminal.background': '#00000000',
-        ...vibrancyColors,
-      },
+      'workbench.colorCustomizations': { ...userColors },
       'terminal.integrated.gpuAcceleration': 'off',
     });
 
     const globalState = createGlobalState({
       customizations: {
         saved: true,
-        terminalBackground: '#1a1b26',
-        vibrancyBackgrounds: {},
         gpuAcceleration: 'auto',
         removedFromApplyToAllProfiles: true,
       },
@@ -528,11 +528,7 @@ describe('restoreSettings', () => {
     });
 
     // Color customizations should NOT have been touched
-    const colors = store.data['workbench.colorCustomizations'];
-    expect(colors['terminal.background']).toBe('#00000000');
-    for (const key of ALL_VIBRANCY_BG_KEYS) {
-      expect(colors[key]).toBe('#1e1e1ecc');
-    }
+    expect(store.data['workbench.colorCustomizations']).toEqual(userColors);
     // But non-color settings should still be restored
     expect(store.data['terminal.integrated.gpuAcceleration']).toBe('auto');
   });
@@ -872,5 +868,189 @@ describe('applySettings with a theme colorCustomizations block', () => {
     }));
 
     expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('statusBar.background');
+  });
+});
+
+// --- disableColorCustomizations lifecycle (settings-corruption regressions) ---
+
+describe('disableColorCustomizations lifecycle', () => {
+  const userColors = { 'editor.background': '#123456', 'sideBar.background': '#abcdef' };
+
+  it('survives the setting being toggled on and then off again', async () => {
+    // Regression: the colour backup was dropped when the setting went on and
+    // never re-taken when it went off, so the next disable deleted the user's
+    // own colours instead of restoring them.
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...userColors } });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, disableColorCustomizations: true }));
+
+    // Colours handed back while the setting is on
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, disableColorCustomizations: false }));
+
+    // Vibrancy applies again, and crucially derives from the user's own colour
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#12345680');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+    expect(store.data['workbench.colorCustomizations']['sideBar.background']).toBe('#abcdef');
+  });
+
+  it('takes a backup when the first install happened with the setting on', async () => {
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...userColors } });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, disableColorCustomizations: true }));
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, disableColorCustomizations: false }));
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+  });
+
+  it('cleans up its own writes on disable even when the setting is now on', async () => {
+    // Regression: the setting being turned on after vibrancy had already
+    // written meant restoreSettings skipped the cleanup entirely, stranding
+    // translucent colours in settings.json and then wiping the backup.
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...userColors } });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#12345680');
+
+    // The apply path never ran for the setting change (suppressed handler,
+    // crash, or a hand-edited settings.json) — disable must still clean up.
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: true });
+
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+    expect(store.data['workbench.colorCustomizations']['terminal.background']).toBeUndefined();
+  });
+
+  it('leaves colors completely alone on disable when it never wrote any', async () => {
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...userColors } });
+    const globalState = createGlobalState();
+
+    // Installed and disabled entirely while the setting was on
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState, disableColorCustomizations: true }));
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: true });
+
+    expect(store.data['workbench.colorCustomizations']).toEqual(userColors);
+  });
+
+  it('keeps the backup when the restoring write fails', async () => {
+    const store = createSettingsStore({ 'workbench.colorCustomizations': { ...userColors } });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({ settingsStore: store, globalState }));
+
+    const failing = {
+      ...store,
+      update: async (key, value) => {
+        if (key === 'workbench.colorCustomizations') throw new Error('write failed');
+        return store.update(key, value);
+      },
+    };
+
+    await applySettings(buildApplyDeps({
+      settingsStore: failing,
+      globalState,
+      disableColorCustomizations: true,
+    }));
+
+    // The backup must survive so a later attempt can still restore the originals
+    expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBe('#123456');
+
+    await restoreSettings({ settingsStore: store, globalState, disableColorCustomizations: false });
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
+  });
+
+  it('cleans up theme-introduced keys on disable when the backup is missing', async () => {
+    // globalState can be lost (new machine with settings sync, wiped storage)
+    // while settings.json still holds vibrancy's values.
+    const themeConfig = {
+      ...defaultThemeConfig,
+      colorCustomizations: { 'statusBar.background': 1 },
+    };
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': {
+        'statusBar.background': '#1e1e1eff',
+        'editor.background': '#1e1e1e4d',
+      },
+    });
+
+    await restoreSettings({
+      settingsStore: store,
+      globalState: createGlobalState(),
+      disableColorCustomizations: false,
+      themeConfig,
+    });
+
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('statusBar.background');
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('editor.background');
+  });
+});
+
+// --- reinstall poisoning via theme literal colors (issue #247, second route) ---
+
+describe('applySettings reinstall poisoning protection for theme literals', () => {
+  const literalThemeConfig = {
+    ...defaultThemeConfig,
+    colorCustomizations: { 'editor.background': '#ff0000cc' },
+  };
+
+  it('does not back up a theme literal as if the user had chosen it', async () => {
+    // settings.json still holds vibrancy's output from a previous install that
+    // was removed without disabling first.
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': { 'editor.background': '#ff0000cc' },
+    });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({
+      settingsStore: store,
+      globalState,
+      themeConfig: literalThemeConfig,
+    }));
+
+    expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBeNull();
+
+    await restoreSettings({
+      settingsStore: store,
+      globalState,
+      disableColorCustomizations: false,
+      themeConfig: literalThemeConfig,
+    });
+
+    expect(store.data['workbench.colorCustomizations']).not.toHaveProperty('editor.background');
+  });
+
+  it('still backs up a genuine user color under a literal-using theme', async () => {
+    const store = createSettingsStore({
+      'workbench.colorCustomizations': { 'editor.background': '#123456' },
+    });
+    const globalState = createGlobalState();
+
+    await applySettings(buildApplyDeps({
+      settingsStore: store,
+      globalState,
+      themeConfig: literalThemeConfig,
+    }));
+
+    expect(globalState.data.customizations.vibrancyBackgrounds['editor.background']).toBe('#123456');
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#ff0000cc');
+
+    await restoreSettings({
+      settingsStore: store,
+      globalState,
+      disableColorCustomizations: false,
+      themeConfig: literalThemeConfig,
+    });
+
+    expect(store.data['workbench.colorCustomizations']['editor.background']).toBe('#123456');
   });
 });

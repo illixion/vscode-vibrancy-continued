@@ -980,8 +980,20 @@ function activate(context) {
 
   // Function to restore previous settings on uninstall
   async function restorePreviousSettings() {
-    const disableColorCustomizations = vscode.workspace.getConfiguration("vscode_vibrancy").get("disableColorCustomizations");
+    const vibrancyConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    const disableColorCustomizations = vibrancyConfig.get("disableColorCustomizations");
     const config = vscode.workspace.getConfiguration();
+
+    // Best-effort: lets the restore clean up colour keys the active theme
+    // introduces even when the backup in globalState is missing. A theme that
+    // can't be resolved must not block the uninstall.
+    let themeConfig;
+    try {
+      const vibrancyTheme = getCurrentTheme(vibrancyConfig);
+      themeConfig = require(path.resolve(__dirname, themeConfigPaths[vibrancyTheme]));
+    } catch (error) {
+      console.warn("Could not resolve the current theme while restoring settings:", error);
+    }
 
     return restoreSettings({
       settingsStore: {
@@ -990,6 +1002,7 @@ function activate(context) {
       },
       globalState: context.globalState,
       disableColorCustomizations,
+      themeConfig,
     });
   }
 
