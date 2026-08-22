@@ -4,6 +4,7 @@
 .monaco-workbench .titlebar,
 .monaco-workbench .monaco-list-rows,
 .monaco-workbench .pane-header,
+.monaco-workbench .part.sidebar > .title,
 .monaco-workbench .auxiliarybar,
 .monaco-workbench .statusbar,
 body {

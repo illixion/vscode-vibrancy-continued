@@ -14,6 +14,7 @@
 * Themes:
   * Fix the "Only Subbar" themes not looking like "only subbar" any more: the editor, tabs, panel and terminal were translucent along with the chrome, so the whole window went see-through instead of just the title bar, activity bar and side bar. Those keys are now opted out of vibrancy's colour customizations, so the editor region renders exactly like stock VSCode while the chrome keeps its vibrancy (issue [#273](https://github.com/illixion/vscode-vibrancy-continued/issues/273))
   * Tokyo Night Storm (Outer): same fix, so "outer" once again means only the chrome around the editor is translucent
+  * Fix the side bar's header sitting darker than the side bar itself in the "Only Subbar" and Tokyo Night Storm (Outer) themes. Those themes make the side bar fully transparent so the vibrancy shows through directly, but `sideBarTitle.background` is one of the keys Vibrancy tints — so the "SOURCE CONTROL" row (and each collapsible section header under it) painted an extra translucent layer on top, showing up as a distinctly darker band against the transparent side bar around it. Those surfaces are now transparent too, so the whole side bar is one continuous panel; measured on a real window, the difference between header and body drops from 20 to 6 (out of 255 per channel). The other themes already did this — they were tinting the side bar itself instead, where the extra layer never arose
 
 # 1.1.92
 

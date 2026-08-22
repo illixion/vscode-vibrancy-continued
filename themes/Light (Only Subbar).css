@@ -3,6 +3,8 @@
 .monaco-workbench .activitybar,
 .monaco-workbench .titlebar,
 .monaco-workbench .monaco-list-rows,
+.monaco-workbench .part.sidebar > .title,
+.monaco-workbench .pane-header,
 body {
   background: transparent !important;
 }
