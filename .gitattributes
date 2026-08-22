@@ -1,0 +1,22 @@
+# Normalise line endings.
+#
+# Five theme CSS files had drifted into mixed CRLF/LF — CRLF originally, with LF
+# lines appended by later edits on other platforms. That is a quiet trap for
+# contributors: the moment an editor normalises on save, a one-line theme tweak
+# becomes a whole-file diff, which buries the actual change and makes review
+# guesswork. Editing those files safely meant byte-level insertion that reused
+# each anchor line's own terminator, which is not a reasonable thing to expect of
+# anyone sending a PR.
+#
+# Nothing in the tree needs CRLF: there are no .bat/.cmd/.ps1 files checked in
+# (the Windows uninstall cleanup script is generated at runtime).
+* text=auto eol=lf
+
+# Never guess at these.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.node binary
+*.vsix binary
