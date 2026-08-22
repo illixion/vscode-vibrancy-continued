@@ -8,6 +8,46 @@ const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, AL
 const { applySettingsRestore } = require('./jsonc-settings');
 
 /**
+ * When this actually runs, because it is not when you would expect.
+ *
+ * `vscode:uninstall` is not an exit hook. Uninstalling Vibrancy only marks it
+ * for removal; nothing happens until VSCode is quit and started again, and then
+ * this script runs early in *startup* — with a live VSCode around it, which then
+ * carries on running. That is why the messages here ask the user to restart
+ * rather than announcing that it is finished: the patched files are still loaded
+ * in the very session that is running the cleanup.
+ *
+ * Two things follow from it.
+ *
+ * Startup is an awkward moment to be editing settings.json, because it is
+ * roughly when VSCode is reading it. The Windows-only deferral below exists
+ * because that write was reported lost there and not elsewhere.
+ *
+ * That report has not been reproducible. Writing settings.json from outside
+ * while VSCode ran was measured on Windows 10 (VSCode 1.10x, a real workbench in
+ * the interactive session), on Linux and on macOS 1.134 — during startup, after
+ * startup, and across a genuinely graceful shutdown (`CloseMainWindow` returning
+ * true and every process gone). The edit survived every time. VSCode also
+ * demonstrably *notices* the change on Windows: removing a restart-scoped
+ * setting made it raise its own "a setting has changed that requires a restart"
+ * dialog. So "Windows caches settings.json and writes it back over us" is not a
+ * mechanism that can be demonstrated on current versions, and no claim about one
+ * is made here.
+ *
+ * The deferral stays regardless. The reports came from real users on
+ * configurations these tests do not cover — Settings Sync, a redirected or
+ * OneDrive-backed AppData, antivirus, older VSCode — and it now has a second,
+ * verifiable benefit: writing after VSCode has quit is what stops that restart
+ * dialog appearing mid-uninstall, since the keys being removed here
+ * (window.controlsStyle, gpuAcceleration, systemColorTheme,
+ * autoDetectColorScheme) are all restart-scoped.
+ *
+ * And the wait loop is not waiting out a shutdown already in progress. It waits
+ * for the user to quit the session they have just opened, edits the file once
+ * nothing holds it, then relaunches VSCode for them.
+ */
+
+/**
  * Every colour key this hook should clear out of settings.json.
  *
  * Derived rather than hand-listed: two copies of this list (here and in the
@@ -17,11 +57,11 @@ const { applySettingsRestore } = require('./jsonc-settings');
  * plus whatever the recorded backup actually covers — that backup is written
  * from the same resolved key set that did the installing.
  *
- * This hook runs as VSCode exits, with no access to the vscode API, so it stays
- * best-effort by design: it can only reach the one settings.json recorded in
- * config.json, and it only recognises vibrancy's usual `#RRGGBBAA` output (a
- * theme could in principle write a short `#abc` literal, but matching shorter
- * hex would risk deleting a user's own 6-digit colour, which is worse).
+ * This hook has no access to the vscode API, so it stays best-effort by design:
+ * it can only reach the one settings.json recorded in config.json, and it only
+ * recognises vibrancy's usual `#RRGGBBAA` output (a theme could in principle
+ * write a short `#abc` literal, but matching shorter hex would risk deleting a
+ * user's own 6-digit colour, which is worse).
  *
  * @param {Object} previousCustomizations - `previousCustomizations` from config.json
  * @returns {string[]}
@@ -156,8 +196,9 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
 /**
  * Stage a self-contained copy of the restore logic in a temp directory.
  *
- * The deferred cleanup runs after VSCode has exited, and by then this extension
- * directory is gone — VSCode deletes it once the hook returns. So the code that
+ * The deferred cleanup does not run until the user quits the session that
+ * started this hook, and this extension directory is long gone by then — VSCode
+ * removes it during the same startup, once the hook returns. So the code that
  * does the work has to be somewhere else by the time it is needed: a copy of
  * jsonc-settings.js, the jsonc-parser package it imports (positioned in a
  * `node_modules` so its bare `require` still resolves), the restore plan, and a
@@ -269,9 +310,10 @@ function buildDeferredScript({ exeName, nodePath, entry, stageDir, cliCommand, l
     ].join('\r\n');
 }
 
-// On Windows, VSCode caches settings.json in memory at startup and writes it back later,
-// overwriting any changes the hook makes directly. Instead, spawn a detached PowerShell
-// script that waits for the VSCode process to fully exit, then cleans up settings.json.
+// Hand the edit to a detached PowerShell script that waits for VSCode to be
+// quit, applies it while nothing holds the file, and reopens VSCode afterwards.
+// See the note at the top of this file for what is and is not established about
+// why Windows needs this.
 function deferSettingsRestoreWindows(settingsPath, cliCommand, previousCustomizations) {
     const staged = stageDeferredRestore(settingsPath, buildRestorePlan(previousCustomizations));
     if (!staged) {
@@ -458,8 +500,10 @@ if (require.main === module) (async () => {
             }
 
             if (process.platform === 'win32') {
-                // Windows: VSCode caches settings in memory at startup and overwrites our changes.
-                // Defer cleanup to a detached script that runs after VSCode fully exits.
+                // Windows was reported to lose a settings.json write made during
+                // startup, which is when this hook runs — so defer it until
+                // VSCode is quit. Deferring also keeps VSCode's own
+                // "restart to apply" dialog out of the uninstall.
                 deferSettingsRestoreWindows(settingsJsonPath || getVSCodeSettingsPath(), cliCommand, previousCustomizations);
             } else {
                 restorePreviousSettings(previousCustomizations, settingsJsonPath);

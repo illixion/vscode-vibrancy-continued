@@ -598,12 +598,14 @@ describe('resolveHookBgKeys', () => {
 
 // --- deferred Windows cleanup ---
 //
-// Windows can't edit settings.json from the hook directly: VSCode holds it in
-// memory and writes it back on exit. The edit is deferred until after that, by
-// which point this extension directory has been deleted — so the code that
-// performs it has to be staged somewhere else first. These tests actually run
-// the staged script, because "it was written to disk" is not the same claim as
-// "it still works once the extension is gone".
+// The hook runs during VSCode *startup*, not at exit — uninstalling only marks
+// the extension for removal, and the cleanup happens on the next launch, with a
+// live VSCode around it. On Windows a settings.json write made in that window is
+// lost, so the edit is deferred until the user quits. By then this extension
+// directory has been deleted, so the code that performs it has to be staged
+// elsewhere first. These tests actually run the staged script, because "it was
+// written to disk" is not the same claim as "it still works once the extension
+// is gone".
 describe('stageDeferredRestore', () => {
   const { stageDeferredRestore, buildRestorePlan } = require('../../extension/uninstallHook');
   const { execFileSync } = require('child_process');
