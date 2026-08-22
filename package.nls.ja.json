@@ -74,5 +74,8 @@
   "messages.nixRelaunchTitle": "Vibrancy 有効化完了 — 「(Vibrancy)」アプリから起動してください",
   "messages.nixRelaunch": "Nixストアのインストールは読み取り専用のため、書き込み可能なVSCodeのコピーにVibrancyを適用しました。アプリケーションメニューから「%1 (Vibrancy)」を起動してください。このウィンドウの再起動プロンプトは無視して構いません（このコピーは変更されていません）。新しいコピーが破損を検出した場合、\"今後表示しない\" をクリックしてください。",
   "messages.nixStale": "Vibrancyのコピー作成後にシステムのVSCodeが更新されました。Vibrancyを再度有効化して、新しいバージョンからコピーを再作成してください。",
-  "messages.nixStaleReenable": "再作成して有効化"
+  "messages.nixStaleReenable": "再作成して有効化",
+  "messages.profileMismatch": "Vibrancy は別の VSCode プロファイルから有効化されています。ここで無効化すると VSCode の共有ファイルはすべてのプロファイル向けに元に戻りますが、復元できる色のカスタマイズはこのプロファイル分だけで、Vibrancy を有効化したプロファイルの設定は残ってしまいます。そのプロファイルに切り替えて無効化してください。そのプロファイルが存在しない場合、またはこのプロファイルに残った色を消したい場合は「それでも無効化」を選んでください。",
+  "messages.profileMismatchDisableAnyway": "それでも無効化",
+  "messages.profileTakeover": "Vibrancy は別の VSCode プロファイルから有効化されていましたが、このプロファイルが引き継ぎました。色のカスタマイズはプロファイルごとに保存されるため、以前のプロファイルの設定はそちらで元に戻す必要があります。ここで無効化してもそれらは削除できません。"
 }

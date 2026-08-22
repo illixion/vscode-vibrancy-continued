@@ -19,6 +19,11 @@ var {
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
 const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
+const {
+  deriveProfileIdentity,
+  evaluateUninstallOwnership,
+  isOwnershipTakeover,
+} = require('./profile-ownership');
 
 /**
  * @type {(info: string) => string}
@@ -1018,6 +1023,53 @@ function activate(context) {
     return configFilePath;
   }
 
+  /** Identity of the VSCode profile this extension host belongs to. */
+  function getProfileIdentity() {
+    try {
+      return deriveProfileIdentity(context.globalStorageUri.fsPath);
+    } catch (error) {
+      console.warn('Vibrancy: could not determine the current profile:', error);
+      return null;
+    }
+  }
+
+  async function readLocalConfig() {
+    try {
+      const configFilePath = path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json');
+      return JSON.parse(await fs.readFile(configFilePath, 'utf-8'));
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Refuse to unpatch VSCode from a profile that didn't enable it, because only
+   * the owning profile's colour customizations can be reverted from here.
+   *
+   * Deliberately overridable — a recorded owner can become unreachable (the
+   * profile was deleted, the VSCode data directory moved), and being unable to
+   * ever disable Vibrancy again would be worse than the stranded colours. The
+   * override is also how a stranded profile cleans up its own leftovers.
+   *
+   * @returns {Promise<boolean>} true to proceed with the uninstall
+   */
+  async function confirmUninstallFromOwningProfile() {
+    const { allowed } = evaluateUninstallOwnership({
+      ownerKey: (await readLocalConfig())?.ownerProfileKey,
+      currentProfile: getProfileIdentity(),
+    });
+    if (allowed) return true;
+
+    const disableAnyway = localize('messages.profileMismatchDisableAnyway');
+    const choice = await vscode.window.showWarningMessage(
+      localize('messages.profileMismatch'),
+      { modal: true },
+      disableAnyway,
+    );
+
+    return choice === disableAnyway;
+  }
+
   async function setLocalConfig(state, paths, previousCustomizations) {
     const configFilePath = await getLocalConfigPath();
 
@@ -1033,6 +1085,7 @@ function activate(context) {
       const cliFullPath = process.platform === 'win32'
         ? path.join(path.dirname(process.execPath), 'bin', `${cliName}.cmd`)
         : cliName;
+      const profile = getProfileIdentity();
       const configData = {
         workbenchHtmlPath: paths.workbenchHtmlPath,
         jsPath: paths.jsPath,
@@ -1040,6 +1093,11 @@ function activate(context) {
         settingsJsonPath: getEditorSettingsPath(vscode.env.appName),
         cliCommand: require('fs').existsSync(cliFullPath) ? cliFullPath : cliName,
         previousCustomizations,
+        // Which profile's settings hold the colour customizations this install
+        // wrote, so Disable can refuse to run from a profile that can't revert
+        // them. Installing always claims ownership.
+        ownerProfileKey: profile?.key ?? null,
+        ownerProfileHint: profile?.hint ?? null,
       };
       // NixOS mirror bookkeeping so the uninstall hook can clean up the
       // shadow install ($HOME mirror + desktop entry) too
@@ -1172,6 +1230,18 @@ function activate(context) {
       throw new Error('unsupported');
     }
 
+    // Enabling from a second profile is where the stranding gets set up: this
+    // install takes ownership, so the previous owner's colour customizations
+    // can no longer be reverted from Disable. Say so, but don't block — the
+    // effect itself is machine-wide, so wanting it configured here is
+    // reasonable. (Skipped inside Update, which re-installs in place.)
+    if (!sharedWriter && isOwnershipTakeover({
+      ownerKey: (await readLocalConfig())?.ownerProfileKey,
+      currentProfile: getProfileIdentity(),
+    })) {
+      vscode.window.showWarningMessage(localize('messages.profileTakeover'));
+    }
+
     // BUG: prevent installation on macOS with Electron 32.2.6 used in VSCode 1.96 (#178)
     if (process.versions.electron === "32.2.6" && process.platform === 'darwin') {
       vscode.window.showErrorMessage("Vibrancy doesn't work with this version of VSCode, see [here](https://github.com/illixion/vscode-vibrancy-continued/issues/178) for more info.");
@@ -1263,6 +1333,10 @@ function activate(context) {
   async function Uninstall(promptRestart = true, sharedWriter) {
     // Defer settings restore when part of Update flow — Update handles it after flush
     if (!sharedWriter) {
+      // Check before touching anything: unpatching is machine-wide, but only
+      // this profile's colour customizations can be reverted from here.
+      if (!await confirmUninstallFromOwningProfile()) return;
+
       await restorePreviousSettings();
     }
 

@@ -74,5 +74,8 @@
   "messages.nixRelaunchTitle": "Vibrancy enabled — launch the \"(Vibrancy)\" app to use it",
   "messages.nixRelaunch": "Your Nix store installation is read-only, so Vibrancy was applied to a writable copy of VSCode instead. Launch \"%1 (Vibrancy)\" from your application menu to use it — restart prompts in this window can be ignored (this copy stays unpatched). If the new copy complains about a corrupted installation, click DON'T SHOW AGAIN.",
   "messages.nixStale": "Your system's VSCode was updated since Vibrancy's writable copy was created. Re-enable Vibrancy to rebuild the copy from the new version.",
-  "messages.nixStaleReenable": "Rebuild and re-enable"
+  "messages.nixStaleReenable": "Rebuild and re-enable",
+  "messages.profileMismatch": "Vibrancy was enabled from a different VSCode profile. Disabling here reverts VSCode's shared files for every profile, but only this profile's colour customizations can be restored — the ones belonging to the profile that enabled Vibrancy would be left behind. Switch to that profile and disable it there instead. Choose \"Disable anyway\" if that profile no longer exists, or if you are clearing colours that were left behind in this one.",
+  "messages.profileMismatchDisableAnyway": "Disable anyway",
+  "messages.profileTakeover": "Vibrancy was enabled from a different VSCode profile, and this profile has now taken over. Colour customizations are stored per profile, so the other profile's will need to be reverted from there — running Disable here can no longer clean them up."
 }
