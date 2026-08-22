@@ -549,19 +549,31 @@ describe('ALL_VIBRANCY_BG_KEYS', () => {
     expect(new Set(ALL_VIBRANCY_BG_KEYS).size).toBe(ALL_VIBRANCY_BG_KEYS.length);
   });
 
-  it('matches the uninstall hook\'s own copy of the key list', () => {
-    // uninstallHook.js runs without the extension host and can't require this
-    // module, so it hardcodes the same list. Drift there means keys left behind
-    // in settings.json after uninstall.
+  it('is the uninstall hook\'s only source of colour keys', () => {
+    // The hook used to keep its own copies of this list — one for POSIX and one
+    // baked into the Windows deferred script — on the stated assumption that it
+    // "can't require this module". It can, and always could: it already imports
+    // removeJSMarkers and friends from here. The two copies drifted apart
+    // anyway (terminalStickyScroll.background was never cleaned up on Windows),
+    // so both now derive from this list. Guard the derivation rather than the
+    // contents, since a re-introduced hardcoded list is the actual failure.
     const src = fs.readFileSync(
       path.join(__dirname, '..', '..', 'extension', 'uninstallHook.js'),
       'utf-8'
     );
-    const block = /const vibrancyBgKeys = \[([\s\S]*?)\];/.exec(src);
-    expect(block).not.toBeNull();
-    const hookKeys = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 
-    expect(new Set(hookKeys)).toEqual(new Set(ALL_VIBRANCY_BG_KEYS));
+    expect(src).toMatch(/require\('\.\/file-transforms'\)/);
+    expect(src).toContain('ALL_VIBRANCY_BG_KEYS');
+
+    // No hand-maintained key list may come back. Colour keys only ever appear
+    // via the shared list, so a cluster of literal "*.background" strings means
+    // someone started a new copy.
+    const literalKeyStrings = [...src.matchAll(/["'][a-zA-Z]+\\?\.[a-zA-Z]*[Bb]ackground["']/g)]
+      .map((m) => m[0])
+      // terminal.background has its own dedicated handling in both paths
+      .filter((s) => !/terminal\\?\.background/.test(s));
+
+    expect(literalKeyStrings).toEqual([]);
   });
 });
 

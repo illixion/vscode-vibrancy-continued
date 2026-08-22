@@ -4,7 +4,34 @@ const fsSync = require('fs'); // Import standard fs for synchronous methods
 const path = require('path');
 const os = require('os');
 const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
-const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir } = require('./file-transforms');
+const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
+
+/**
+ * Every colour key this hook should clear out of settings.json.
+ *
+ * Derived rather than hand-listed: two copies of this list (here and in the
+ * Windows deferred script) had already drifted apart by a key, and themes can
+ * now name colour keys of their own via their `colorCustomizations` block, which
+ * no hard-coded list would ever know about. So take vibrancy's built-in keys
+ * plus whatever the recorded backup actually covers — that backup is written
+ * from the same resolved key set that did the installing.
+ *
+ * This hook runs as VSCode exits, with no access to the vscode API, so it stays
+ * best-effort by design: it can only reach the one settings.json recorded in
+ * config.json, and it only recognises vibrancy's usual `#RRGGBBAA` output (a
+ * theme could in principle write a short `#abc` literal, but matching shorter
+ * hex would risk deleting a user's own 6-digit colour, which is worse).
+ *
+ * @param {Object} previousCustomizations - `previousCustomizations` from config.json
+ * @returns {string[]}
+ */
+function resolveHookBgKeys(previousCustomizations) {
+    const recorded = previousCustomizations?.vibrancyBackgrounds;
+    return [...new Set([
+        ...ALL_VIBRANCY_BG_KEYS,
+        ...(recorded && typeof recorded === 'object' ? Object.keys(recorded) : []),
+    ])].filter((key) => key !== 'terminal.background');
+}
 
 function getVSCodeSettingsPath(configSettingsPath) {
     // Prefer the path stored in local config (supports Insiders, Cursor, etc.)
@@ -43,23 +70,10 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         return;
     }
 
-    // All vibrancy-managed background keys — must match ALL_VIBRANCY_BG_KEYS in index.js
-    const vibrancyBgKeys = [
-        "editorPane.background", "editorGroupHeader.tabsBackground",
-        "editorGroupHeader.noTabsBackground", "breadcrumb.background", "editorGutter.background",
-        "panel.background", "panelStickyScroll.background", "tab.activeBackground",
-        "tab.unfocusedActiveBackground", "sideBar.background", "sideBarTitle.background",
-        "sideBarStickyScroll.background", "terminalStickyScroll.background",
-        "activityBar.background", "editorWidget.background",
-        "editorHoverWidget.background", "editorSuggestWidget.background", "editorStickyScroll.background",
-        "editorStickyScrollGutter.background", "tab.inactiveBackground",
-        "tab.unfocusedInactiveBackground", "inlineChat.background", "editor.background",
-        "notifications.background", "notificationCenterHeader.background",
-        "menu.background", "quickInput.background",
-    ];
-
     // Look up what the user's original value was (if we have saved customizations)
     const savedBgs = previousCustomizations?.saved ? previousCustomizations.vibrancyBackgrounds : null;
+
+    const vibrancyBgKeys = resolveHookBgKeys(previousCustomizations);
 
     // Single pass: for each vibrancy bg key, either restore the user's original value or strip it
     for (const key of vibrancyBgKeys) {
@@ -145,25 +159,16 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
 // On Windows, VSCode caches settings.json in memory at startup and writes it back later,
 // overwriting any changes the hook makes directly. Instead, spawn a detached PowerShell
 // script that waits for the VSCode process to fully exit, then cleans up settings.json.
-function deferSettingsRestoreWindows(settingsPath, cliCommand) {
+function deferSettingsRestoreWindows(settingsPath, cliCommand, previousCustomizations) {
     const exeName = path.basename(process.execPath, '.exe'); // e.g. "Code - Insiders"
     const logPath = path.join(os.tmpdir(), 'vibrancy-cleanup.log').replace(/\\/g, '\\\\');
 
-    // All vibrancy-managed keys (nested inside workbench.colorCustomizations)
-    const colorKeys = [
-        'terminal\\.background',
-        'editorPane\\.background', 'editorGroupHeader\\.tabsBackground',
-        'editorGroupHeader\\.noTabsBackground', 'breadcrumb\\.background',
-        'editorGutter\\.background', 'panel\\.background', 'panelStickyScroll\\.background',
-        'tab\\.activeBackground', 'tab\\.unfocusedActiveBackground',
-        'sideBar\\.background', 'sideBarTitle\\.background', 'sideBarStickyScroll\\.background',
-        'activityBar\\.background', 'editorWidget\\.background', 'editorHoverWidget\\.background',
-        'editorSuggestWidget\\.background', 'editorStickyScroll\\.background',
-        'editorStickyScrollGutter\\.background', 'tab\\.inactiveBackground',
-        'tab\\.unfocusedInactiveBackground', 'inlineChat\\.background',
-        'editor\\.background', 'notifications\\.background', 'notificationCenterHeader\\.background',
-        'menu\\.background', 'quickInput\\.background',
-    ];
+    // All vibrancy-managed keys (nested inside workbench.colorCustomizations),
+    // from the same resolved set the POSIX path uses. This list used to be
+    // maintained by hand alongside that one and had drifted apart from it by a
+    // key (terminalStickyScroll.background was never cleaned up on Windows).
+    const colorKeys = ['terminal.background', ...resolveHookBgKeys(previousCustomizations)]
+        .map((key) => key.replace(/\./g, '\\.'));
 
     const colorReplaces = colorKeys.map(k =>
         `$c = $c -replace '(?m)"${k}"\\s*:\\s*"#[0-9a-fA-F]{8}",?[ \\t]*\\r?\\n?', ''`
@@ -228,7 +233,7 @@ function showFatalError(message) {
 }
 
 // Exported for testing
-module.exports = { restorePreviousSettings, getVSCodeSettingsPath };
+module.exports = { restorePreviousSettings, getVSCodeSettingsPath, resolveHookBgKeys };
 
 // Only run uninstall logic when invoked directly as a script (not when required by tests)
 if (require.main === module) (async () => {
@@ -369,7 +374,7 @@ if (require.main === module) (async () => {
             if (process.platform === 'win32') {
                 // Windows: VSCode caches settings in memory at startup and overwrites our changes.
                 // Defer cleanup to a detached script that runs after VSCode fully exits.
-                deferSettingsRestoreWindows(settingsJsonPath || getVSCodeSettingsPath(), cliCommand);
+                deferSettingsRestoreWindows(settingsJsonPath || getVSCodeSettingsPath(), cliCommand, previousCustomizations);
             } else {
                 restorePreviousSettings(previousCustomizations, settingsJsonPath);
             }

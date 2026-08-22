@@ -524,3 +524,52 @@ describe('restorePreviousSettings (JSONC)', () => {
     expect(result).not.toContain('"#1e1e1ecc"');
   });
 });
+
+// --- uninstall hook key coverage (drift guard) ---
+
+describe('resolveHookBgKeys', () => {
+  const { resolveHookBgKeys } = require('../../extension/uninstallHook');
+  const { ALL_VIBRANCY_BG_KEYS } = require('../../extension/file-transforms');
+
+  it('covers every vibrancy-managed key', () => {
+    // Regression: this list was maintained by hand in two places and had
+    // drifted — terminalStickyScroll.background was never cleaned up on
+    // Windows. It is now derived, so it cannot drift again.
+    const keys = resolveHookBgKeys(null);
+    for (const key of ALL_VIBRANCY_BG_KEYS) {
+      if (key === 'terminal.background') continue;
+      expect(keys).toContain(key);
+    }
+  });
+
+  it('includes keys a theme introduced, which no hard-coded list would know', () => {
+    const keys = resolveHookBgKeys({
+      saved: true,
+      vibrancyBackgrounds: { 'statusBar.background': null, 'editor.background': '#123456' },
+    });
+
+    expect(keys).toContain('statusBar.background');
+  });
+
+  it('leaves terminal.background to its own dedicated handling', () => {
+    expect(resolveHookBgKeys(null)).not.toContain('terminal.background');
+    expect(resolveHookBgKeys({
+      saved: true,
+      vibrancyBackgrounds: { 'terminal.background': '#abcdef' },
+    })).not.toContain('terminal.background');
+  });
+
+  it('never returns duplicates', () => {
+    const keys = resolveHookBgKeys({
+      saved: true,
+      vibrancyBackgrounds: Object.fromEntries(ALL_VIBRANCY_BG_KEYS.map(k => [k, null])),
+    });
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('survives a missing or malformed backup', () => {
+    for (const value of [null, undefined, {}, { vibrancyBackgrounds: 'nonsense' }]) {
+      expect(resolveHookBgKeys(value).length).toBeGreaterThan(0);
+    }
+  });
+});
