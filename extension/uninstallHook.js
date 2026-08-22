@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
 const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
+const { applySettingsRestore } = require('./jsonc-settings');
 
 /**
  * Every colour key this hook should clear out of settings.json.
@@ -51,9 +52,65 @@ function getVSCodeSettingsPath(configSettingsPath) {
     }
 }
 
-// Function to restore previous settings
-// Because VSCode uses JSONC, we need to be careful with comments
-// and formatting. We will use regex to find and replace the specific settings.
+/**
+ * Turn a recorded backup into the set of edits that undoes Vibrancy's writes.
+ *
+ * Shared by the direct path and the deferred Windows one so both revert
+ * identically — the two used to be hand-maintained regex lists that had already
+ * drifted apart by a key.
+ *
+ * `null` means "remove it"; anything else is the user's own value going back in.
+ * When no backup was saved at all, every managed key is removed rather than
+ * restored: without a record there is nothing to restore *to*, and leaving
+ * Vibrancy's translucent colours behind is the one outcome that definitely
+ * looks broken once the effect is gone.
+ *
+ * @param {Object} previousCustomizations - `previousCustomizations` from config.json
+ * @returns {{colors: Object, settings: Object}} a plan for applySettingsRestore
+ */
+function buildRestorePlan(previousCustomizations) {
+    const saved = previousCustomizations?.saved ? previousCustomizations : null;
+    const savedBgs = saved?.vibrancyBackgrounds || {};
+
+    const colors = {};
+    for (const key of resolveHookBgKeys(previousCustomizations)) {
+        colors[key] = savedBgs[key] ?? null;
+    }
+
+    // `#00000000` is Vibrancy's own forced transparency, never a value worth
+    // handing back even if it somehow ended up in the backup.
+    const savedTerminal = saved?.terminalBackground;
+    colors['terminal.background'] = savedTerminal != null && savedTerminal !== '#00000000' ? savedTerminal : null;
+
+    // Set by promptRestart, never something the user chose, so it always goes.
+    const settings = { 'window.controlsStyle': null };
+
+    // The other three are only touched when there *is* a backup, and that
+    // asymmetry with the colours above is deliberate. Vibrancy sets
+    // `gpuAcceleration: "off"` — but so might the user, and with no record of
+    // which it was, removing it would silently undo their setting. Leaving it
+    // costs nothing visible. Translucent colours are the opposite: left behind
+    // once the effect is gone, they look unmistakably broken, so those are
+    // cleared either way.
+    if (saved) {
+        settings['window.systemColorTheme'] = saved.systemColorTheme ?? null;
+        settings['window.autoDetectColorScheme'] = saved.autoDetectColorScheme ?? null;
+        settings['terminal.integrated.gpuAcceleration'] = saved.gpuAcceleration ?? null;
+    }
+
+    return { colors, settings };
+}
+
+/**
+ * Revert Vibrancy's settings.json writes.
+ *
+ * Goes through jsonc-parser rather than regex substitution: see the header of
+ * jsonc-settings.js for why. The practical difference here is that a colour key
+ * is now matched by its position under `workbench.colorCustomizations` instead
+ * of by name anywhere in the file, restored values keep the file's own
+ * indentation, and a settings.json that fails to parse is left alone rather
+ * than being edited into something worse.
+ */
 function restorePreviousSettings(previousCustomizations, configSettingsPath) {
     const settingsPath = getVSCodeSettingsPath(configSettingsPath);
 
@@ -70,140 +127,124 @@ function restorePreviousSettings(previousCustomizations, configSettingsPath) {
         return;
     }
 
-    // Look up what the user's original value was (if we have saved customizations)
-    const savedBgs = previousCustomizations?.saved ? previousCustomizations.vibrancyBackgrounds : null;
-
-    const vibrancyBgKeys = resolveHookBgKeys(previousCustomizations);
-
-    // Single pass: for each vibrancy bg key, either restore the user's original value or strip it
-    for (const key of vibrancyBgKeys) {
-        const escapedKey = key.replace(/\./g, '\\.');
-        const regex = new RegExp(`"${escapedKey}"\\s*:\\s*"#[0-9a-fA-F]{8}",?\\s*`, 'g');
-        const originalValue = savedBgs?.[key];
-        if (originalValue != null) {
-            settingsContent = settingsContent.replace(regex, `"${key}": "${originalValue}",\n            `);
-        } else {
-            settingsContent = settingsContent.replace(regex, '');
-        }
-    }
-
-    // terminal.background: restore original or strip the transparent #00000000
-    const savedTermBg = previousCustomizations?.saved ? previousCustomizations.terminalBackground : null;
-    if (savedTermBg != null && savedTermBg !== '#00000000') {
-        settingsContent = settingsContent.replace(
-            /"terminal\.background"\s*:\s*"#[0-9a-fA-F]{8}",?\s*/g,
-            `"terminal.background": "${savedTermBg}",\n            `
-        );
-    } else {
-        settingsContent = settingsContent.replace(
-            /"terminal\.background"\s*:\s*"#00000000",?\s*/g,
-            ''
-        );
-    }
-
-    // Restore saved customizations for non-background settings
-    if (previousCustomizations?.saved) {
-
-        if (previousCustomizations.systemColorTheme != null) {
-            settingsContent = settingsContent.replace(
-                /"window\.systemColorTheme"\s*:\s*".*?",?\s*/g,
-                `"window.systemColorTheme": "${previousCustomizations.systemColorTheme}",`
-            );
-        } else {
-            settingsContent = settingsContent.replace(
-                /"window\.systemColorTheme"\s*:\s*".*?",?\s*/g,
-                ''
-            );
-        }
-
-        if (previousCustomizations.autoDetectColorScheme != null) {
-            settingsContent = settingsContent.replace(
-                /"window\.autoDetectColorScheme"\s*:\s*(true|false),?\s*/g,
-                `"window.autoDetectColorScheme": ${previousCustomizations.autoDetectColorScheme},`
-            );
-        } else {
-            settingsContent = settingsContent.replace(
-                /"window\.autoDetectColorScheme"\s*:\s*(true|false),?\s*/g,
-                ''
-            );
-        }
-
-        if (previousCustomizations.gpuAcceleration != null) {
-            settingsContent = settingsContent.replace(
-                /"terminal\.integrated\.gpuAcceleration"\s*:\s*".*?",?\s*/g,
-                `"terminal.integrated.gpuAcceleration": "${previousCustomizations.gpuAcceleration}",`
-            );
-        } else {
-            settingsContent = settingsContent.replace(
-                /"terminal\.integrated\.gpuAcceleration"\s*:\s*".*?",?\s*/g,
-                ''
-            );
-        }
-    }
-
-    // Always remove window.controlsStyle — set by our promptRestart, never user-owned
-    settingsContent = settingsContent.replace(
-        /"window\.controlsStyle"\s*:\s*".*?",?\s*/g,
-        ''
+    const { text, changed, errors } = applySettingsRestore(
+        settingsContent,
+        buildRestorePlan(previousCustomizations),
     );
 
-    // Write updated settings back to disk
+    if (errors.length > 0) {
+        console.error(
+            'Vibrancy: settings.json could not be parsed, leaving it untouched. ' +
+            'Remove Vibrancy\'s colour customizations by hand if they are still there.',
+        );
+        return;
+    }
+
+    if (!changed) {
+        console.log('VSCode settings.json had nothing left to revert.');
+        return;
+    }
+
     try {
-        fsSync.writeFileSync(settingsPath, settingsContent.trim() + '\n', 'utf-8');
+        fsSync.writeFileSync(settingsPath, text, 'utf-8');
         console.log('VSCode settings.json successfully reverted.');
     } catch (err) {
         console.error('Failed to write settings.json:', err);
     }
 }
 
+/**
+ * Stage a self-contained copy of the restore logic in a temp directory.
+ *
+ * The deferred cleanup runs after VSCode has exited, and by then this extension
+ * directory is gone — VSCode deletes it once the hook returns. So the code that
+ * does the work has to be somewhere else by the time it is needed: a copy of
+ * jsonc-settings.js, the jsonc-parser package it imports (positioned in a
+ * `node_modules` so its bare `require` still resolves), the restore plan, and a
+ * small entry point.
+ *
+ * @returns {{dir: string, entry: string}|null} null when staging failed
+ */
+function stageDeferredRestore(settingsPath, plan) {
+    const dir = path.join(os.tmpdir(), `vibrancy-cleanup-${Date.now()}`);
+
+    try {
+        const parserRoot = path.dirname(require.resolve('jsonc-parser/package.json'));
+        fsSync.mkdirSync(path.join(dir, 'node_modules'), { recursive: true });
+        fsSync.cpSync(parserRoot, path.join(dir, 'node_modules', 'jsonc-parser'), { recursive: true });
+        fsSync.copyFileSync(path.join(__dirname, 'jsonc-settings.js'), path.join(dir, 'jsonc-settings.js'));
+        fsSync.writeFileSync(path.join(dir, 'plan.json'), JSON.stringify({ settingsPath, plan }, null, 2), 'utf-8');
+
+        const entry = path.join(dir, 'restore.js');
+        fsSync.writeFileSync(entry, [
+            `const fs = require('fs');`,
+            `const path = require('path');`,
+            `const { applySettingsRestore } = require('./jsonc-settings');`,
+            `const job = JSON.parse(fs.readFileSync(path.join(__dirname, 'plan.json'), 'utf-8'));`,
+            `if (!fs.existsSync(job.settingsPath)) { console.log('settings.json not found'); process.exit(0); }`,
+            `const before = fs.readFileSync(job.settingsPath, 'utf-8');`,
+            `const result = applySettingsRestore(before, job.plan);`,
+            `if (result.errors.length > 0) { console.error('settings.json did not parse, left untouched'); process.exit(2); }`,
+            `if (!result.changed) { console.log('nothing left to revert'); process.exit(0); }`,
+            `fs.writeFileSync(job.settingsPath, result.text, 'utf-8');`,
+            `console.log('reverted ' + (before.length - result.text.length) + ' bytes');`,
+            ''].join('\n'), 'utf-8');
+
+        return { dir, entry };
+    } catch (err) {
+        console.error('Vibrancy: could not stage the deferred settings cleanup:', err);
+        try { fsSync.rmSync(dir, { recursive: true, force: true }); } catch {}
+        return null;
+    }
+}
+
 // On Windows, VSCode caches settings.json in memory at startup and writes it back later,
 // overwriting any changes the hook makes directly. Instead, spawn a detached PowerShell
 // script that waits for the VSCode process to fully exit, then cleans up settings.json.
+//
+// PowerShell only does the waiting now. The edit itself is handed to the staged
+// node script above, so Windows and POSIX revert through the same code instead
+// of through two hand-written regex lists that drifted apart. VSCode's own
+// binary is the interpreter — Electron runs as plain node given
+// ELECTRON_RUN_AS_NODE, and it is the one runtime guaranteed to be present.
+// Launching it only after the wait loop matters: started any earlier it would
+// show up as a running instance and the loop would never finish.
 function deferSettingsRestoreWindows(settingsPath, cliCommand, previousCustomizations) {
     const exeName = path.basename(process.execPath, '.exe'); // e.g. "Code - Insiders"
     const logPath = path.join(os.tmpdir(), 'vibrancy-cleanup.log').replace(/\\/g, '\\\\');
 
-    // All vibrancy-managed keys (nested inside workbench.colorCustomizations),
-    // from the same resolved set the POSIX path uses. This list used to be
-    // maintained by hand alongside that one and had drifted apart from it by a
-    // key (terminalStickyScroll.background was never cleaned up on Windows).
-    const colorKeys = ['terminal.background', ...resolveHookBgKeys(previousCustomizations)]
-        .map((key) => key.replace(/\./g, '\\.'));
-
-    const colorReplaces = colorKeys.map(k =>
-        `$c = $c -replace '(?m)"${k}"\\s*:\\s*"#[0-9a-fA-F]{8}",?[ \\t]*\\r?\\n?', ''`
-    ).join('\r\n');
+    const staged = stageDeferredRestore(settingsPath, buildRestorePlan(previousCustomizations));
+    if (!staged) {
+        // Best-effort fallback: write now and accept that VSCode may overwrite
+        // it on exit. A cleanup that sometimes sticks beats none at all.
+        restorePreviousSettings(previousCustomizations, settingsPath);
+        return;
+    }
 
     const cli = (cliCommand || 'code').replace(/'/g, "''");
+    const quote = (value) => `'${String(value).replace(/'/g, "''")}'`;
 
     const psScript = [
         `$log = '${logPath}'`,
         `function Log($msg) { Add-Content -Path $log -Value "$(Get-Date -Format o) $msg" }`,
         `Log "Vibrancy cleanup started"`,
-        `$proc = '${exeName.replace(/'/g, "''")}'`,
-        `$settings = '${settingsPath.replace(/'/g, "''")}'`,
+        `$proc = ${quote(exeName)}`,
+        `$node = ${quote(process.execPath)}`,
+        `$script = ${quote(staged.entry)}`,
+        `$stage = ${quote(staged.dir)}`,
         `Log "Waiting for $proc to exit..."`,
         // Wait for all instances of the VSCode exe to exit
         `while (Get-Process -Name $proc -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }`,
         `Start-Sleep -Seconds 2`,
-        `Log "Process exited, cleaning settings at: $settings"`,
-        `if (Test-Path $settings) {`,
-        `  $before = (Get-Item $settings).Length`,
-        `  Log "Settings file found, size: $before bytes"`,
-        `  $c = [System.IO.File]::ReadAllText($settings)`,
-        colorReplaces,
-        // Remove top-level vibrancy settings
-        `  $c = $c -replace '(?m)"terminal\\.integrated\\.gpuAcceleration"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
-        `  $c = $c -replace '(?m)"window\\.systemColorTheme"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
-        `  $c = $c -replace '(?m)"window\\.autoDetectColorScheme"\\s*:\\s*(true|false),?[ \\t]*\\r?\\n?', ''`,
-        `  $c = $c -replace '(?m)"window\\.controlsStyle"\\s*:\\s*"[^"]*",?[ \\t]*\\r?\\n?', ''`,
-        `  $c = $c.Trim() + [System.Environment]::NewLine`,
-        `  [System.IO.File]::WriteAllText($settings, $c, [System.Text.Encoding]::UTF8)`,
-        `  $after = (Get-Item $settings).Length`,
-        `  Log "Settings cleaned, new size: $after bytes (removed $($before - $after) bytes)"`,
-        `} else {`,
-        `  Log "Settings file not found at: $settings"`,
+        `Log "Process exited, reverting settings via $script"`,
+        `$env:ELECTRON_RUN_AS_NODE = '1'`,
+        `try {`,
+        `  $out = & $node $script 2>&1`,
+        `  Log "Restore output: $out"`,
+        `} catch {`,
+        `  Log "Restore failed: $_"`,
         `}`,
+        `Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue`,
         // Relaunch VSCode
         `Log "Relaunching: ${cli}"`,
         `Start-Process '${cli}'`,
@@ -233,7 +274,13 @@ function showFatalError(message) {
 }
 
 // Exported for testing
-module.exports = { restorePreviousSettings, getVSCodeSettingsPath, resolveHookBgKeys };
+module.exports = {
+    restorePreviousSettings,
+    getVSCodeSettingsPath,
+    resolveHookBgKeys,
+    buildRestorePlan,
+    stageDeferredRestore,
+};
 
 // Only run uninstall logic when invoked directly as a script (not when required by tests)
 if (require.main === module) (async () => {

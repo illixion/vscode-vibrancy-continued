@@ -101,9 +101,9 @@ async function applySettings(deps) {
      *   - the user hand-edited it, or settings sync brought a different one;
      *   - disableColorCustomizations was switched on and then off again, so the
      *     backup was handed back and dropped;
-     *   - a *different profile* is active. globalState is shared machine-wide
-     *     while settings.json is per-profile (issue #183), so the recorded
-     *     original can belong to a profile other than the one being written.
+     *   - a profile shares the *default* profile's settings.json (VSCode's
+     *     `useDefaultFlags.settings`) while keeping its own globalState, so one
+     *     file can be written by two profiles with independent backups.
      *
      * In all of those cases the value in front of us is the user's and has to
      * be adopted, or applying vibrancy would overwrite it with nothing left to
@@ -179,9 +179,8 @@ async function applySettings(deps) {
       await settingsStore.update("workbench.colorCustomizations", newColorCustomization);
 
       // Record exactly what we wrote, so the next run can tell our own output
-      // apart from a value the user provides — or from another profile's
-      // settings.json, since this record is shared machine-wide (issue #183).
-      // `null` records a key we deliberately removed.
+      // apart from a value the user provides. `null` records a key we
+      // deliberately removed.
       const written = {};
       for (const key of [...managedKeys, "terminal.background"]) {
         written[key] = key in newColorCustomization ? newColorCustomization[key] : null;

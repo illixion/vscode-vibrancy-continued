@@ -77,5 +77,7 @@
   "messages.nixStaleReenable": "Rebuild and re-enable",
   "messages.profileMismatch": "Vibrancy was enabled from a different VSCode profile. Disabling here reverts VSCode's shared files for every profile, but only this profile's colour customizations can be restored — the ones belonging to the profile that enabled Vibrancy would be left behind. Switch to that profile and disable it there instead. Choose \"Disable anyway\" if that profile no longer exists, or if you are clearing colours that were left behind in this one.",
   "messages.profileMismatchDisableAnyway": "Disable anyway",
-  "messages.profileTakeover": "Vibrancy was enabled from a different VSCode profile, and this profile has now taken over. Colour customizations are stored per profile, so the other profile's will need to be reverted from there — running Disable here can no longer clean them up."
+  "messages.profileTakeover": "Vibrancy was enabled from a different VSCode profile, and this profile has now taken over. Colour customizations are stored per profile, so the other profile's will need to be reverted from there — running Disable here can no longer clean them up.",
+  "messages.profileTip": "Vibrancy applies to every VSCode profile, but the colour customizations it needs are stored per profile. Your other profiles ({0}) will show the effect without those colours until Vibrancy is enabled from each one. Disable it from the profile you enabled it in, so its colours can be reverted.",
+  "messages.profileLeftovers": "Another VSCode profile ({0}) still has {1} of Vibrancy's colour customizations in its settings. Colour customizations are per profile, so they can only be reverted from there: switch to that profile and run \"Disable Vibrancy\"."
 }

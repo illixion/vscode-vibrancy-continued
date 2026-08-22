@@ -379,7 +379,7 @@ describe('restorePreviousSettings (JSONC)', () => {
     expect(result).toMatch(/"statusBar\.background":\s*"#007acc",?\s*\}/);
   });
 
-  it('empty colorCustomizations object after removing all vibrancy keys', () => {
+  it('drops colorCustomizations entirely once nothing is left in it', () => {
     fs.writeFileSync(settingsPath, [
       '{',
       '    "workbench.colorCustomizations": {',
@@ -395,8 +395,31 @@ describe('restorePreviousSettings (JSONC)', () => {
     const result = fs.readFileSync(settingsPath, 'utf-8');
     expect(result).not.toContain('"sideBar.background"');
     expect(result).not.toContain('"editor.background"');
-    expect(result).toContain('"workbench.colorCustomizations"');
+    // The bare `"workbench.colorCustomizations": {}` left behind is Vibrancy's
+    // litter, not the user's, so it goes too — but only because everything
+    // inside it was ours. See the comment-only case below.
+    expect(result).not.toContain('"workbench.colorCustomizations"');
     expect(result).toContain('"editor.fontSize"');
+  });
+
+  it('keeps an emptied colorCustomizations that still holds a comment', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        // I had colours here once',
+      '        "sideBar.background": "#1e1e1ecc"',
+      '    },',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    restorePreviousSettings(null, settingsPath);
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).not.toContain('"sideBar.background"');
+    // Removing the property would take the comment text with it.
+    expect(result).toContain('// I had colours here once');
+    expect(result).toContain('"workbench.colorCustomizations"');
   });
 
   it('full round-trip with JSONC preserves comments and non-vibrancy settings', () => {
@@ -501,11 +524,10 @@ describe('restorePreviousSettings (JSONC)', () => {
     expect(result).not.toContain('"#1e1e1ee6"');
   });
 
-  it('known limitation: 8-digit hex colors in comments still match', () => {
-    // If a comment contains an 8-digit hex value (with alpha) for a vibrancy key,
-    // the regex will still match inside the comment. This is accepted because
-    // 8-digit hex colors in comments are rare — users typically comment out
-    // standard 6-digit colors, not alpha-channel variants.
+  it('no longer edits inside comments, whatever hex they contain', () => {
+    // This used to be documented as an accepted limitation: the regex matched
+    // an 8-digit hex for a vibrancy key even inside a comment, and mangled it.
+    // A parser sees a comment as a comment, so the limitation is simply gone.
     fs.writeFileSync(settingsPath, [
       '{',
       '    "workbench.colorCustomizations": {',
@@ -518,9 +540,9 @@ describe('restorePreviousSettings (JSONC)', () => {
     restorePreviousSettings(null, settingsPath);
 
     const result = fs.readFileSync(settingsPath, 'utf-8');
-    // The 8-digit hex in the comment is mangled
-    expect(result).not.toContain('"#282c34ff"');
-    // The actual vibrancy value is also removed
+    // The commented-out colour survives untouched...
+    expect(result).toContain('// "sideBar.background": "#282c34ff"');
+    // ...while the real vibrancy value is removed.
     expect(result).not.toContain('"#1e1e1ecc"');
   });
 });
@@ -571,5 +593,105 @@ describe('resolveHookBgKeys', () => {
     for (const value of [null, undefined, {}, { vibrancyBackgrounds: 'nonsense' }]) {
       expect(resolveHookBgKeys(value).length).toBeGreaterThan(0);
     }
+  });
+});
+
+// --- deferred Windows cleanup ---
+//
+// Windows can't edit settings.json from the hook directly: VSCode holds it in
+// memory and writes it back on exit. The edit is deferred until after that, by
+// which point this extension directory has been deleted — so the code that
+// performs it has to be staged somewhere else first. These tests actually run
+// the staged script, because "it was written to disk" is not the same claim as
+// "it still works once the extension is gone".
+describe('stageDeferredRestore', () => {
+  const { stageDeferredRestore, buildRestorePlan } = require('../../extension/uninstallHook');
+  const { execFileSync } = require('child_process');
+
+  let tmpDir;
+  let settingsPath;
+  let staged;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-defer-test-'));
+    settingsPath = path.join(tmpDir, 'settings.json');
+    staged = null;
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (staged) fs.rmSync(staged.dir, { recursive: true, force: true });
+  });
+
+  const run = () => execFileSync(process.execPath, [staged.entry], { encoding: 'utf-8' });
+
+  it('stages a bundle that runs without the extension directory', () => {
+    fs.writeFileSync(settingsPath, [
+      '{',
+      '    // mine',
+      '    "workbench.colorCustomizations": {',
+      '        "sideBar.background": "#1e1e1ecc"',
+      '    },',
+      '    "window.controlsStyle": "custom",',
+      '    "editor.fontSize": 14',
+      '}',
+    ].join('\n') + '\n');
+
+    staged = stageDeferredRestore(settingsPath, buildRestorePlan(null));
+    expect(staged).not.toBeNull();
+
+    // jsonc-parser has to sit in a node_modules for its bare require to resolve
+    // once the copy is running from a temp directory.
+    expect(fs.existsSync(path.join(staged.dir, 'node_modules', 'jsonc-parser', 'package.json'))).toBe(true);
+    expect(fs.existsSync(path.join(staged.dir, 'jsonc-settings.js'))).toBe(true);
+
+    expect(run()).toContain('reverted');
+
+    const result = fs.readFileSync(settingsPath, 'utf-8');
+    expect(result).not.toContain('"sideBar.background"');
+    expect(result).not.toContain('"window.controlsStyle"');
+    expect(result).toContain('// mine');
+    expect(result).toContain('"editor.fontSize"');
+  });
+
+  it('reverts identically to the direct path', () => {
+    // The two used to be separate hand-written regex lists, which is how
+    // terminalStickyScroll.background ended up cleaned on POSIX but not on
+    // Windows. Sharing buildRestorePlan is what stops that recurring.
+    const content = [
+      '{',
+      '    "workbench.colorCustomizations": {',
+      '        "terminalStickyScroll.background": "#1e1e1ebf",',
+      '        "editor.background": "#1e1e1e4d"',
+      '    }',
+      '}',
+    ].join('\n') + '\n';
+    const directPath = path.join(tmpDir, 'direct.json');
+
+    fs.writeFileSync(settingsPath, content);
+    fs.writeFileSync(directPath, content);
+
+    staged = stageDeferredRestore(settingsPath, buildRestorePlan(null));
+    run();
+    restorePreviousSettings(null, directPath);
+
+    expect(fs.readFileSync(settingsPath, 'utf-8')).toBe(fs.readFileSync(directPath, 'utf-8'));
+  });
+
+  it('leaves a damaged settings.json alone and says so', () => {
+    const broken = '{\n  "workbench.colorCustomizations": {\n    "editor.background": "#1e1e1e4d",\n';
+    fs.writeFileSync(settingsPath, broken);
+
+    staged = stageDeferredRestore(settingsPath, buildRestorePlan(null));
+
+    // Non-zero exit, and crucially the file is untouched rather than edited
+    // into something even less parseable.
+    expect(() => run()).toThrow();
+    expect(fs.readFileSync(settingsPath, 'utf-8')).toBe(broken);
+  });
+
+  it('does nothing when the settings file is gone', () => {
+    staged = stageDeferredRestore(path.join(tmpDir, 'absent.json'), buildRestorePlan(null));
+    expect(run()).toContain('not found');
   });
 });

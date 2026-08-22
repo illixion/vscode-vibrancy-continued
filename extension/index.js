@@ -16,6 +16,7 @@ var {
   deepEqual,
   checkRuntimeUpdate,
   getConfigDir,
+  resolveManagedBgKeys,
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
 const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
@@ -24,6 +25,13 @@ const {
   evaluateUninstallOwnership,
   isOwnershipTakeover,
 } = require('./profile-ownership');
+const {
+  listProfiles,
+  groupBySettingsFile,
+  findProfileByGlobalStorage,
+} = require('./profile-registry');
+const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tips');
+const { readColorCustomizations } = require('./jsonc-settings');
 
 /**
  * @type {(info: string) => string}
@@ -181,6 +189,24 @@ var pendingNodeCopies = [];
 
 function getCurrentTheme(config) {
   return config.theme in themeStylePaths ? config.theme : defaultTheme;
+}
+
+/**
+ * The active Vibrancy theme's config JSON, or undefined if it can't be resolved.
+ *
+ * Callers use this to learn which colour keys the theme adds on top of
+ * Vibrancy's built-in set, so a theme that can't be loaded must degrade to "no
+ * extra keys" rather than throwing — every caller is doing cleanup or
+ * diagnostics, and neither is worth failing an uninstall over.
+ */
+function getCurrentThemeConfig() {
+  try {
+    const vibrancyTheme = getCurrentTheme(vscode.workspace.getConfiguration("vscode_vibrancy"));
+    return require(path.resolve(__dirname, themeConfigPaths[vibrancyTheme]));
+  } catch (error) {
+    console.warn('Vibrancy: could not resolve the current theme config:', error);
+    return undefined;
+  }
 }
 
 // Settings that were renamed (e.g. to fix a typo): [oldKey, newKey].
@@ -992,13 +1018,7 @@ function activate(context) {
     // Best-effort: lets the restore clean up colour keys the active theme
     // introduces even when the backup in globalState is missing. A theme that
     // can't be resolved must not block the uninstall.
-    let themeConfig;
-    try {
-      const vibrancyTheme = getCurrentTheme(vibrancyConfig);
-      themeConfig = require(path.resolve(__dirname, themeConfigPaths[vibrancyTheme]));
-    } catch (error) {
-      console.warn("Could not resolve the current theme while restoring settings:", error);
-    }
+    const themeConfig = getCurrentThemeConfig();
 
     return restoreSettings({
       settingsStore: {
@@ -1021,6 +1041,107 @@ function activate(context) {
     );
 
     return configFilePath;
+  }
+
+  /**
+   * Read VSCode's profile registry, or an empty list if it can't be read.
+   *
+   * @returns {Array} result of listProfiles — always contains the default profile
+   */
+  function getProfiles() {
+    const userDir = path.dirname(getEditorSettingsPath(vscode.env.appName));
+    let storage = null;
+    try {
+      storage = JSON.parse(require('fs').readFileSync(path.join(userDir, 'globalStorage', 'storage.json'), 'utf-8'));
+    } catch {
+      // No profiles have ever been created, or the file is mid-write. Either
+      // way the default profile is still describable, so carry on with just it.
+    }
+    return listProfiles(userDir, storage);
+  }
+
+  /**
+   * The settings.json this extension host actually reads and writes.
+   *
+   * Not the same thing as `getEditorSettingsPath`, which only ever names the
+   * default profile's file. Recording that path for a named profile pointed the
+   * uninstall hook at a file whose colour customizations belonged to somebody
+   * else, so the real ones were never cleaned up.
+   */
+  function getCurrentSettingsPath() {
+    try {
+      const profile = findProfileByGlobalStorage(getProfiles(), context.globalStorageUri.fsPath);
+      if (profile) return profile.settingsPath;
+    } catch (error) {
+      console.warn('Vibrancy: could not resolve the current profile settings path:', error);
+    }
+    return getEditorSettingsPath(vscode.env.appName);
+  }
+
+  /**
+   * Scan the other profiles for colour customizations this install left behind.
+   *
+   * Read-only, and deliberately so: writing another profile's settings.json
+   * while a window has it open would be overwritten by that window's own cache
+   * anyway. The point is to be able to *name* the affected profiles instead of
+   * describing the problem in the abstract.
+   *
+   * @returns {Array<{profileNames: string[], keys: string[]}>}
+   */
+  function scanOtherProfilesForLeftovers() {
+    try {
+      const currentSettingsPath = getCurrentSettingsPath();
+      const themeConfig = getCurrentThemeConfig();
+      const managedKeys = resolveManagedBgKeys(themeConfig?.colorCustomizations);
+
+      return groupBySettingsFile(getProfiles())
+        .filter((target) => target.settingsPath !== currentSettingsPath)
+        .map((target) => {
+          let keys = [];
+          try {
+            const text = require('fs').readFileSync(target.settingsPath, 'utf-8');
+            keys = findVibrancyLeftovers(readColorCustomizations(text), managedKeys);
+          } catch {
+            // Missing file: a profile that has never had a setting changed.
+          }
+          return { profileNames: target.profileNames, keys };
+        });
+    } catch (error) {
+      console.warn('Vibrancy: could not scan other profiles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Tell profile users about the scope mismatch, at the point it's detectable.
+   *
+   * Nothing in VSCode's UI suggests that an extension's effect could be
+   * machine-wide while its colour settings are per profile, so the first
+   * encounter with it looks like a Vibrancy bug rather than a scoping artefact.
+   */
+  async function showProfileTip() {
+    try {
+      const situation = assessProfileSituation({
+        profiles: getProfiles(),
+        leftovers: scanOtherProfilesForLeftovers(),
+        introductionShown: context.globalState.get('profileTipShown') === true,
+      });
+
+      if (situation.kind === 'stranded') {
+        vscode.window.showWarningMessage(
+          localize('messages.profileLeftovers')
+            .replace('{0}', situation.profileNames.join(', '))
+            .replace('{1}', String(situation.keys.length)),
+        );
+      } else if (situation.kind === 'introduction') {
+        vscode.window.showInformationMessage(
+          localize('messages.profileTip').replace('{0}', situation.profileNames.join(', ')),
+        );
+        await context.globalState.update('profileTipShown', true);
+      }
+    } catch (error) {
+      console.warn('Vibrancy: could not evaluate the profile tip:', error);
+    }
   }
 
   /** Identity of the VSCode profile this extension host belongs to. */
@@ -1090,7 +1211,9 @@ function activate(context) {
         workbenchHtmlPath: paths.workbenchHtmlPath,
         jsPath: paths.jsPath,
         electronJsPath: paths.electronJsPath,
-        settingsJsonPath: getEditorSettingsPath(vscode.env.appName),
+        // The *current profile's* settings.json, not the default profile's —
+        // this is the file whose colour customizations the hook has to revert.
+        settingsJsonPath: getCurrentSettingsPath(),
         cliCommand: require('fs').existsSync(cliFullPath) ? cliFullPath : cliName,
         previousCustomizations,
         // Which profile's settings hold the colour customizations this install
@@ -1240,6 +1363,12 @@ function activate(context) {
       currentProfile: getProfileIdentity(),
     })) {
       vscode.window.showWarningMessage(localize('messages.profileTakeover'));
+    }
+
+    // Deliberately not awaited: it reads other profiles' settings off disk, and
+    // a slow or unreadable file must not hold up the install.
+    if (!sharedWriter) {
+      showProfileTip();
     }
 
     // BUG: prevent installation on macOS with Electron 32.2.6 used in VSCode 1.96 (#178)

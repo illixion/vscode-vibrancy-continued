@@ -77,5 +77,7 @@
   "messages.nixStaleReenable": "重建并启用",
   "messages.profileMismatch": "Vibrancy 是从另一个 VSCode 配置文件（profile）启用的。在此禁用会为所有配置文件还原 VSCode 的共享文件，但只能恢复当前配置文件的颜色自定义 —— 启用 Vibrancy 的那个配置文件中的设置将被遗留。请切换到那个配置文件并在那里禁用。如果那个配置文件已不存在，或者您正在清理遗留在当前配置文件中的颜色，请选择“仍然禁用”。",
   "messages.profileMismatchDisableAnyway": "仍然禁用",
-  "messages.profileTakeover": "Vibrancy 之前是从另一个 VSCode 配置文件启用的，现已由当前配置文件接管。颜色自定义按配置文件分别存储，因此需要在另一个配置文件中自行还原 —— 在此处执行禁用已无法清理它们。"
+  "messages.profileTakeover": "Vibrancy 之前是从另一个 VSCode 配置文件启用的，现已由当前配置文件接管。颜色自定义按配置文件分别存储，因此需要在另一个配置文件中自行还原 —— 在此处执行禁用已无法清理它们。",
+  "messages.profileTip": "Vibrancy 会应用于所有 VSCode 配置文件，但它所需的颜色自定义是按配置文件分别存储的。在你的其他配置文件 ({0}) 中启用 Vibrancy 之前，它们只会显示效果而没有这些颜色。请在启用它的那个配置文件中禁用，这样才能还原其颜色。",
+  "messages.profileLeftovers": "另一个 VSCode 配置文件 ({0}) 的设置中仍有 {1} 项 Vibrancy 的颜色自定义。颜色自定义按配置文件存储，因此只能在那里还原：请切换到该配置文件并运行“Disable Vibrancy”。"
 }
