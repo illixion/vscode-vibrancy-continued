@@ -6,6 +6,7 @@
   "configuration.type.tabbed.description": "(Windows 11 のみ) Mica Alt (タブ) 背景マテリアル",
   "configuration.type.acrylic.description": "(Windows) Acrylic Fluent Design のブラー効果を使用します",
   "configuration.type.transparent.description": "ぼかし効果を適用せずに、背景を透明にします",
+  "configuration.type.liquid-glass.description": "(macOS 26 以降) ネイティブの NSGlassEffectView による Apple Liquid Glass。古い macOS では under-window のすりガラス効果にフォールバックします",
   "configuration.type.macos-only.description": "(macOS のみ)",
   "configuration.type.macos-only-legacy.description": "VSCode 1.86 で廃止。(macOS のみ)",
   "configuration.opacity.description": "すりガラス効果の透明度を制御します。",

@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.1.93",
+  "version": "1.2.0",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -67,6 +67,7 @@
             "mica",
             "tabbed",
             "transparent",
+            "liquid-glass",
             "under-window",
             "fullscreen-ui",
             "titlebar",
@@ -93,6 +94,7 @@
             "%configuration.type.mica.description%",
             "%configuration.type.tabbed.description%",
             "%configuration.type.transparent.description%",
+            "%configuration.type.liquid-glass.description%",
             "%configuration.type.macos-only.description%",
             "%configuration.type.macos-only.description%",
             "%configuration.type.macos-only.description%",
@@ -288,6 +290,8 @@
   },
   "scripts": {
     "build-win10": "node-gyp rebuild",
+    "build-mac-glass": "sh scripts/build-liquidglass.sh",
+    "smoke-mac-glass": "node scripts/liquidglass-smoke.mjs",
     "vscode:uninstall": "node ./extension/uninstallHook.js",
     "test": "vitest run",
     "test:unit": "vitest run test/unit",

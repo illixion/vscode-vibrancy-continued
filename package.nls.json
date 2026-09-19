@@ -6,6 +6,7 @@
   "configuration.type.mica.description": "(Windows 11 only) Mica background material",
   "configuration.type.tabbed.description": "(Windows 11 only) Mica Alt (Tabbed) background material",
   "configuration.type.transparent.description": "Make the background transparent, without blur",
+  "configuration.type.liquid-glass.description": "(macOS 26+) Apple Liquid Glass via the native NSGlassEffectView; falls back to under-window vibrancy on older macOS",
   "configuration.type.macos-only.description": "(macOS only)",
   "configuration.type.macos-only-legacy.description": "DEPRECATED in VS 1.86 (macOS only)",
   "configuration.opacity.description": "Opacity of Vibrancy Effect. -1 is theme default.",

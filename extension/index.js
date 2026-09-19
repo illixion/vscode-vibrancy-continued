@@ -614,6 +614,27 @@ function activate(context) {
 
     await writer.mkdir(runtimeDir);
     await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
+
+    // macOS: ship the Liquid Glass native addon (.node) next to the runtime so
+    // the injected runtime can require() it by relative path — the same layout
+    // the Windows install uses for vibrancy-*.node. Unlike Windows, macOS
+    // doesn't hard-lock a loaded .node against replacement, so no deferred
+    // copy dance is needed. Both arch prebuilts go in; the runtime picks by
+    // process.arch. Missing prebuilts are fine: the runtime then falls back
+    // to regular under-window vibrancy.
+    if (process.platform === 'darwin') {
+      const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
+      if (fs.existsSync(nativePrebuiltDir)) {
+        for (const file of fs.readdirSync(nativePrebuiltDir)) {
+          if (/^liquidglass-darwin-(arm64|x64)\.node$/.test(file)) {
+            await writer.copyFile(
+              path.join(nativePrebuiltDir, file),
+              path.join(runtimeDir, file)
+            );
+          }
+        }
+      }
+    }
   }
 
   async function installRuntimeWin(writer) {
@@ -642,6 +663,9 @@ function activate(context) {
     if (fs.existsSync(nativePrebuiltDir)) {
       const files = fs.readdirSync(nativePrebuiltDir);
       for (const file of files) {
+        // Windows installs only need the Windows accent addon; skip the
+        // macOS Liquid Glass prebuilts that now share this directory.
+        if (file.startsWith('liquidglass-darwin-')) continue;
         if (file.endsWith('.node')) {
           if (writer.requiresElevation) {
             pendingNodeCopies.push({
@@ -777,8 +801,11 @@ function activate(context) {
 
     // The 'transparent' vibrancy type paints no blur material, so it needs an
     // actually see-through window; every other type paints over an opaque window
-    // (native NSVisualEffectView on macOS, DWM backdrop on Win11). Resolve 'auto'
-    // against the theme's per-OS default to tell whether transparency is needed.
+    // (native NSVisualEffectView on macOS, DWM backdrop on Win11). 'liquid-glass'
+    // is the other see-through case: its NSGlassEffectView sits UNDER the web
+    // content, so Chromium must be transparent for it to show (macOS-only — on
+    // Windows the runtime coerces it to 'auto'). Resolve 'auto' against the
+    // theme's per-OS default to tell whether transparency is needed.
     const resolvedType = config.type === 'auto'
       ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
       : config.type;
@@ -788,7 +815,8 @@ function activate(context) {
       electronMajorVersion,
       appName: vscode.env.appName,
       isWindows11,
-      transparentType: resolvedType === 'transparent',
+      transparentType: resolvedType === 'transparent' ||
+        (osType === 'macos' && resolvedType === 'liquid-glass'),
       // On Windows an opaque window can Aero-Snap, but opaque vibrancy renders
       // with sheared/unreadable text on older builds (issue #122 needed a
       // transparent window). Only default to opaque on a VSCode build where it's

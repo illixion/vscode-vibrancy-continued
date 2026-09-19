@@ -123,9 +123,12 @@ Native method of Vibrancy effect. See here for screenshots of all available opti
 * acrylic : Acrylic Fluent Design blur. (Windows)
 * mica : Mica background material — tints with the desktop wallpaper. (Windows 11 only)
 * tabbed : Mica Alt (Tabbed) background material — a stronger Mica variant. (Windows 11 only)
+* liquid-glass : Apple's Liquid Glass via the native `NSGlassEffectView`. (macOS 26+ only) Falls back to `under-window` vibrancy on older macOS. See [Liquid Glass](docs/vibrancy-types.md#liquid-glass-macos).
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
 
 > On Windows 10, `mica` and `tabbed` aren't available and fall back to `acrylic`. The Mica/Tabbed materials use the modern DWM backdrop API, which only exists on Windows 11.
+
+> `liquid-glass` uses a private, reverse-engineered macOS API (`NSGlassEffectView`) and is inherently more fragile across macOS releases than Electron's supported `setVibrancy()`. If the glass class is missing (macOS < 26) or the native addon can't load, Vibrancy silently falls back to `under-window` vibrancy so the window is never left broken.
 
 #### Opacity (`vscode_vibrancy.opacity`)
 

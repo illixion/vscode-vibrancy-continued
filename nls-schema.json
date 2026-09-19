@@ -17,6 +17,9 @@
     "configuration.type.macos-only-legacy.description": {
       "type": "string"
     },
+    "configuration.type.liquid-glass.description": {
+      "type": "string"
+    },
     "configuration.opacity.description": {
       "type": "string"
     },
@@ -123,6 +126,7 @@
     "configuration.type.acrylic.description",
     "configuration.type.macos-only.description",
     "configuration.type.macos-only-legacy.description",
+    "configuration.type.liquid-glass.description",
     "configuration.opacity.description",
     "configuration.backgroundOverride.description",
     "configuration.theme.description",

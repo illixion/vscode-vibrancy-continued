@@ -11,4 +11,7 @@ __mocks__/
 vitest.config.mjs
 CLAUDE.md
 binding.gyp.dist
+binding.gyp.mac.dist
+scripts/build-liquidglass.sh
+scripts/liquidglass-smoke.mjs
 nls-schema.json
