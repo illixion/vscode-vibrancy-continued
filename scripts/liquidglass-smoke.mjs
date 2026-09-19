@@ -6,7 +6,7 @@
 //   node scripts/liquidglass-smoke.mjs
 //
 // addView() needs a live Electron BrowserWindow handle, so it is NOT called
-// here — see HOST-TESTING.md for the full in-VS Code test.
+// here — see LIQUID-GLASS-NOTES.md for the full in-VS Code test.
 import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';

@@ -21,6 +21,12 @@ var {
 const { applySettings, restoreSettings } = require('./vscode-settings');
 const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
 const {
+  appBundlePath,
+  getCodesignInfo,
+  reSignCommand,
+  reSignApp,
+} = require('./mac-app-resign');
+const {
   deriveProfileIdentity,
   evaluateUninstallOwnership,
   isOwnershipTakeover,
@@ -1243,6 +1249,48 @@ function activate(context) {
     return choice === disableAnyway;
   }
 
+  /**
+   * macOS library validation refuses to dlopen the Liquid Glass addon into
+   * VSCode's Microsoft-signed main process (hardened runtime, Team ID
+   * mismatch), so on a stock install the type silently degrades to
+   * under-window vibrancy. With the user's consent, ad-hoc re-sign the app
+   * bundle — dropping the hardened runtime and with it library validation —
+   * so the addon can load after the restart. Best effort: any failure just
+   * shows the manual command, never fails the install.
+   */
+  async function maybeReSignAppForLiquidGlass() {
+    if (process.platform !== 'darwin') return;
+    if (vscode.workspace.getConfiguration('vscode_vibrancy').get('type') !== 'liquid-glass') return;
+
+    const appPath = appBundlePath(process.execPath);
+    if (!appPath) return;
+
+    const info = await getCodesignInfo(appPath);
+    // Unsigned or already ad-hoc: library validation isn't in the way.
+    if (!info || !info.signed || info.adHoc) return;
+
+    const yes = localize('messages.liquidGlassReSignYes');
+    const choice = await vscode.window.showWarningMessage(
+      localize('messages.liquidGlassReSign'),
+      {
+        modal: true,
+        detail: localize('messages.liquidGlassReSignDetail').replace('%1', appPath),
+      },
+      yes,
+    );
+    if (choice !== yes) return;
+
+    try {
+      await reSignApp(appPath);
+      vscode.window.showInformationMessage(localize('messages.liquidGlassReSignDone'));
+    } catch (err) {
+      vscode.window.showWarningMessage(
+        localize('messages.liquidGlassReSignFailed').replace('%1', String((err && err.message) || err)),
+        { modal: true, detail: reSignCommand(appPath) },
+      );
+    }
+  }
+
   async function setLocalConfig(state, paths, previousCustomizations) {
     const configFilePath = await getLocalConfigPath();
 
@@ -1372,6 +1420,7 @@ function activate(context) {
     await migrateRenamedSettings();
     await checkColorTheme(testMode);
     await checkElectronDeprecatedType();
+    await maybeReSignAppForLiquidGlass();
     await setLocalConfig(true, {
       workbenchHtmlPath: HTMLFile,
       jsPath: JSFile,

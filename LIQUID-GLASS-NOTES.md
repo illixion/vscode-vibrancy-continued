@@ -1,9 +1,10 @@
-# Testing the Liquid Glass feature on your Mac
+# Liquid Glass on macOS: build, test & code-signing notes
 
-Everything in this folder was authored inside a Linux sandbox, which **cannot
-compile or run the macOS native addon** (`NSGlassEffectView` needs AppKit +
-Xcode, and only loads inside Electron on macOS 26+). So the native half has to
-be built and verified on your Mac. This guide walks through it.
+The Liquid Glass native addon (`native/liquidglass.mm`) is AppKit code: it can
+only be compiled on macOS, and the real `NSGlassEffectView` effect only exists
+on macOS 26+. This document covers building the addon, testing the effect
+end-to-end in VSCode, and the code-signing constraint stock VSCode puts on
+third-party native addons.
 
 > **Requirements:** macOS **26 (Tahoe)** or later for the real glass effect,
 > Xcode Command Line Tools **matching your macOS/SDK version**, Node.js ≥ 18,
@@ -17,10 +18,10 @@ be built and verified on your Mac. This guide walks through it.
 > the beta SDK's `.tbd` stubs — install the matching **full Xcode** and point
 > `xcode-select` at it (see Troubleshooting).
 
-The working directory for every command below is:
+The working directory for every command below is the root of this repository:
 
 ```sh
-cd ~/Desktop/vscode-liquid-glass/vscode-vibrancy-continued
+cd <your checkout of vscode-vibrancy-continued>
 ```
 
 ---
@@ -31,7 +32,7 @@ cd ~/Desktop/vscode-liquid-glass/vscode-vibrancy-continued
 npm install          # node-addon-api, node-gyp, vitest, etc.
 ```
 
-## 2. Build the native addon (host only)
+## 2. Build the native addon (macOS only)
 
 This compiles `native/liquidglass.mm` into an N-API `.node`, stages it where the
 installer picks it up (`native/prebuilt/liquidglass-darwin-<arch>.node`), and
@@ -202,30 +203,35 @@ The runtime catches this and falls back to `under-window` vibrancy, so you get
 a working-but-not-glass window instead of a crash — the same graceful
 degradation as the macOS < 26 path.
 
-**Local workaround (throwaway installs only):** ad-hoc re-sign the whole app
-bundle. This replaces every signature (app, frameworks, helpers) with an ad-hoc
-one and drops the hardened runtime — and with it, library validation — so the
-addon loads:
+**The fix is an ad-hoc re-sign of the app bundle**, which replaces every
+signature (app, frameworks, helpers) with an ad-hoc one and drops the hardened
+runtime — and with it, library validation — so the addon loads. **Enable
+Vibrancy offers to do this for you** when the type is `liquid-glass` and the
+bundle carries a foreign Team ID: a consent dialog explains the trade-offs,
+and the extension runs the re-sign through its usual privilege escalation
+(administrator prompt). If the automatic re-sign fails, the dialog shows the
+manual command:
 
 ```sh
 sudo codesign --force --deep --sign - "/Applications/Visual Studio Code - Insiders.app"
 xattr -dr com.apple.quarantine "/Applications/Visual Studio Code - Insiders.app"
 ```
 
-What to know before doing it:
+What to know before accepting (or running it yourself):
 
 - It changes **no code** — only signatures. The notarization stamp is gone, so
   the quarantine attribute is stripped for a clean first launch.
 - macOS Sequoia+ protects app bundles with the **App Management** TCC
-  permission: grant it to your terminal (System Settings → Privacy & Security →
-  App Management) or even `sudo codesign` fails with `Operation not permitted`
-  (the same gate blocks plain `cp` into the app bundle).
+  permission: grant it to whatever triggers the re-sign (your terminal for the
+  manual command, VSCode for the automatic one — System Settings → Privacy &
+  Security → App Management) or even `sudo codesign` fails with
+  `Operation not permitted` (the same gate blocks plain `cp` into the bundle).
 - Every auto-update restores Microsoft's signature *and* overwrites the
-  vibrancy patch: re-sign **and** re-run Enable/Reload Vibrancy afterwards.
-  Undoing it entirely = reinstall the app.
-- Only ever do this to a throwaway install (Insiders), never your daily editor.
+  vibrancy patch: Enable offers to re-sign again after each update. Undoing it
+  entirely = reinstall the app.
+- Prefer doing this on a throwaway install (Insiders), not your daily editor.
 
 This is the structural constraint of the whole feature: a third-party `.node`
-can never carry Microsoft's Team ID, so a publicly-shipped build would have to
-automate this re-sign during Enable (the extension already elevates) or accept
-that real Liquid Glass needs a locally re-signed VSCode.
+can never carry Microsoft's Team ID, so real Liquid Glass on macOS always
+needs either a re-signed app (automated here) or a VSCode build that ships the
+addon under its own signature.

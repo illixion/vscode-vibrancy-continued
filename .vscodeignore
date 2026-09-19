@@ -4,6 +4,7 @@ images/*
 images/types/*
 !images/logo.png
 docs/*
+LIQUID-GLASS-NOTES.md
 test/
 __mocks__/
 .github/

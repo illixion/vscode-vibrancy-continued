@@ -43,7 +43,7 @@ Because the glass is a native view behind the web content, the effect only shows
 - It must **not** be combined with `setVibrancy()`: Electron would install its own `NSVisualEffectView` that hides the glass and gives the old blurry look. The runtime enforces this — the glass path and the vibrancy path are mutually exclusive branches.
 - The material **variant** is set to `2` (the Dock-style glass). Variant/scrim/subdued setters are private API and experimental.
 - With `vscode_vibrancy.opacity` left on the theme default (`-1`), liquid-glass uses an html opacity of `0.6` — a scrim that keeps text legible over the glass (fully clear is unreadable, theme-era values wash it out). An explicitly-set `vscode_vibrancy.opacity` still wins.
-- On a **stock** VSCode install, macOS library validation rejects the unsigned addon in the main process (hardened runtime + Team ID mismatch) and Vibrancy falls back to `under-window`. Real glass on your own machine needs an ad-hoc re-sign of the app — see `HOST-TESTING.md`.
+- On a **stock** VSCode install, macOS library validation rejects the unsigned addon in the main process (hardened runtime + Team ID mismatch) and Vibrancy falls back to `under-window`. Enabling liquid-glass therefore offers to ad-hoc re-sign the app bundle during install (with your consent); `LIQUID-GLASS-NOTES.md` documents what that does and the manual equivalent.
 
 > ⚠️ `NSGlassEffectView` and its variant controls are a **private, reverse-engineered** macOS API. This is inherently more brittle across macOS releases than Electron's supported `setVibrancy()`, and could stop working on a future OS update.
 

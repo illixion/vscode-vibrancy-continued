@@ -6,7 +6,7 @@
   * A liquid-glass CSS overlay clears the workbench chrome and leaves subtle translucent fills on the activity bar, sidebar, panel, etc.; the theme's normal transparency still applies on top. With the opacity left on the theme default, liquid-glass uses a `0.6` html scrim — fully clear is unreadable over the glass (an explicit `vscode_vibrancy.opacity` still wins)
   * Prebuilt N-API addons for both `darwin-arm64` and `darwin-x64` are staged next to the injected runtime and loaded by `process.arch` — the same layout the Windows vibrancy addon already uses
   * Note: `NSGlassEffectView` and its variant controls are a private, reverse-engineered macOS API and are inherently more brittle across OS releases than Electron's supported `setVibrancy()`
-  * Note: VSCode's hardened runtime enforces library validation, so its main process refuses to load a third-party `.node` signed by a different Team ID — on a stock install liquid-glass therefore falls back to `under-window` vibrancy. Real glass currently requires ad-hoc re-signing the app (documented in `HOST-TESTING.md`); automating that during Enable is the obvious next step
+  * Note: VSCode's hardened runtime enforces library validation, so its main process refuses to load a third-party `.node` signed by a different Team ID — on a stock install liquid-glass would silently fall back to `under-window` vibrancy. Enable now offers (with a consent dialog) to ad-hoc re-sign the app bundle through the usual privilege escalation so the addon can load, and shows the manual command if that fails; `LIQUID-GLASS-NOTES.md` explains exactly what the re-sign changes and restores
 
 # 1.1.93
 

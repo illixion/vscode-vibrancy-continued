@@ -116,6 +116,21 @@
     "messages.electronDeprecatedType": {
       "type": "string"
     },
+    "messages.liquidGlassReSign": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignDetail": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignYes": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignDone": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignFailed": {
+      "type": "string"
+    },
     "messages.applyToAllProfiles": {
       "type": "string"
     }
@@ -158,6 +173,11 @@
     "messages.importError",
     "messages.htmlError",
     "messages.electronDeprecatedType",
+    "messages.liquidGlassReSign",
+    "messages.liquidGlassReSignDetail",
+    "messages.liquidGlassReSignYes",
+    "messages.liquidGlassReSignDone",
+    "messages.liquidGlassReSignFailed",
     "messages.applyToAllProfiles",
     "configuration.disableColorCustomizations.description"
   ]
