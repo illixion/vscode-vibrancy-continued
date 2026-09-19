@@ -17,6 +17,9 @@
     "configuration.type.macos-only-legacy.description": {
       "type": "string"
     },
+    "configuration.type.liquid-glass.description": {
+      "type": "string"
+    },
     "configuration.opacity.description": {
       "type": "string"
     },
@@ -113,6 +116,21 @@
     "messages.electronDeprecatedType": {
       "type": "string"
     },
+    "messages.liquidGlassReSign": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignDetail": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignYes": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignDone": {
+      "type": "string"
+    },
+    "messages.liquidGlassReSignFailed": {
+      "type": "string"
+    },
     "messages.applyToAllProfiles": {
       "type": "string"
     }
@@ -123,6 +141,7 @@
     "configuration.type.acrylic.description",
     "configuration.type.macos-only.description",
     "configuration.type.macos-only-legacy.description",
+    "configuration.type.liquid-glass.description",
     "configuration.opacity.description",
     "configuration.backgroundOverride.description",
     "configuration.theme.description",
@@ -154,6 +173,11 @@
     "messages.importError",
     "messages.htmlError",
     "messages.electronDeprecatedType",
+    "messages.liquidGlassReSign",
+    "messages.liquidGlassReSignDetail",
+    "messages.liquidGlassReSignYes",
+    "messages.liquidGlassReSignDone",
+    "messages.liquidGlassReSignFailed",
     "messages.applyToAllProfiles",
     "configuration.disableColorCustomizations.description"
   ]

@@ -21,6 +21,12 @@ var {
 const { applySettings, restoreSettings } = require('./vscode-settings');
 const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
 const {
+  appBundlePath,
+  getCodesignInfo,
+  reSignCommand,
+  reSignApp,
+} = require('./mac-app-resign');
+const {
   deriveProfileIdentity,
   evaluateUninstallOwnership,
   isOwnershipTakeover,
@@ -614,6 +620,27 @@ function activate(context) {
 
     await writer.mkdir(runtimeDir);
     await writer.copyDir(path.resolve(__dirname, runtimeSrcDir), path.resolve(runtimeDir));
+
+    // macOS: ship the Liquid Glass native addon (.node) next to the runtime so
+    // the injected runtime can require() it by relative path — the same layout
+    // the Windows install uses for vibrancy-*.node. Unlike Windows, macOS
+    // doesn't hard-lock a loaded .node against replacement, so no deferred
+    // copy dance is needed. Both arch prebuilts go in; the runtime picks by
+    // process.arch. Missing prebuilts are fine: the runtime then falls back
+    // to regular under-window vibrancy.
+    if (process.platform === 'darwin') {
+      const nativePrebuiltDir = path.resolve(__dirname, '../native/prebuilt');
+      if (fs.existsSync(nativePrebuiltDir)) {
+        for (const file of fs.readdirSync(nativePrebuiltDir)) {
+          if (/^liquidglass-darwin-(arm64|x64)\.node$/.test(file)) {
+            await writer.copyFile(
+              path.join(nativePrebuiltDir, file),
+              path.join(runtimeDir, file)
+            );
+          }
+        }
+      }
+    }
   }
 
   async function installRuntimeWin(writer) {
@@ -642,6 +669,9 @@ function activate(context) {
     if (fs.existsSync(nativePrebuiltDir)) {
       const files = fs.readdirSync(nativePrebuiltDir);
       for (const file of files) {
+        // Windows installs only need the Windows accent addon; skip the
+        // macOS Liquid Glass prebuilts that now share this directory.
+        if (file.startsWith('liquidglass-darwin-')) continue;
         if (file.endsWith('.node')) {
           if (writer.requiresElevation) {
             pendingNodeCopies.push({
@@ -777,8 +807,11 @@ function activate(context) {
 
     // The 'transparent' vibrancy type paints no blur material, so it needs an
     // actually see-through window; every other type paints over an opaque window
-    // (native NSVisualEffectView on macOS, DWM backdrop on Win11). Resolve 'auto'
-    // against the theme's per-OS default to tell whether transparency is needed.
+    // (native NSVisualEffectView on macOS, DWM backdrop on Win11). 'liquid-glass'
+    // is the other see-through case: its NSGlassEffectView sits UNDER the web
+    // content, so Chromium must be transparent for it to show (macOS-only — on
+    // Windows the runtime coerces it to 'auto'). Resolve 'auto' against the
+    // theme's per-OS default to tell whether transparency is needed.
     const resolvedType = config.type === 'auto'
       ? require(path.resolve(__dirname, themeConfigPaths[getCurrentTheme(config)])).type[osType]
       : config.type;
@@ -788,7 +821,8 @@ function activate(context) {
       electronMajorVersion,
       appName: vscode.env.appName,
       isWindows11,
-      transparentType: resolvedType === 'transparent',
+      transparentType: resolvedType === 'transparent' ||
+        (osType === 'macos' && resolvedType === 'liquid-glass'),
       // On Windows an opaque window can Aero-Snap, but opaque vibrancy renders
       // with sheared/unreadable text on older builds (issue #122 needed a
       // transparent window). Only default to opaque on a VSCode build where it's
@@ -1215,6 +1249,48 @@ function activate(context) {
     return choice === disableAnyway;
   }
 
+  /**
+   * macOS library validation refuses to dlopen the Liquid Glass addon into
+   * VSCode's Microsoft-signed main process (hardened runtime, Team ID
+   * mismatch), so on a stock install the type silently degrades to
+   * under-window vibrancy. With the user's consent, ad-hoc re-sign the app
+   * bundle — dropping the hardened runtime and with it library validation —
+   * so the addon can load after the restart. Best effort: any failure just
+   * shows the manual command, never fails the install.
+   */
+  async function maybeReSignAppForLiquidGlass() {
+    if (process.platform !== 'darwin') return;
+    if (vscode.workspace.getConfiguration('vscode_vibrancy').get('type') !== 'liquid-glass') return;
+
+    const appPath = appBundlePath(process.execPath);
+    if (!appPath) return;
+
+    const info = await getCodesignInfo(appPath);
+    // Unsigned or already ad-hoc: library validation isn't in the way.
+    if (!info || !info.signed || info.adHoc) return;
+
+    const yes = localize('messages.liquidGlassReSignYes');
+    const choice = await vscode.window.showWarningMessage(
+      localize('messages.liquidGlassReSign'),
+      {
+        modal: true,
+        detail: localize('messages.liquidGlassReSignDetail').replace('%1', appPath),
+      },
+      yes,
+    );
+    if (choice !== yes) return;
+
+    try {
+      await reSignApp(appPath);
+      vscode.window.showInformationMessage(localize('messages.liquidGlassReSignDone'));
+    } catch (err) {
+      vscode.window.showWarningMessage(
+        localize('messages.liquidGlassReSignFailed').replace('%1', String((err && err.message) || err)),
+        { modal: true, detail: reSignCommand(appPath) },
+      );
+    }
+  }
+
   async function setLocalConfig(state, paths, previousCustomizations) {
     const configFilePath = await getLocalConfigPath();
 
@@ -1344,6 +1420,7 @@ function activate(context) {
     await migrateRenamedSettings();
     await checkColorTheme(testMode);
     await checkElectronDeprecatedType();
+    await maybeReSignAppForLiquidGlass();
     await setLocalConfig(true, {
       workbenchHtmlPath: HTMLFile,
       jsPath: JSFile,

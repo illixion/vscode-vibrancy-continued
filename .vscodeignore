@@ -4,6 +4,7 @@ images/*
 images/types/*
 !images/logo.png
 docs/*
+LIQUID-GLASS-NOTES.md
 test/
 __mocks__/
 .github/
@@ -11,4 +12,7 @@ __mocks__/
 vitest.config.mjs
 CLAUDE.md
 binding.gyp.dist
+binding.gyp.mac.dist
+scripts/build-liquidglass.sh
+scripts/liquidglass-smoke.mjs
 nls-schema.json

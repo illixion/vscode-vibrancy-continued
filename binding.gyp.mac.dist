@@ -1,0 +1,30 @@
+{
+  "targets": [
+    {
+      "target_name": "liquidglass",
+      "sources": [
+        "native/liquidglass.mm"
+      ],
+      "include_dirs": [
+        "<!@(node -p \"require('node-addon-api').include\")"
+      ],
+      "defines": [
+        "NAPI_DISABLE_CPP_EXCEPTIONS",
+        "NAPI_VERSION=8"
+      ],
+      "xcode_settings": {
+        "GCC_ENABLE_CPP_EXCEPTIONS": "NO",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "CLANG_CXX_LANGUAGE_STANDARD": "c++17",
+        "CLANG_ENABLE_OBJC_ARC": "YES",
+        "MACOSX_DEPLOYMENT_TARGET": "11.0",
+        "OTHER_CFLAGS": [
+          "-O3"
+        ],
+        "OTHER_LDFLAGS": [
+          "-framework AppKit"
+        ]
+      }
+    }
+  ]
+}

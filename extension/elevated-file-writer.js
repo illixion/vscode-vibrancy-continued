@@ -213,6 +213,31 @@ function elevatedCopyWindows(operations) {
 }
 
 /**
+ * Run an arbitrary shell script with administrator privileges on macOS
+ * (osascript authentication dialog). Used for privileged work that isn't a
+ * file operation — see mac-app-resign.js.
+ * @param {string} script
+ * @returns {Promise<void>}
+ */
+function elevatedShellScript(script) {
+  return new Promise((resolve, reject) => {
+    if (process.platform !== 'darwin') {
+      reject(new Error('Unsupported platform for elevation'));
+      return;
+    }
+    const escapedScript = script.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const osaScript = `do shell script "${escapedScript}" with administrator privileges`;
+    cp.execFile('osascript', ['-e', osaScript], (error, _stdout, stderr) => {
+      if (error) {
+        reject(new Error(`Elevation failed: ${stderr || error.message}`));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
  * Execute file operations with elevated privileges.
  * Returns a Promise that resolves on success or rejects with an error.
  */
@@ -227,17 +252,7 @@ function elevatedCopy(operations) {
 
     if (platform === 'darwin') {
       // macOS: use osascript with administrator privileges
-      const script = buildShellScript(operations);
-      const escapedScript = script.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      const osaScript = `do shell script "${escapedScript}" with administrator privileges`;
-
-      cp.execFile('osascript', ['-e', osaScript], (error, _stdout, stderr) => {
-        if (error) {
-          reject(new Error(`Elevation failed: ${stderr || error.message}`));
-        } else {
-          resolve();
-        }
-      });
+      elevatedShellScript(buildShellScript(operations)).then(resolve, reject);
     } else if (platform === 'linux') {
       // Linux: try pkexec (Polkit GUI dialog) first, then fall back to running
       // sudo in a VSCode terminal. pkexec is preferred when it works, but it
@@ -407,6 +422,7 @@ class StagedFileWriter {
 module.exports = {
   checkNeedsElevation,
   elevatedCopy,
+  elevatedShellScript,
   hasCommand,
   hasNoNewPrivs,
   setTerminalRunner,

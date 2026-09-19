@@ -59,8 +59,43 @@ jobs:
           name: native-${{ matrix.arch }}
           path: native/prebuilt/
 
+  # macOS Liquid Glass addon. Runs on a single arm64 runner and cross-compiles
+  # the x64 slice too — an N-API addon links no Node symbols at build time, so
+  # `node-gyp rebuild --arch=x64` produces a valid Intel .node without needing
+  # an (increasingly scarce) Intel runner. One artifact holds both arches.
+  build-native-mac:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Install node-addon-api
+        run: npm install node-addon-api
+      - name: Rename binding.gyp.mac.dist to binding.gyp
+        run: mv binding.gyp.mac.dist binding.gyp
+      - name: Build Liquid Glass addon (arm64)
+        run: npx -y node-gyp@latest rebuild --arch=arm64
+      - name: Stage arm64 prebuilt
+        run: |
+          mkdir -p native/prebuilt
+          cp build/Release/liquidglass.node native/prebuilt/liquidglass-darwin-arm64.node
+      - name: Build Liquid Glass addon (x64, cross-compiled)
+        run: npx -y node-gyp@latest rebuild --arch=x64
+      - name: Stage x64 prebuilt
+        run: cp build/Release/liquidglass.node native/prebuilt/liquidglass-darwin-x64.node
+      - name: Verify both architectures
+        run: lipo -info native/prebuilt/liquidglass-darwin-*.node
+      - name: Upload native modules
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-darwin
+          path: native/prebuilt/
+
   publish:
-    needs: build-native
+    needs: [build-native, build-native-mac]
     runs-on: ubuntu-latest
     # Baseline ~2-3m. Deliberately not generous: this job pushes to the
     # Marketplace and Open VSX, so a wedged upload should surface fast.
@@ -82,6 +117,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: native-arm64
+          path: native/prebuilt/
+      - name: Download native modules (darwin)
+        uses: actions/download-artifact@v8
+        with:
+          name: native-darwin
           path: native/prebuilt/
       - name: Install dependencies
         run: npm install --omit=dev

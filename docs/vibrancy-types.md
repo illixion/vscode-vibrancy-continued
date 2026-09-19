@@ -21,6 +21,32 @@ All screenshots use an opacity value of 0, whereas the default value in most the
 | HUD | <img src="../images/types/hud.png" alt="HUD UI Type" width="1024"> |
 | Tooltip | <img src="../images/types/tooltip.png" alt="Tooltip UI Type" width="1024"> |
 
+# Liquid Glass (macOS)
+
+`liquid-glass` is unlike every other type: it is **not** an Electron `setVibrancy()` material. On macOS 26+ Vibrancy inserts a real Apple `NSGlassEffectView` — the same Liquid Glass surface the OS uses — *underneath* VSCode's Chromium content, via a small native addon (`native/liquidglass.mm`, adapted from [electron-liquid-glass](https://github.com/Meridius-Labs/electron-liquid-glass)).
+
+```
+NSGlassEffectView            ← real Apple Liquid Glass (native, behind everything)
+      ↓
+transparent Chromium         ← window.setBackgroundColor('#00000000')
+      ↓
+translucent semantic surfaces ← the liquid-glass CSS overlay
+      ↓
+text / icons / editor
+```
+
+Because the glass is a native view behind the web content, the effect only shows if the window is transparent and VSCode's own backgrounds are translucent. Vibrancy already makes the window `frame:false, transparent:true` on macOS, and when this type is active the runtime injects an extra CSS overlay that clears the workbench chrome and leaves subtle translucent fills on the activity bar, sidebar, panel, etc. The theme's normal transparency still applies on top.
+
+**Requirements & behavior**
+
+- **macOS 26+** for the real glass. The addon looks up `NSGlassEffectView` at runtime with `NSClassFromString`, so on macOS < 26 (or if the addon can't load) Vibrancy **falls back to `under-window`** Electron vibrancy — never a broken window.
+- It must **not** be combined with `setVibrancy()`: Electron would install its own `NSVisualEffectView` that hides the glass and gives the old blurry look. The runtime enforces this — the glass path and the vibrancy path are mutually exclusive branches.
+- The material **variant** is set to `2` (the Dock-style glass). Variant/scrim/subdued setters are private API and experimental.
+- With `vscode_vibrancy.opacity` left on the theme default (`-1`), liquid-glass uses an html opacity of `0.6` — a scrim that keeps text legible over the glass (fully clear is unreadable, theme-era values wash it out). An explicitly-set `vscode_vibrancy.opacity` still wins.
+- On a **stock** VSCode install, macOS library validation rejects the unsigned addon in the main process (hardened runtime + Team ID mismatch) and Vibrancy falls back to `under-window`. Enabling liquid-glass therefore offers to ad-hoc re-sign the app bundle during install (with your consent); `LIQUID-GLASS-NOTES.md` documents what that does and the manual equivalent.
+
+> ⚠️ `NSGlassEffectView` and its variant controls are a **private, reverse-engineered** macOS API. This is inherently more brittle across macOS releases than Electron's supported `setVibrancy()`, and could stop working on a future OS update.
+
 # Wallpaper tinting in full screen (macOS)
 
 In native macOS full screen there is no desktop behind the window, so instead of transparency the system applies **wallpaper tinting**: it blends your wallpaper's average color into the vibrancy material. This requires **System Settings → Appearance → "Allow wallpaper tinting in windows"** (on by default); the setting is read at app launch, so restart VSCode after toggling it.

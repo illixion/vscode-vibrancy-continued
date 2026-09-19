@@ -1,3 +1,4 @@
+const path = require('path');
 const electron = require('electron');
 /**
  * @type {(window) => Record<'interval' | 'overwrite', {install: () => void, uninstall: () => void>}
@@ -54,6 +55,23 @@ const windowsType = ['acrylic', 'mica', 'tabbed'];
 
 const universalType = ['transparent'];
 
+// 'liquid-glass' is NOT an Electron vibrancy type — it swaps setVibrancy() for
+// a native NSGlassEffectView (macOS 26+) inserted underneath Chromium's
+// content view by native/liquidglass.mm. Never run both: Electron's
+// NSVisualEffectView overrides the glass and produces the old blurry effect.
+const LIQUID_GLASS_TYPE = 'liquid-glass';
+
+// NSGlassEffectView material variants (private API, experimental). 2 is the
+// Dock-style glass; full table in native/liquidglass.mm / electron-liquid-glass.
+const LIQUID_GLASS_VARIANT = 2;
+// Roughly matches the corner rounding macOS itself applies to windows.
+const LIQUID_GLASS_CORNER_RADIUS = 12;
+// Html-tint scrim used when vscode_vibrancy.opacity is left on the theme
+// default (-1): fully clear (0) is unreadable over the glass and the
+// theme-era values (0.3) wash it out — 0.6 measured as the sweet spot.
+// An explicitly-set vscode_vibrancy.opacity still wins.
+const LIQUID_GLASS_DEFAULT_OPACITY = 0.6;
+
 // Windows AccentState values (must match enum in native/vibrancy.cc)
 const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
 const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
@@ -85,6 +103,119 @@ function hexToRgb(hex) {
     : null;
 }
 
+// --- macOS Liquid Glass -----------------------------------------------------
+
+// undefined: load not attempted yet; null: unavailable; else the addon instance.
+let liquidGlassAddon;
+
+function getLiquidGlassAddon() {
+  if (liquidGlassAddon !== undefined) return liquidGlassAddon;
+  liquidGlassAddon = null;
+  try {
+    // The installer copies liquidglass-darwin-*.node from native/prebuilt next
+    // to this runtime file (same layout as the Windows vibrancy addon).
+    const addonPath = path.resolve(__dirname, `./liquidglass-darwin-${process.arch}.node`);
+    const mod = require(addonPath);
+    liquidGlassAddon = new mod.LiquidGlassNative();
+  } catch (err) {
+    console.error('Vibrancy: failed to load the Liquid Glass native addon:', err);
+  }
+  return liquidGlassAddon;
+}
+
+// The ±1px resize nudge that makes macOS re-evaluate the window material.
+function nudgeWindowSize(window) {
+  const width = window.getBounds().width;
+  window.setBounds({ width: width + 1 });
+  window.setBounds({ width });
+}
+
+// Electron's supported vibrancy — the fallback whenever real Liquid Glass
+// can't be had (macOS < 26, addon missing, addView failed).
+function applyVibrancyFallback(window) {
+  window.setVibrancy('under-window');
+  nudgeWindowSize(window);
+}
+
+/**
+ * @returns {number | null} the glass view id, or null when the fallback ran
+ */
+function applyLiquidGlass(window) {
+  const glass = getLiquidGlassAddon();
+  if (!glass) {
+    console.error('Vibrancy: Liquid Glass addon unavailable; falling back to under-window vibrancy.');
+    applyVibrancyFallback(window);
+    return null;
+  }
+  if (!glass.isGlassSupported()) {
+    console.error('Vibrancy: NSGlassEffectView not available on this macOS; falling back to under-window vibrancy.');
+    applyVibrancyFallback(window);
+    return null;
+  }
+
+  // Chromium has to be fully see-through for the native glass behind it to show.
+  window.setBackgroundColor('#00000000');
+
+  // frame:false windows can end up with hidden traffic lights; keep them.
+  if (typeof window.setWindowButtonVisibility === 'function') {
+    try {
+      window.setWindowButtonVisibility(true);
+    } catch {
+      // older Electron — nothing to do
+    }
+  }
+
+  let id;
+  try {
+    id = glass.addView(window.getNativeWindowHandle(), {
+      cornerRadius: LIQUID_GLASS_CORNER_RADIUS,
+      tintColor: '#00000000',
+      opaque: false,
+    });
+  } catch (err) {
+    console.error('Vibrancy: Liquid Glass addView threw:', err);
+    id = -1;
+  }
+  if (typeof id !== 'number' || id < 0) {
+    console.error('Vibrancy: Liquid Glass addView failed; falling back to under-window vibrancy.');
+    applyVibrancyFallback(window);
+    return null;
+  }
+
+  glass.setVariant(id, LIQUID_GLASS_VARIANT);
+  console.log(`Vibrancy: Liquid Glass active (view ${id}, variant ${LIQUID_GLASS_VARIANT}).`);
+  return id;
+}
+
+/**
+ * Apple-style translucent surfaces for the Liquid Glass type: workbench chrome
+ * fully transparent, subtle fills on the parts that need separation from the
+ * glass. Injected AFTER the theme CSS, so it wins ties against the theme's
+ * vibrancy-era fills. Tint polarity follows the theme's declared color scheme.
+ */
+function liquidGlassCSS() {
+  const light = app.theme && app.theme.systemColorTheme === 'light';
+  const tint = (a) => (light ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a})`);
+  return `
+    .monaco-workbench,
+    .monaco-workbench .part,
+    .monaco-workbench .part > .content,
+    .monaco-workbench .monaco-editor-background,
+    .monaco-editor,
+    .monaco-editor .inputarea.ime-input {
+      background: transparent !important;
+    }
+
+    .monaco-workbench .part.titlebar { background-color: ${tint(0.03)} !important; }
+    .monaco-workbench .part.activitybar { background-color: ${tint(0.04)} !important; }
+    .monaco-workbench .part.sidebar { background-color: ${tint(0.06)} !important; }
+    .monaco-workbench .part.auxiliarybar { background-color: ${tint(0.05)} !important; }
+    .monaco-workbench .part.panel { background-color: ${tint(0.05)} !important; }
+    .monaco-workbench .part.statusbar { background-color: ${tint(0.04)} !important; }
+    .monaco-workbench .part.editor > .content .editor-group-container { background-color: ${tint(0.025)} !important; }
+  `;
+}
+
 electron.app.on('browser-window-created', (_, window) => {
   const methods = transparencyMethods(window);
   const hackMethod = app.config.preventFlash ? 'overwrite' : 'interval';
@@ -94,7 +225,7 @@ electron.app.on('browser-window-created', (_, window) => {
   if (type !== 'auto') {
     if (!universalType.includes(type)) {
       if (app.os === 'win10' && !windowsType.includes(type)) type = 'auto';
-      if (app.os === 'macos' && !macosType.includes(type)) type = 'auto';
+      if (app.os === 'macos' && !macosType.includes(type) && type !== LIQUID_GLASS_TYPE) type = 'auto';
     }
   }
   if (type === 'auto') {
@@ -102,6 +233,7 @@ electron.app.on('browser-window-created', (_, window) => {
   }
 
   const isUniversalType = universalType.includes(type);
+  const isLiquidGlass = app.os === 'macos' && type === LIQUID_GLASS_TYPE;
 
   let opacity = app.config.opacity;
   // if opacity < 0, use the theme default opacity
@@ -168,8 +300,19 @@ electron.app.on('browser-window-created', (_, window) => {
     });
   }
 
+  let glassViewId = null;
   window.on('closed', () => {
     effects.uninstall();
+    // Drop the native glass view with the window, so the addon registry can't
+    // accumulate one detached (retained) view per closed window.
+    if (glassViewId !== null && liquidGlassAddon) {
+      try {
+        liquidGlassAddon.removeView(glassViewId);
+      } catch {
+        // best effort
+      }
+      glassViewId = null;
+    }
   });
 
   window.webContents.on('dom-ready', () => {
@@ -197,17 +340,17 @@ electron.app.on('browser-window-created', (_, window) => {
 
     effects.install();
 
-    if (app.os === 'macos' && !isUniversalType) {
+    if (isLiquidGlass) {
+      // Real Apple Liquid Glass (NSGlassEffectView) — and explicitly NOT
+      // window.setVibrancy(), which would hide the glass behind Electron's
+      // own NSVisualEffectView. applyLiquidGlass falls back to
+      // setVibrancy('under-window') when glass is unavailable.
+      glassViewId = applyLiquidGlass(window);
+    } else if (app.os === 'macos' && !isUniversalType) {
       window.setVibrancy(type);
 
       // hack
-      const width = window.getBounds().width;
-      window.setBounds({
-        width: width + 1,
-      });
-      window.setBounds({
-        width,
-      });
+      nudgeWindowSize(window);
     }
 
     injectHTML(window);
@@ -254,11 +397,16 @@ function styleHTML() {
   if (type === 'auto') {
     type = app.theme.type[app.os];
   }
+  const isLiquidGlass = app.os === 'macos' && type === LIQUID_GLASS_TYPE;
 
   let opacity = app.config.opacity;
 
   if (opacity < 0) {
-    opacity = app.theme.opacity[app.os];
+    // The glass provides its own frost; a fully clear html background is
+    // unreadable over it and the theme-era defaults wash it out, so
+    // liquid-glass gets its own default scrim. An explicit user opacity
+    // is still honored verbatim.
+    opacity = isLiquidGlass ? LIQUID_GLASS_DEFAULT_OPACITY : app.theme.opacity[app.os];
   }
 
   const themeBackgroundRGB = hexToRgb(app.theme.background) || { r: 0, g: 0, b: 0 };
@@ -308,6 +456,7 @@ function styleHTML() {
         background: rgba(${backgroundRGB.r},${backgroundRGB.g},${backgroundRGB.b},${opacity}) !important;
       }
       ${themeCSS}
+      ${isLiquidGlass ? liquidGlassCSS() : ''}
     </style>
     `,
     app.imports.css,
