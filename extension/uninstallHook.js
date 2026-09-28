@@ -384,22 +384,12 @@ if (require.main === module) (async () => {
         return null;
     }
 
-    async function uninstallJS(jsFilePath, electronJsFilePath, writer) {
-        let JS = await fs.readFile(jsFilePath, 'utf-8');
-        const { result, hadMarkers } = removeJSMarkers(JS);
-        JS = result;
-
-        if (electronJsFilePath === jsFilePath) {
-            // Since VSCode 1.95, both files are the same — apply all cleanups to one buffer
-            JS = removeElectronOptions(JS);
-            await writer.writeFile(jsFilePath, JS, 'utf-8');
-        } else {
-            if (hadMarkers) {
-                await writer.writeFile(jsFilePath, JS, 'utf-8');
-            }
-            const ElectronJS = await fs.readFile(electronJsFilePath, 'utf-8');
-            await writer.writeFile(electronJsFilePath, removeElectronOptions(ElectronJS), 'utf-8');
-        }
+    // Both patches live in main.js; undo them on one buffer so the second
+    // write can't overwrite the first. A recorded electronJsPath is ignored:
+    // on every supported VSCode it names this same file.
+    async function uninstallJS(jsFilePath, writer) {
+        const JS = await fs.readFile(jsFilePath, 'utf-8');
+        await writer.writeFile(jsFilePath, removeElectronOptions(removeJSMarkers(JS).result), 'utf-8');
     }
 
     async function uninstallHTML(htmlFilePath, writer) {
@@ -443,7 +433,7 @@ if (require.main === module) (async () => {
 
     const config = loadConfig();
     if (config) {
-        const { workbenchHtmlPath, jsPath, electronJsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry } = config;
+        const { workbenchHtmlPath, jsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry } = config;
 
         // Determine elevation needs from the JS file path (part of VSCode install dir)
         const appDir = path.dirname(jsPath);
@@ -466,7 +456,7 @@ if (require.main === module) (async () => {
 
             let fileOpsError = null;
             try {
-                await uninstallJS(jsPath, electronJsPath, writer);
+                await uninstallJS(jsPath, writer);
                 await uninstallHTML(workbenchHtmlPath, writer);
                 await writer.flush();
             } catch (err) {

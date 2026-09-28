@@ -11,9 +11,7 @@ VSCode extension that applies vibrancy/transparency effects to the Visual Studio
 - `extension/uninstallHook.js` — Cleanup on extension uninstall
 
 ### Runtime modules
-- `runtime-pre-esm/` — CJS runtime injected into VSCode's main process. **This is the one every current VSCode loads**, despite the name.
-- `runtime/` — ESM runtime, used **only for VSCode 1.94** (the one release that shipped `workbench.esm.html`; 1.95 went back to CJS). Selection lives in `extension/install-paths.js`.
-- A runtime change must go into **both** directories; changing only `runtime/` does nothing on any VSCode anyone runs today.
+- `runtime-pre-esm/` — the CJS runtime injected into VSCode's main process, and the only runtime. The name is historical: an ESM `runtime/` existed solely for VSCode 1.94's `workbench.esm.html` layout and was removed when the floor went to 1.95.
 - `native/` — C++ native modules for Windows vibrancy effects; prebuilt binaries in `native/prebuilt/`
 
 ### Themes and i18n
@@ -25,8 +23,8 @@ VSCode extension that applies vibrancy/transparency effects to the Visual Studio
 ### StagedFileWriter (elevated-file-writer.js)
 All file modifications to VSCode's install directory go through `StagedFileWriter`. When elevation is needed, writes are staged to a temp directory and executed in a single elevated operation. Never bypass the writer with direct `fs` calls to the VSCode install path.
 
-### ElectronJSFile === JSFile (VSCode 1.95+)
-Since VSCode 1.95, the Electron main.js and workbench main.js are the same file. Any code that reads/writes both must handle this: use a single in-memory buffer for all modifications to avoid the second disk read (from the elevated staged path) overwriting the first write.
+### One main.js carries both patches
+The minimum supported VSCode is 1.95 (`engines.vscode`), where the Electron main entry and the workbench main are the same `main.js`. The window-options patch and the runtime injection must be applied to a single in-memory buffer: re-reading the file between them (from the elevated staged path) returns the pristine original and drops the first patch.
 
 ### Windows elevation uses PowerShell, not batch
 The elevated copy on Windows uses PowerShell cmdlets (`Copy-Item`, `Remove-Item`, `New-Item`) with `-EncodedCommand` (Base64 UTF-16LE) passed through `Start-Process -Verb RunAs`. This avoids batch script quoting pitfalls (`rem` eating command chains, `&&` cascading failures, parentheses in paths).

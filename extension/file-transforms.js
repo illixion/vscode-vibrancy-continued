@@ -49,7 +49,7 @@ const MARKER_REGEX = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSC
  * @param {string} js - Original main.js content
  * @param {string} base - Base directory path for existence check
  * @param {object} injectData - Data to inject as global.vscode_vibrancy_plugin
- * @param {string} runtimePath - Absolute path to the runtime entry file (index.mjs or index.cjs)
+ * @param {string} runtimePath - Absolute path to the runtime entry file (index.cjs)
  * @returns {string} Modified JS content
  */
 function generateNewJS(js, base, injectData, runtimePath) {

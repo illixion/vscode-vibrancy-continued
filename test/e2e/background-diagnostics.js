@@ -1,5 +1,5 @@
 /**
- * Reads the test-mode background diagnostics written by runtime/diagnostics.mjs
+ * Reads the test-mode background diagnostics written by runtime-pre-esm/diagnostics.cjs
  * and turns them into log lines for the E2E output.
  *
  * The question it answers for an opaque post-restart screenshot: did the
