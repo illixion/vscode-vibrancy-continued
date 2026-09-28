@@ -38,3 +38,7 @@ the "Open a pull request" / "Comparing changes" view.
 - Do **not** run the E2E suite (`npm run test:e2e`) locally; it needs
   platform-specific setup and is handled by CI.
 - The extension modifies VSCode's own installation files, so test with care.
+- Runtime code lives in two copies. `runtime-pre-esm/` (CJS) is what every
+  current VSCode loads, despite its name; `runtime/` (ESM) is used only for
+  VSCode 1.94. Make runtime changes in **both**, and in `runtime-pre-esm/`
+  at minimum.

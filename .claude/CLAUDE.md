@@ -11,8 +11,9 @@ VSCode extension that applies vibrancy/transparency effects to the Visual Studio
 - `extension/uninstallHook.js` — Cleanup on extension uninstall
 
 ### Runtime modules
-- `runtime/` — ESM runtime injected into VSCode's workbench (modern VSCode)
-- `runtime-pre-esm/` — CJS runtime for older VSCode versions
+- `runtime-pre-esm/` — CJS runtime injected into VSCode's main process. **This is the one every current VSCode loads**, despite the name.
+- `runtime/` — ESM runtime, used **only for VSCode 1.94** (the one release that shipped `workbench.esm.html`; 1.95 went back to CJS). Selection lives in `extension/install-paths.js`.
+- A runtime change must go into **both** directories; changing only `runtime/` does nothing on any VSCode anyone runs today.
 - `native/` — C++ native modules for Windows vibrancy effects; prebuilt binaries in `native/prebuilt/`
 
 ### Themes and i18n
