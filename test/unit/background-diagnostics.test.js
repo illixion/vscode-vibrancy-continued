@@ -44,12 +44,17 @@ describe('summarizeEvents', () => {
   });
 });
 
-describe('runtime diagnostics', () => {
+// runtime-pre-esm is what every VSCode except 1.94 loads; runtime/ is the 1.94
+// ESM copy. Both must behave identically.
+describe.each([
+  ['runtime-pre-esm (CJS)', async () => require('../../runtime-pre-esm/diagnostics.cjs')],
+  ['runtime (1.94 ESM)', async () => (await import('../../runtime/diagnostics.mjs')).default],
+])('runtime diagnostics: %s', (_name, load) => {
   let createDiagnostics;
   let tmpDir;
 
   beforeAll(async () => {
-    ({ default: createDiagnostics } = await import('../../runtime/diagnostics.mjs'));
+    createDiagnostics = await load();
   });
 
   beforeEach(() => {

@@ -961,7 +961,7 @@ function reportBackgroundDiagnostics(sourcePath, artifactPath, transparencyOk) {
   try {
     text = fs.readFileSync(sourcePath, 'utf-8');
   } catch {
-    console.log('  Background diagnostics: no log written (runtime did not load, or not the ESM runtime)');
+    console.log('  Background diagnostics: no log written (the runtime did not load)');
     return;
   }
   try { fs.writeFileSync(artifactPath, text); } catch {}

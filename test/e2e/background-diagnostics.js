@@ -37,7 +37,7 @@ function summarizeEvents(events) {
   }
 
   if (byWindow.size === 0) {
-    lines.push('Background diagnostics: no events recorded (runtime did not load, or not the ESM runtime)');
+    lines.push('Background diagnostics: no events recorded (the runtime did not load)');
     return { lines, bypass: false, changed: false };
   }
 
