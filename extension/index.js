@@ -700,6 +700,7 @@ function activate(context) {
       theme: themeConfig,
       themeCSS: themeCSS,
       imports: imports,
+      diagnosticsPath: testMode ? path.join(path.dirname(testModeFile), 'test-diagnostics.jsonl') : null,
     };
 
     const base = __filename;

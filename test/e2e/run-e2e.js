@@ -37,6 +37,7 @@ const fs = require('fs');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
 const { ALL_VIBRANCY_BG_KEYS } = require('../../extension/file-transforms');
+const { parseEvents, summarizeEvents } = require('./background-diagnostics');
 
 function getConfigDir() {
   const homedir = os.homedir();
@@ -56,6 +57,7 @@ async function main() {
   const configDir = getConfigDir();
   const testModeFile = path.join(configDir, 'test-mode');
   const signalFile = path.join(configDir, 'test-result');
+  const diagnosticsFile = path.join(configDir, 'test-diagnostics.jsonl');
   let userDataDir, tmpWorkspace, vsixPath;
   let desktopCleanup = null;
 
@@ -83,6 +85,7 @@ async function main() {
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(testModeFile, `e2e-${Date.now()}`);
     try { fs.unlinkSync(signalFile); } catch {}
+    try { fs.unlinkSync(diagnosticsFile); } catch {}
     console.log(`  Test mode file: ${testModeFile}`);
 
     // --- Step 3: Prepare user-data-dir with settings ---
@@ -180,6 +183,7 @@ async function main() {
     // --- Step 6: Second launch (post-restart, vibrancy active) ---
     console.log('\n[6/9] Second launch (post-restart, screenshot)...');
     const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-post-restart.png`);
+    try { fs.unlinkSync(diagnosticsFile); } catch {}
 
     const secondResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
       signalFile: null,
@@ -212,6 +216,11 @@ async function main() {
     const beaconPct = checkPixels(screenshot2, '0', 'magenta');
     const beaconOk = beaconPct !== null && beaconPct >= 1.5;
     console.log(`  Import beacon (magenta frame): ${fmtPct(beaconPct)} (${beaconOk ? 'PASS' : 'FAIL'})`);
+    reportBackgroundDiagnostics(
+      diagnosticsFile,
+      path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-diagnostics.jsonl`),
+      greenOk && sidebarOk
+    );
 
     // --- Step 7: Request uninstall ---
     console.log('\n[7/9] Third launch (uninstall vibrancy)...');
@@ -304,6 +313,7 @@ async function main() {
     try { if (desktopCleanup) desktopCleanup(); } catch {}
     try { fs.unlinkSync(testModeFile); } catch {}
     try { fs.unlinkSync(signalFile); } catch {}
+    try { fs.unlinkSync(diagnosticsFile); } catch {}
     try { fs.unlinkSync(path.join(configDir, 'test-uninstall')); } catch {}
     try { if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true }); } catch {}
     try { if (tmpWorkspace) fs.rmSync(tmpWorkspace, { recursive: true, force: true }); } catch {}
@@ -938,6 +948,33 @@ function captureScreenshot(outputPath, opts = {}) {
     }
   }
   console.log('  All screenshot methods exhausted');
+}
+
+/**
+ * Print what the test-mode runtime recorded about the window background during
+ * the post-restart launch, and keep the raw log with the screenshots artifact.
+ * Informational only: it never changes the verdict. The raw events are printed
+ * only when transparency failed, since that is when they are worth reading.
+ */
+function reportBackgroundDiagnostics(sourcePath, artifactPath, transparencyOk) {
+  let text;
+  try {
+    text = fs.readFileSync(sourcePath, 'utf-8');
+  } catch {
+    console.log('  Background diagnostics: no log written (runtime did not load, or not the ESM runtime)');
+    return;
+  }
+  try { fs.writeFileSync(artifactPath, text); } catch {}
+
+  const events = parseEvents(text);
+  const { lines } = summarizeEvents(events);
+  for (const line of lines) console.log(`  ${line}`);
+
+  if (!transparencyOk) {
+    const MAX_RAW = 80;
+    console.log(`  Raw background events (${Math.min(events.length, MAX_RAW)} of ${events.length}):`);
+    for (const ev of events.slice(0, MAX_RAW)) console.log(`    ${JSON.stringify(ev)}`);
+  }
 }
 
 // --- Pixel color checks ---

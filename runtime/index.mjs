@@ -4,6 +4,7 @@ import electron from 'electron';
  * @type {(window) => Record<'interval' | 'overwrite', {install: () => void, uninstall: () => void>}
  */
 import transparencyMethods from './methods/index.mjs';
+import createDiagnostics from './diagnostics.mjs';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 
@@ -28,6 +29,7 @@ import { fileURLToPath } from 'url';
  * }}
  */
 const app = global.vscode_vibrancy_plugin;
+const diagnostics = createDiagnostics(app.diagnosticsPath);
 // @ts-check
 
 const macosType = [
@@ -214,9 +216,22 @@ electron.app.on('browser-window-created', (_, window) => {
       return;
     }
 
+    const bgBefore = diagnostics && diagnostics.readBg(window);
     window.setBackgroundColor('#00000000');
 
     effects.install();
+
+    if (diagnostics) {
+      diagnostics.log('dom-ready', {
+        id: window.id,
+        url: currentURL,
+        method: hackMethod,
+        type,
+        bgBefore,
+        bgAfter: diagnostics.readBg(window),
+      });
+      diagnostics.watch(window);
+    }
 
     if (app.os === 'macos' && !isUniversalType) {
       window.setVibrancy(type);
