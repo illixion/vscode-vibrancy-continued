@@ -11,6 +11,7 @@ const j = (rel) => path.join(APP, ...rel.split('/'));
 
 const MAIN = j('main.js');
 const SEPARATE_ELECTRON_MAIN = j('vs/code/electron-main/main.js');
+const MAIN_IMPL = j('mainImpl.js');
 const SANDBOX_HTML = j('vs/code/electron-sandbox/workbench/workbench.html');
 const BROWSER_HTML = j('vs/code/electron-browser/workbench/workbench.html');
 const ESM_HTML = j('vs/code/electron-sandbox/workbench/workbench.esm.html');
@@ -32,6 +33,8 @@ const LAYOUTS = {
   merged95: installOf(MAIN, SANDBOX_HTML),
   // 1.102: electron-sandbox renamed to electron-browser
   browser102: installOf(MAIN, BROWSER_HTML),
+  // 1.140: window creation moved into mainImpl.js
+  mainImpl140: installOf(MAIN, MAIN_IMPL, BROWSER_HTML),
 };
 
 describe('resolveInstallPaths', () => {
@@ -85,6 +88,14 @@ describe('resolveInstallPaths', () => {
 
     expect(paths.jsFile).toBe(MAIN);
     expect(paths.electronJsFile).toBe(SEPARATE_ELECTRON_MAIN);
+    expect(paths.mergedMain).toBe(false);
+  });
+
+  it('patches mainImpl.js for window options on 1.140+', () => {
+    const paths = resolveInstallPaths({ appDir: APP, exists: LAYOUTS.mainImpl140 });
+
+    expect(paths.jsFile).toBe(MAIN);
+    expect(paths.electronJsFile).toBe(MAIN_IMPL);
     expect(paths.mergedMain).toBe(false);
   });
 

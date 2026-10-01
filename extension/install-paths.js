@@ -71,7 +71,14 @@ function resolveInstallPaths({ appDir, exists, runtimeVersion = DEFAULT_RUNTIME_
   // and the caller must apply them to a single in-memory copy — re-reading
   // between patches drops the first one. `mergedMain` is that signal.
   const separateElectronMain = path.join(appDir, 'vs', 'code', 'electron-main', 'main.js');
-  const electronJsFile = exists(separateElectronMain) ? separateElectronMain : jsFile;
+  // VSCode 1.140 moved window creation out of main.js again, into a sibling
+  // mainImpl.js that main.js loads. Frame/transparency options must land
+  // there, so treat it as the separate Electron main (mergedMain is false and
+  // main.js only receives the runtime loader).
+  const mainImpl = path.join(appDir, 'mainImpl.js');
+  const electronJsFile = exists(separateElectronMain)
+    ? separateElectronMain
+    : exists(mainImpl) ? mainImpl : jsFile;
 
   const sandboxHtml = path.join(appDir, 'vs', 'code', 'electron-sandbox', 'workbench', 'workbench.html');
   const browserHtml = path.join(appDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html');
