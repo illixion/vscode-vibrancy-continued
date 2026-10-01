@@ -32,17 +32,28 @@ let savedEnv;
 let extension;
 
 /** Lay down a fake VSCode install and point the extension at it. */
-function makeInstall({ htmlRelPath = SANDBOX_HTML } = {}) {
+function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   appDir = path.join(tmpRoot, 'resources', 'app', 'out');
   fs.mkdirSync(path.join(appDir, path.dirname(htmlRelPath)), { recursive: true });
   // The 1.95+ layout: one merged main.js, no vs/code/electron-main/main.js.
-  fs.copyFileSync(path.join(FIXTURES, 'main-merged.js'), path.join(appDir, 'main.js'));
+  if (mainImpl) {
+    // The 1.140 layout: main.js is a thin entry that loads mainImpl.js, which
+    // now creates the BrowserWindow.
+    fs.writeFileSync(path.join(appDir, 'main.js'), 'import("./mainImpl.js");\n');
+    fs.copyFileSync(path.join(FIXTURES, 'main-merged.js'), path.join(appDir, 'mainImpl.js'));
+  } else {
+    fs.copyFileSync(path.join(FIXTURES, 'main-merged.js'), path.join(appDir, 'main.js'));
+  }
   fs.copyFileSync(path.join(FIXTURES, 'workbench.html'), path.join(appDir, htmlRelPath));
 
   // activate() finds the install via require.main, which vitest does not
   // define, and falls back to this global — the one VSCode's own bundle sets.
   globalThis._VSCODE_FILE_ROOT = appDir;
-  return { htmlPath: path.join(appDir, htmlRelPath), jsPath: path.join(appDir, 'main.js') };
+  return {
+    htmlPath: path.join(appDir, htmlRelPath),
+    jsPath: path.join(appDir, 'main.js'),
+    implPath: path.join(appDir, 'mainImpl.js'),
+  };
 }
 
 function activate({ settings = {} } = {}) {
@@ -172,6 +183,44 @@ describe('Enable', () => {
 
     expect(read(jsPath)).toBe(originalJs);
     expect(fs.existsSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toBe(false);
+  });
+});
+
+describe('Enable on 1.140+, where mainImpl.js creates the window', () => {
+  it('puts the runtime in main.js and the window options in mainImpl.js', async () => {
+    const { jsPath, implPath } = makeInstall({ mainImpl: true });
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toContain('VSCODE-VIBRANCY-START');
+    expect(read(jsPath)).not.toContain('experimentalDarkMode');
+    expect(read(implPath)).toMatch(/frame:false,transparent:(?:true|false)[^]*experimentalDarkMode/);
+    expect(read(implPath)).not.toContain('VSCODE-VIBRANCY-START');
+  });
+
+  it('records mainImpl.js as the window options file, for older uninstall hooks', async () => {
+    const { jsPath, implPath } = makeInstall({ mainImpl: true });
+    activate();
+
+    await run('extension.installVibrancy');
+
+    const config = JSON.parse(read(path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json')));
+    expect(config.jsPath).toBe(jsPath);
+    expect(config.electronJsPath).toBe(implPath);
+  });
+
+  it('is undone byte for byte by Disable', async () => {
+    const { jsPath, implPath } = makeInstall({ mainImpl: true });
+    const originalJs = read(jsPath);
+    const originalImpl = read(implPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    await run('extension.uninstallVibrancy');
+
+    expect(read(jsPath)).toBe(originalJs);
+    expect(read(implPath)).toBe(originalImpl);
   });
 });
 

@@ -2,6 +2,7 @@
 
 * Core:
   * Vibrancy now requires VSCode 1.95 or newer, and the same for editors built on it such as Cursor and VSCodium. On an older version you'll simply stay on the last Vibrancy release that supports it; updating your editor brings you back to the latest
+  * Fix the window keeping its native title bar and frame on VSCode 1.140. That release moved window creation out of `main.js` into a sibling `mainImpl.js`, so the frameless and transparent options were never applied and Reload Vibrancy reported success while changing nothing visible. Vibrancy now patches `mainImpl.js` for the window options and `main.js` for the runtime, and Disable and Uninstall revert both. Thanks to [@gocasimiro](https://github.com/gocasimiro) for finding the cause in [#276](https://github.com/illixion/vscode-vibrancy-continued/pull/276)
 
 # 1.1.93
 

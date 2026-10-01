@@ -20,6 +20,11 @@
  * Electron main entry (vs/code/electron-main/main.js) that 1.95 merged into
  * main.js.
  *
+ * One layout since then splits them again: VSCode 1.140 moved BrowserWindow
+ * creation into a sibling mainImpl.js that main.js loads. The window options
+ * must land there, so `windowOptionsFile` names it when it exists (and is
+ * `jsFile` otherwise). The caller patches one file or two accordingly.
+ *
  * ORDERING RULE — resolve against the directory VSCode is really running
  * from, then move the result with rebaseInstallPaths(). Never resolve against
  * a NixOS mirror directory: the mirror is created *during* the install, so at
@@ -38,12 +43,14 @@ const DEFAULT_RUNTIME_VERSION = 'v6';
 const RUNTIME_SRC = '../runtime-pre-esm';
 
 /** Path keys that name a file or directory inside the install. */
-const REBASED_KEYS = ['jsFile', 'htmlFile', 'runtimeDir'];
+const REBASED_KEYS = ['jsFile', 'windowOptionsFile', 'htmlFile', 'runtimeDir'];
 
 /**
  * @typedef {object} InstallPaths
  * @property {string} appDir          directory the paths were resolved against
  * @property {string} jsFile          main.js: the Electron main entry and workbench main in one
+ * @property {string} windowOptionsFile  the file that creates BrowserWindow: mainImpl.js
+ *   on 1.140+, otherwise the same as jsFile
  * @property {string} htmlFile        workbench HTML
  * @property {string} runtimeDir      where the injected runtime is installed
  * @property {string} runtimeSrcDir   runtime to copy, relative to this file
@@ -72,9 +79,13 @@ function resolveInstallPaths({ appDir, exists, runtimeVersion = DEFAULT_RUNTIME_
   // before anything is written.
   const htmlFile = exists(sandboxHtml) ? sandboxHtml : browserHtml;
 
+  const jsFile = path.join(appDir, 'main.js');
+  const mainImpl = path.join(appDir, 'mainImpl.js');
+
   return {
     appDir,
-    jsFile: path.join(appDir, 'main.js'),
+    jsFile,
+    windowOptionsFile: exists(mainImpl) ? mainImpl : jsFile,
     htmlFile,
     runtimeDir: path.join(appDir, `vscode-vibrancy-runtime-${runtimeVersion}`),
     runtimeSrcDir: RUNTIME_SRC,

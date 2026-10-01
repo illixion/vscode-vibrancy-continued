@@ -553,7 +553,7 @@ function activate(context) {
 
   // Separate bindings for the ~40 read sites downstream. retargetToMirror is
   // the only thing that moves them, and it reassigns them as a group.
-  var { jsFile: JSFile, htmlFile: HTMLFile, runtimeDir } = installPaths;
+  var { jsFile: JSFile, windowOptionsFile: WindowOptionsFile, htmlFile: HTMLFile, runtimeDir } = installPaths;
   const { runtimeSrcDir } = installPaths;
 
   // ####  NixOS shadow install  ##############################################
@@ -575,7 +575,7 @@ function activate(context) {
       fromDir,
       toDir: nixMirror.mirrorTargetDir(storeRoot, fromDir),
     });
-    ({ jsFile: JSFile, htmlFile: HTMLFile, runtimeDir } = installPaths);
+    ({ jsFile: JSFile, windowOptionsFile: WindowOptionsFile, htmlFile: HTMLFile, runtimeDir } = installPaths);
     mirrorStoreRoot = storeRoot;
     usingMirror = true;
   }
@@ -759,10 +759,11 @@ function activate(context) {
 
   // BrowserWindow option modification
   /**
-   * Inject the frameless/transparent BrowserWindow options into main.js.
+   * Inject the frameless/transparent BrowserWindow options into the file that
+   * creates the window (main.js, or mainImpl.js on 1.140+).
    *
    * Returns the patched content rather than writing it, so Install can fold
-   * the runtime injection into the same buffer.
+   * the runtime injection into the same buffer when that file is main.js.
    *
    * @returns {Promise<string|undefined>} the patched content, or undefined when
    *   this editor doesn't get window options injected at all.
@@ -770,7 +771,7 @@ function activate(context) {
   async function modifyElectronJSFile() {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
-    let ElectronJS = await fs.readFile(JSFile, 'utf-8');
+    let ElectronJS = await fs.readFile(WindowOptionsFile, 'utf-8');
 
     // The 'transparent' vibrancy type paints no blur material, so it needs an
     // actually see-through window; every other type paints over an opaque window
@@ -861,10 +862,16 @@ function activate(context) {
     JS = result;
 
     if (knownEditors.includes(vscode.env.appName)) {
-      // Both patches live in main.js; undo them on one in-memory copy so the
-      // second write can't overwrite the first.
+      // Without a separate window file both patches live in main.js; undo them
+      // on one in-memory copy so the second write can't overwrite the first.
       JS = removeElectronOptions(JS);
       await writer.writeFile(JSFile, JS, 'utf-8');
+
+      if (WindowOptionsFile !== JSFile) {
+        const windowJS = await fs.readFile(WindowOptionsFile, 'utf-8');
+        const unpatched = removeElectronOptions(windowJS);
+        if (unpatched !== windowJS) await writer.writeFile(WindowOptionsFile, unpatched, 'utf-8');
+      }
     } else if (hadMarkers) {
       await writer.writeFile(JSFile, JS, 'utf-8');
     }
@@ -1333,9 +1340,9 @@ function activate(context) {
     await setLocalConfig(true, {
       workbenchHtmlPath: HTMLFile,
       jsPath: JSFile,
-      // Unused since the 1.95 floor, but older versions' uninstall hooks read
-      // it, so a downgrade followed by an uninstall still finds the file.
-      electronJsPath: JSFile,
+      // Older versions' uninstall hooks read it, so a downgrade followed by an
+      // uninstall still finds the file that holds the window options.
+      electronJsPath: WindowOptionsFile,
     }, await changeVSCodeSettings());
 
     // Every successful enable and update funnels through here, which is what
@@ -1415,13 +1422,20 @@ function activate(context) {
       } else {
         await installRuntime(writer);
       }
-      // main.js is both the Electron main entry and the workbench main, so
-      // both patches have to land on a single in-memory copy. An elevated
-      // writer stages its writes to temp files, so re-reading the file between
-      // them would return the pristine original and silently drop the window
-      // options — leaving a patched but non-transparent window. uninstallJS
-      // does the same for teardown.
-      await installJS(writer, await modifyElectronJSFile());
+      // Normally main.js is both the Electron main entry and the workbench
+      // main, so both patches have to land on a single in-memory copy. An
+      // elevated writer stages its writes to temp files, so re-reading the file
+      // between them would return the pristine original and silently drop the
+      // window options — leaving a patched but non-transparent window.
+      // uninstallJS does the same for teardown. On 1.140+ the window is created
+      // in mainImpl.js instead, so the two patches go to two different files.
+      const windowJS = await modifyElectronJSFile();
+      if (WindowOptionsFile === JSFile) {
+        await installJS(writer, windowJS);
+      } else {
+        await installJS(writer);
+        if (windowJS !== undefined) await writer.writeFile(WindowOptionsFile, windowJS, 'utf-8');
+      }
       await installHTML(writer);
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.

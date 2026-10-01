@@ -9,6 +9,7 @@ const APP = path.join('/opt', 'code', 'resources', 'app', 'out');
 const j = (rel) => path.join(APP, ...rel.split('/'));
 
 const MAIN = j('main.js');
+const MAIN_IMPL = j('mainImpl.js');
 const SANDBOX_HTML = j('vs/code/electron-sandbox/workbench/workbench.html');
 const BROWSER_HTML = j('vs/code/electron-browser/workbench/workbench.html');
 const ESM_HTML = j('vs/code/electron-sandbox/workbench/workbench.esm.html');
@@ -26,6 +27,8 @@ const LAYOUTS = {
   merged95: installOf(MAIN, SANDBOX_HTML),
   // 1.102: electron-sandbox renamed to electron-browser
   browser102: installOf(MAIN, BROWSER_HTML),
+  // 1.140: window creation moved out of main.js into a sibling mainImpl.js
+  mainImpl140: installOf(MAIN, MAIN_IMPL, BROWSER_HTML),
 };
 
 describe('resolveInstallPaths', () => {
@@ -35,6 +38,19 @@ describe('resolveInstallPaths', () => {
     expect(paths.jsFile).toBe(MAIN);
     expect(paths.htmlFile).toBe(SANDBOX_HTML);
     expect(paths.runtimeSrcDir).toBe(RUNTIME_SRC);
+  });
+
+  it('keeps the window options in main.js when there is no mainImpl.js', () => {
+    const paths = resolveInstallPaths({ appDir: APP, exists: LAYOUTS.merged95 });
+
+    expect(paths.windowOptionsFile).toBe(MAIN);
+  });
+
+  it('sends the window options to mainImpl.js on 1.140+, leaving the runtime in main.js', () => {
+    const paths = resolveInstallPaths({ appDir: APP, exists: LAYOUTS.mainImpl140 });
+
+    expect(paths.jsFile).toBe(MAIN);
+    expect(paths.windowOptionsFile).toBe(MAIN_IMPL);
   });
 
   it('follows the electron-sandbox -> electron-browser rename in 1.102', () => {
@@ -101,6 +117,12 @@ describe('rebaseInstallPaths', () => {
     expect(moved.jsFile).toBe(path.join(MIRROR, 'main.js'));
     expect(moved.htmlFile).toBe(path.join(MIRROR, 'vs', 'code', 'electron-sandbox', 'workbench', 'workbench.html'));
     expect(moved.runtimeDir).toBe(path.join(MIRROR, 'vscode-vibrancy-runtime-v6'));
+  });
+
+  it('moves the window options file with the rest', () => {
+    const moved = rebaseInstallPaths(resolveInstallPaths({ appDir: APP, exists: LAYOUTS.mainImpl140 }), move);
+
+    expect(moved.windowOptionsFile).toBe(path.join(MIRROR, 'mainImpl.js'));
   });
 
   it('leaves the original alone', () => {

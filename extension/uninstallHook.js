@@ -384,12 +384,21 @@ if (require.main === module) (async () => {
         return null;
     }
 
-    // Both patches live in main.js; undo them on one buffer so the second
-    // write can't overwrite the first. A recorded electronJsPath is ignored:
-    // on every supported VSCode it names this same file.
+    // Both patches normally live in main.js; undo them on one buffer so the
+    // second write can't overwrite the first. VSCode 1.140+ creates the window
+    // in a sibling mainImpl.js, which then holds the window options. It is found
+    // by probing rather than from the recorded electronJsPath, which is only
+    // there for older versions' hooks.
     async function uninstallJS(jsFilePath, writer) {
         const JS = await fs.readFile(jsFilePath, 'utf-8');
         await writer.writeFile(jsFilePath, removeElectronOptions(removeJSMarkers(JS).result), 'utf-8');
+
+        const mainImpl = path.join(path.dirname(jsFilePath), 'mainImpl.js');
+        if (fsSync.existsSync(mainImpl)) {
+            const implJS = await fs.readFile(mainImpl, 'utf-8');
+            const unpatched = removeElectronOptions(implJS);
+            if (unpatched !== implJS) await writer.writeFile(mainImpl, unpatched, 'utf-8');
+        }
     }
 
     async function uninstallHTML(htmlFilePath, writer) {
