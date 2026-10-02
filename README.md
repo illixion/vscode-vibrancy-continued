@@ -63,6 +63,8 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 ✔ Kiro
 
+Other editors built on VSCode may work too. Vibrancy changes their window only when it can tell exactly where the change goes, and warns that the result is untested. If it can't tell, it refuses with "Your code editor is not supported". If an editor won't start afterwards, see [Restoring an editor that won't start](#restoring-an-editor-that-wont-start).
+
 Some editors may present a [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt) warning about the installation being corrupted, use this extension to fix it: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
 
 # Getting Started
@@ -265,6 +267,24 @@ Other immutable installs (Flatpak, distros with a read-only `/usr`) are detected
 Press F1 or ⌘+Shift+P and activate command **"Disable Vibrancy"**, then restart Visual Studio Code.
 
 You can also just uninstall the extension and restart VSCode, which will automatically remove Vibrancy.
+
+### Restoring an editor that won't start
+
+Disable runs inside the editor, so it can't help if the editor won't start after enabling Vibrancy, or starts with an invisible window. Vibrancy checks that its changes will load before applying them, and since 1.4.0 it also keeps the original of every file it changes. These scripts put those originals back, so you don't have to reinstall the editor. Close the editor first.
+
+macOS and Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/restore.sh | bash
+```
+
+Windows, in PowerShell (as administrator if the editor is installed for all users):
+
+```powershell
+irm https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/restore.ps1 | iex
+```
+
+Both restore every editor that has saved originals. To restore only one, pass part of its path, such as `bash restore.sh Cursor` or `restore.ps1 -Filter Cursor`, or pass the full path of its `resources/app/out` folder. Then start the editor and run **Disable Vibrancy** to remove its colour settings too, and please [open an issue](https://github.com/illixion/vscode-vibrancy-continued/issues) with your editor's name and version.
 
 ### Effect doesn't work correctly in VSCode terminal?
 

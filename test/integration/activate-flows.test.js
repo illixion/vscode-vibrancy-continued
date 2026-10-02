@@ -46,6 +46,15 @@ function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   }
   fs.copyFileSync(path.join(FIXTURES, 'workbench.html'), path.join(appDir, htmlRelPath));
 
+  // What lets the extension parse a patched main.js before writing it: the
+  // module type VSCode's app/package.json declares, and a launcher script that
+  // shows the editor's binary can run as Node (see patch-safety.js). Node runs
+  // the check here, standing in for the editor's binary.
+  const appRoot = path.dirname(appDir);
+  fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({ type: 'module' }));
+  fs.mkdirSync(path.join(appRoot, 'bin'));
+  fs.writeFileSync(path.join(appRoot, 'bin', 'code'), 'ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" "$@"\n');
+
   // activate() finds the install via require.main, which vitest does not
   // define, and falls back to this global — the one VSCode's own bundle sets.
   globalThis._VSCODE_FILE_ROOT = appDir;
@@ -56,8 +65,10 @@ function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   };
 }
 
-function activate({ settings = {} } = {}) {
+function activate({ settings = {}, appName } = {}) {
   vscode.__reset({
+    appName,
+    appRoot: appDir && path.dirname(appDir),
     settings: {
       // Matching the theme keeps the "your colour theme doesn't match" prompt
       // out of the captured messages; the rest come from the manifest.
@@ -312,6 +323,107 @@ describe('Reload', () => {
     // And exactly one set of markers — not one per update.
     expect(read(jsPath).match(/VSCODE-VIBRANCY-START/g)).toHaveLength(1);
     expect(fs.readdirSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toContain('index.cjs');
+  });
+});
+
+describe('a patch that could stop the editor starting', () => {
+  // Issue #201: the window-options patch turned Trae's main.js into a syntax
+  // error, Trae crashed at launch, and Disable, Uninstall and the uninstall hook
+  // all run inside the editor, so none of them could undo it.
+  const backup = (p) => p + '.vibrancy-orig';
+  const errors = () => vscode.__state.messages.filter((m) => m.kind === 'error').map((m) => m.message);
+
+  it('keeps a pristine copy of each patched file', async () => {
+    const { jsPath, implPath } = makeInstall({ mainImpl: true });
+    const originalJs = read(jsPath);
+    const originalImpl = read(implPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(backup(jsPath))).toBe(originalJs);
+    expect(read(backup(implPath))).toBe(originalImpl);
+  });
+
+  it('keeps the original through Reload, which unpatches before it re-patches', async () => {
+    const { jsPath } = makeInstall();
+    const originalJs = read(jsPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    await run('extension.updateVibrancy');
+
+    expect(read(backup(jsPath))).toBe(originalJs);
+  });
+
+  it('removes the copies on Disable', async () => {
+    const { jsPath, implPath } = makeInstall({ mainImpl: true });
+    activate();
+
+    await run('extension.installVibrancy');
+    await run('extension.uninstallVibrancy');
+
+    expect(fs.existsSync(backup(jsPath))).toBe(false);
+    expect(fs.existsSync(backup(implPath))).toBe(false);
+  });
+
+  it('refuses a patch the editor could not load, before touching anything', async () => {
+    const { jsPath } = makeInstall();
+    // The anchor outside any options object, so the injected options can't parse.
+    fs.writeFileSync(jsPath, "'use strict';\nconst experimentalDarkMode = true;\nexport default experimentalDarkMode;\n");
+    const original = read(jsPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toBe(original);
+    expect(fs.existsSync(backup(jsPath))).toBe(false);
+    expect(fs.existsSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toBe(false);
+    expect(errors().some((m) => m.includes('would no longer load'))).toBe(true);
+    expect(colours()?.['editor.background']).toBeUndefined();
+  });
+});
+
+describe('an editor Vibrancy has not been tested with', () => {
+  // One window builder, with the anchor in the options object beside
+  // webPreferences: how VSCode and forks that kept its layout (Kiro) look.
+  const UNAMBIGUOUS = "'use strict';\nconst { BrowserWindow } = require('electron');\n"
+    + 'export function createWindow() {\n'
+    + '  return new BrowserWindow({webPreferences:{sandbox:true},experimentalDarkMode:true});\n'
+    + '}\n';
+
+  it('gets the window patch with a warning when the anchor is unambiguous', async () => {
+    const { jsPath } = makeInstall();
+    fs.writeFileSync(jsPath, UNAMBIGUOUS);
+    activate({ appName: 'Some Fork' });
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toMatch(/frame:false,transparent:(?:true|false)/);
+    expect(vscode.__state.messages.some((m) => m.kind === 'warn' && m.message.includes('Some Fork'))).toBe(true);
+  });
+
+  it('is undone byte for byte by Disable', async () => {
+    const { jsPath } = makeInstall();
+    fs.writeFileSync(jsPath, UNAMBIGUOUS);
+    activate({ appName: 'Some Fork' });
+
+    await run('extension.installVibrancy');
+    await run('extension.uninstallVibrancy');
+
+    expect(read(jsPath)).toBe(UNAMBIGUOUS);
+  });
+
+  it('is refused untouched when the anchor is ambiguous', async () => {
+    // The fixture's anchor has no webPreferences beside it.
+    const { jsPath } = makeInstall();
+    const original = read(jsPath);
+    activate({ appName: 'Some Fork' });
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toBe(original);
+    expect(vscode.__state.messages.some((m) => m.kind === 'error' && m.message.includes('not supported'))).toBe(true);
   });
 });
 

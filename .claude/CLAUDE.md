@@ -26,6 +26,9 @@ All file modifications to VSCode's install directory go through `StagedFileWrite
 ### One main.js carries both patches
 The minimum supported VSCode is 1.95 (`engines.vscode`), where the Electron main entry and the workbench main are the same `main.js`. The window-options patch and the runtime injection must be applied to a single in-memory buffer: re-reading the file between them (from the elevated staged path) returns the pristine original and drops the first patch.
 
+### Patches are checked and backed up (patch-safety.js)
+main.js and mainImpl.js run before any window opens, so a bad patch can stop the editor starting, and then nothing inside the editor can undo it (issue #201). Install parses every patched file with the editor's own binary (`ELECTRON_RUN_AS_NODE=1 <execPath> --check`) before writing anything, and keeps the original next to it as `<file>.vibrancy-orig`; `scripts/restore.sh` / `restore.ps1` copy those back. Update plans the backups *before* it unpatches, because without elevation the unpatch lands on disk immediately. Editors outside `knownEditors` get the window patch only when `hasUnambiguousWindowAnchor` passes.
+
 ### Windows elevation uses PowerShell, not batch
 The elevated copy on Windows uses PowerShell cmdlets (`Copy-Item`, `Remove-Item`, `New-Item`) with `-EncodedCommand` (Base64 UTF-16LE) passed through `Start-Process -Verb RunAs`. This avoids batch script quoting pitfalls (`rem` eating command chains, `&&` cascading failures, parentheses in paths).
 

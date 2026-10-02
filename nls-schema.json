@@ -83,6 +83,12 @@
     "messages.unsupportedEditor": {
       "type": "string"
     },
+    "messages.patchWontLoad": {
+      "type": "string"
+    },
+    "messages.untestedEditor": {
+      "type": "string"
+    },
     "messages.admin": {
       "type": "string"
     },
@@ -144,6 +150,8 @@
     "messages.smthingwrong",
     "messages.unsupported",
     "messages.unsupportedEditor",
+    "messages.patchWontLoad",
+    "messages.untestedEditor",
     "messages.admin",
     "messages.recommendedColorTheme",
     "messages.restartIde",

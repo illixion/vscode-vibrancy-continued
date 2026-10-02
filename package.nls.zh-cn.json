@@ -47,6 +47,8 @@
   "messages.unsupportedEditor": "不支持您的代码编辑器，请参阅扩展说明了解支持的编辑器列表。",
   "messages.linuxFramedNoEffect": "Vibrancy 已安装但没有任何可见效果：您的窗口模式为 “framed”，而在 Linux 上毛玻璃效果完全依赖窗口透明度（不像 macOS/Windows 那样有原生模糊材质）。请将 `vscode_vibrancy.windowMode` 改回 `auto`，或清除已弃用的 `disableFramelessWindow` 设置，然后运行“重新安装毛玻璃效果”。",
   "messages.forceFramelessUnsupportedEditor": "无法在此不受支持的编辑器上启用无边框窗口。请将 “vscode_vibrancy.windowMode” 设置为 “auto” 或 “framed” 以在此安装 Vibrancy。",
+  "messages.patchWontLoad": "Vibrancy 未安装：应用其更改后，%1 将无法在此编辑器中加载（%2）。您的编辑器文件未被修改。请附上编辑器名称和版本进行反馈。",
+  "messages.untestedEditor": "%1 不在 Vibrancy 已测试的编辑器列表中，因此其窗口更改为实验性功能。如果重启后 %1 无法启动或窗口不可见，可以在不重新安装的情况下恢复其原始文件：请参阅 Vibrancy README 中的 “Restoring an editor that won't start”。",
   "messages.admin": "无法应用更改，请使用管理员权限运行 Visual Studio Code，有关详细信息，请参阅自述文件: ",
   "messages.recommendedColorTheme": "你当前的颜色主题是 \"%1\" ，而你的毛玻璃主题是为 \"%2\" 设计的!",
   "messages.restartIde": "重启 Visual Studio Code",

@@ -47,6 +47,8 @@
   "messages.unsupportedEditor": "Your code editor is not supported, see extension description for the list of supported editors",
   "messages.linuxFramedNoEffect": "Vibrancy is installed but has no visible effect: your window mode is 'framed', and on Linux the vibrancy effect comes entirely from window transparency (there is no native blur material as on macOS/Windows). Set `vscode_vibrancy.windowMode` back to `auto` — or clear the deprecated `disableFramelessWindow` setting — then run 'Reload Vibrancy'.",
   "messages.forceFramelessUnsupportedEditor": "A frameless window can't be enabled on this unsupported editor. Set \"vscode_vibrancy.windowMode\" to \"auto\" or \"framed\" to install Vibrancy here.",
+  "messages.patchWontLoad": "Vibrancy didn't install: with its changes, %1 would no longer load in this editor (%2). Your editor's files were left unchanged. Please report this with your editor's name and version.",
+  "messages.untestedEditor": "%1 isn't on Vibrancy's list of tested editors, so its window change is experimental. If %1 won't start or its window is invisible after restarting, restore its original files without reinstalling it: see \"Restoring an editor that won't start\" in the Vibrancy README.",
   "messages.admin": "Apply changes failed, please run Visual Studio Code with administrator privileges, see description for more details: ",
   "messages.recommendedColorTheme": "Your current color theme is \"%1\" and the Vibrancy theme is designed for \"%2\"!",
   "messages.restartIde": "Restart Visual Studio Code",

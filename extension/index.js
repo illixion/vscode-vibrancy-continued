@@ -35,6 +35,7 @@ const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tip
 const { readColorCustomizations } = require('./jsonc-settings');
 const { resolveInstallPaths, rebaseInstallPaths, findRuntimeDirs } = require('./install-paths');
 const { extensionsDirOf, readRecord, writeRecord, removeRecord } = require('./install-records');
+const patchSafety = require('./patch-safety');
 
 /**
  * @type {(info: string) => string}
@@ -680,13 +681,13 @@ function activate(context) {
   }
 
   /**
-   * Inject the vibrancy runtime bootstrap into the workbench main.js.
+   * The workbench main.js with the vibrancy runtime bootstrap injected.
    *
    * `baseJS` overrides the on-disk content, so a caller that has already
    * patched the same file in memory can fold this transform into that copy
    * instead of re-reading it (see Install).
    */
-  async function installJS(writer, baseJS) {
+  async function buildMainJS(baseJS) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
@@ -708,9 +709,66 @@ function activate(context) {
     };
 
     const base = __filename;
-    const newJS = generateNewJS(JS, base, injectData);
+    return generateNewJS(JS, base, injectData);
+  }
 
-    await writer.writeFile(JSFile, newJS, 'utf-8');
+  /**
+   * Refuse a patched main.js or mainImpl.js that the editor couldn't load (see
+   * patch-safety.js). Runs before anything is written, so a refusal leaves the
+   * editor untouched.
+   */
+  function checkPatchedJS(file, content) {
+    const fsSync = require('fs');
+    const binDirs = [
+      vscode.env.appRoot && path.join(vscode.env.appRoot, 'bin'),
+      path.join(path.dirname(process.execPath), 'bin'),
+    ].filter(Boolean);
+    const io = {
+      readdir: (d) => fsSync.readdirSync(d),
+      readFile: (p) => fsSync.readFileSync(p, 'utf-8'),
+    };
+    if (!patchSafety.canRunAsNode(binDirs, io)) return;
+
+    const result = patchSafety.checkSyntax(content, {
+      execPath: process.execPath,
+      moduleType: patchSafety.moduleTypeOf(file, io.readFile),
+      tmpDir: os.tmpdir(),
+      spawnSync: require('child_process').spawnSync,
+      writeFile: (p, s) => fsSync.writeFileSync(p, s, 'utf-8'),
+      unlink: (p) => fsSync.unlinkSync(p),
+    });
+    if (result.skipped) {
+      console.warn(`Vibrancy: couldn't check ${file}: ${result.message}`);
+    } else if (!result.ok) {
+      throw new Error(localize('messages.patchWontLoad')
+        .replace('%1', path.basename(file))
+        .replace('%2', result.message));
+    }
+  }
+
+  /**
+   * The pristine backups to write alongside the files about to be patched.
+   * Planned from what is on disk *before* anything is unpatched, because Update
+   * unpatches first: without elevation those writes land immediately, and a
+   * backup taken afterwards would be our own unpatch output, not the original.
+   */
+  async function planBackups() {
+    const backups = [];
+    for (const file of new Set([JSFile, WindowOptionsFile])) {
+      const backupFile = patchSafety.backupPathFor(file);
+      let existing;
+      try { existing = await fs.readFile(backupFile, 'utf-8'); } catch { existing = undefined; }
+      const content = patchSafety.planBackup(await fs.readFile(file, 'utf-8'), existing);
+      if (content !== null) backups.push({ file: backupFile, content });
+    }
+    return backups;
+  }
+
+  async function removeBackups(writer) {
+    for (const file of new Set([JSFile, WindowOptionsFile])) {
+      const backupFile = patchSafety.backupPathFor(file);
+      if (require('fs').existsSync(backupFile)) await writer.removeFile(backupFile);
+    }
   }
 
   async function generateImports(config) {
@@ -822,9 +880,15 @@ function activate(context) {
       vscode.window.showWarningMessage(localize('messages.linuxFramedNoEffect'));
     }
 
-    // On non-VSCode editors, injecting frameless+transparent window options is
-    // risky, so we only do it on a list of known working editors.
+    // On editors Vibrancy hasn't been tested with, the window patch is only
+    // attempted when the anchors it relies on are unambiguous; even then it can
+    // compile and still break the window, so the user is told how to restore
+    // the original files. Elsewhere it's refused, as before.
     if (!knownEditors.includes(vscode.env.appName)) {
+      if (frameless && patchSafety.hasUnambiguousWindowAnchor(ElectronJS, { isMacos: osType === 'macos' })) {
+        vscode.window.showWarningMessage(localize('messages.untestedEditor').replace(/%1/g, vscode.env.appName));
+        return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
+      }
       if (frameless) {
         // A frameless result on an unsupported editor has two causes with very
         // different fixes:
@@ -861,23 +925,37 @@ function activate(context) {
   }
 
   async function uninstallJS(writer) {
-    let JS = await fs.readFile(JSFile, 'utf-8');
-    const { result, hadMarkers } = removeJSMarkers(JS);
-    JS = result;
+    // Without a separate window file both patches live in main.js; undo them
+    // on one in-memory copy so the second write can't overwrite the first.
+    // Every editor gets both undone: an untested one can carry window options
+    // too (see modifyElectronJSFile), and on one that doesn't it's a no-op.
+    const JS = await fs.readFile(JSFile, 'utf-8');
+    const unpatched = removeElectronOptions(removeJSMarkers(JS).result);
+    if (unpatched !== JS) await writer.writeFile(JSFile, await loadableOrBackup(JSFile, unpatched), 'utf-8');
 
-    if (knownEditors.includes(vscode.env.appName)) {
-      // Without a separate window file both patches live in main.js; undo them
-      // on one in-memory copy so the second write can't overwrite the first.
-      JS = removeElectronOptions(JS);
-      await writer.writeFile(JSFile, JS, 'utf-8');
-
-      if (WindowOptionsFile !== JSFile) {
-        const windowJS = await fs.readFile(WindowOptionsFile, 'utf-8');
-        const unpatched = removeElectronOptions(windowJS);
-        if (unpatched !== windowJS) await writer.writeFile(WindowOptionsFile, unpatched, 'utf-8');
+    if (WindowOptionsFile !== JSFile) {
+      const windowJS = await fs.readFile(WindowOptionsFile, 'utf-8');
+      const unpatchedWindow = removeElectronOptions(windowJS);
+      if (unpatchedWindow !== windowJS) {
+        await writer.writeFile(WindowOptionsFile, await loadableOrBackup(WindowOptionsFile, unpatchedWindow), 'utf-8');
       }
-    } else if (hadMarkers) {
-      await writer.writeFile(JSFile, JS, 'utf-8');
+    }
+  }
+
+  /**
+   * The unpatched content, or the pristine backup if unpatching left a file
+   * the editor couldn't load.
+   */
+  async function loadableOrBackup(file, unpatched) {
+    try {
+      checkPatchedJS(file, unpatched);
+      return unpatched;
+    } catch (error) {
+      try {
+        return await fs.readFile(patchSafety.backupPathFor(file), 'utf-8');
+      } catch {
+        throw error;
+      }
     }
   }
 
@@ -1390,7 +1468,12 @@ function activate(context) {
     lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
   }
 
-  async function Install(sharedWriter) {
+  /**
+   * @param {StagedFileWriter} [sharedWriter] - Flushed by the caller when given
+   * @param {{file: string, content: string}[]} [backups] - From planBackups();
+   *   Update plans them before it unpatches, so passes them in.
+   */
+  async function Install(sharedWriter, backups) {
 
     if (osType === 'unknown') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
@@ -1428,12 +1511,8 @@ function activate(context) {
       await ensureMirrorIfNeeded();
       await fs.stat(JSFile);
       await fs.stat(HTMLFile);
+      const pristineBackups = backups ?? await planBackups();
 
-      if (osType === 'win10') {
-        await installRuntimeWin(writer);
-      } else {
-        await installRuntime(writer);
-      }
       // Normally main.js is both the Electron main entry and the workbench
       // main, so both patches have to land on a single in-memory copy. An
       // elevated writer stages its writes to temp files, so re-reading the file
@@ -1442,12 +1521,24 @@ function activate(context) {
       // uninstallJS does the same for teardown. On 1.140+ the window is created
       // in mainImpl.js instead, so the two patches go to two different files.
       const windowJS = await modifyElectronJSFile();
-      if (WindowOptionsFile === JSFile) {
-        await installJS(writer, windowJS);
+      const mainJS = await buildMainJS(WindowOptionsFile === JSFile ? windowJS : undefined);
+      const implJS = WindowOptionsFile === JSFile ? undefined : windowJS;
+
+      // Both are checked before anything is written, so a refusal leaves the
+      // editor exactly as it was.
+      checkPatchedJS(JSFile, mainJS);
+      if (implJS !== undefined) checkPatchedJS(WindowOptionsFile, implJS);
+
+      if (osType === 'win10') {
+        await installRuntimeWin(writer);
       } else {
-        await installJS(writer);
-        if (windowJS !== undefined) await writer.writeFile(WindowOptionsFile, windowJS, 'utf-8');
+        await installRuntime(writer);
       }
+      for (const { file, content } of pristineBackups) {
+        await writer.writeFile(file, content, 'utf-8');
+      }
+      await writer.writeFile(JSFile, mainJS, 'utf-8');
+      if (implJS !== undefined) await writer.writeFile(WindowOptionsFile, implJS, 'utf-8');
       await installHTML(writer);
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
@@ -1498,7 +1589,14 @@ function activate(context) {
     }
   }
 
-  async function Uninstall(promptRestart = true, sharedWriter) {
+  /**
+   * @param {boolean} [promptRestart]
+   * @param {StagedFileWriter} [sharedWriter] - Flushed by the caller when given
+   * @param {boolean} [reinstalling] - Update, which installs straight after: the
+   *   runtime and the pristine backups stay. A Disable retried with an elevated
+   *   writer also passes sharedWriter, so that alone doesn't say which it is.
+   */
+  async function Uninstall(promptRestart = true, sharedWriter, reinstalling = false) {
     if (!sharedWriter) {
       // Check before touching anything: unpatching is machine-wide, but only
       // this profile's colour customizations can be reverted from here.
@@ -1536,9 +1634,12 @@ function activate(context) {
       await fs.stat(JSFile);
       await uninstallJS(writer);
 
-      // Update reinstalls the runtime straight away, so only a real Disable
-      // removes it.
-      if (!sharedWriter) await removeRuntime(writer);
+      // Update reinstalls the runtime straight away and keeps the originals,
+      // so only a real Disable removes them.
+      if (!reinstalling) {
+        await removeRuntime(writer);
+        await removeBackups(writer);
+      }
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {
@@ -1600,10 +1701,14 @@ function activate(context) {
     const writer = new StagedFileWriter(needsElevation);
     await writer.init();
 
+    // Planned before anything is unpatched; see planBackups.
+    let backups;
+
     try {
       await ensureMirrorIfNeeded();
-      await Uninstall(false, writer);
-      await Install(writer);
+      backups = await planBackups();
+      await Uninstall(false, writer, true);
+      await Install(writer, backups);
       // Flush all file changes at once, then apply settings only on success
       await writer.flush();
       await applyPostInstallSettings();
@@ -1614,8 +1719,8 @@ function activate(context) {
         const elevatedWriter = new StagedFileWriter(true);
         await elevatedWriter.init();
         try {
-          await Uninstall(false, elevatedWriter);
-          await Install(elevatedWriter);
+          await Uninstall(false, elevatedWriter, true);
+          await Install(elevatedWriter, backups);
           await elevatedWriter.flush();
           await applyPostInstallSettings();
           enabledRestart();

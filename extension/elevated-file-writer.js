@@ -356,6 +356,11 @@ class StagedFileWriter {
     }
   }
 
+  /** Remove a single file. The rmdir operation removes files as well. */
+  async removeFile(targetPath) {
+    await this.rmdir(targetPath);
+  }
+
   async copyFile(srcPath, destPath) {
     if (!this.requiresElevation) {
       fs.copyFileSync(srcPath, destPath);

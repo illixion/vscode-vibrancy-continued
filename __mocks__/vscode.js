@@ -54,6 +54,8 @@ const state = {
   themeListeners: [],
   version: '1.119.0',
   appName: 'Visual Studio Code',
+  /** vscode.env.appRoot, the install's resources/app directory. */
+  appRoot: undefined,
   colorThemeKind: 2, // Dark
 };
 
@@ -69,6 +71,7 @@ function __reset(overrides = {}) {
   state.themeListeners = [];
   state.version = overrides.version || '1.119.0';
   state.appName = overrides.appName || 'Visual Studio Code';
+  state.appRoot = overrides.appRoot;
   state.colorThemeKind = overrides.colorThemeKind ?? 2;
   return state;
 }
@@ -127,7 +130,10 @@ module.exports = {
   __reset,
 
   get version() { return state.version; },
-  env: { get appName() { return state.appName; } },
+  env: {
+    get appName() { return state.appName; },
+    get appRoot() { return state.appRoot; },
+  },
 
   workspace: {
     getConfiguration,

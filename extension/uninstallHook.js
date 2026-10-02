@@ -8,6 +8,7 @@ const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, AL
 const { applySettingsRestore } = require('./jsonc-settings');
 const { extensionsDirOf, readRecord, removeRecord } = require('./install-records');
 const { findRuntimeDirs } = require('./install-paths');
+const { backupPathFor } = require('./patch-safety');
 
 /**
  * When this actually runs, because it is not when you would expect.
@@ -464,6 +465,12 @@ if (require.main === module) (async () => {
                     } catch (err) {
                         console.warn(`Vibrancy: could not remove ${dir}:`, err.message);
                     }
+                }
+                // The pristine copies kept for restoring an editor that won't
+                // start (patch-safety.js); unneeded once it's unpatched.
+                for (const file of [jsPath, path.join(path.dirname(jsPath), 'mainImpl.js')]) {
+                    const backup = backupPathFor(file);
+                    if (fsSync.existsSync(backup)) await writer.removeFile(backup);
                 }
                 await writer.flush();
             } catch (err) {

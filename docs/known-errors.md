@@ -12,9 +12,19 @@ To fix this, either use the Finder and move VSCode to `/Applications` (or move i
 sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 ```
 
+### Vibrancy didn't install: with its changes, main.js would no longer load in this editor
+
+Before changing anything, Vibrancy checks that the editor could still load its files with those changes. This error means it couldn't, so Vibrancy stopped and left your editor's files as they were. It usually means an editor update changed the files Vibrancy expects. Please open an issue with your editor's name and version, and the error text.
+
+### The editor won't start, or its window is invisible, after enabling Vibrancy
+
+Disable can't run when the editor doesn't start, but the original files can be put back without reinstalling the editor: see [Restoring an editor that won't start](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#restoring-an-editor-that-wont-start).
+
 ### Your code editor is not supported.
 
 See here for the list of supported editors: [Supported Code Editors](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#supported-code-editors)
+
+On an editor that isn't on that list, Vibrancy only changes the window when it can tell exactly where the change goes, and shows this error when it can't. Nothing has been changed when you see it. Please open an issue with your editor's name and version so it can be looked at.
 
 If you're using an unsupported code editor and you're on Windows, you must perform these steps prior to activating Vibrancy Continued: [Windows Install Guide](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#%EF%B8%8F-important-notice-for-windows-1011-users)
 
