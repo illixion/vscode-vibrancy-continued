@@ -4,7 +4,7 @@
 #
 # Vibrancy patches files inside the editor's installation. If an editor won't
 # start after enabling Vibrancy, or its window is invisible, Disable can't help:
-# it runs inside the editor. Since 1.4.0 Vibrancy keeps the original of every
+# it runs inside the editor. Since 1.3.1 Vibrancy keeps the original of every
 # file it patches next to it (main.js.vibrancy-orig), and this copies those
 # originals back, so the editor starts again without being reinstalled.
 #
@@ -64,7 +64,7 @@ done
 
 if [ "$restored" -eq 0 ]; then
   echo "Found no files to restore${FILTER:+ matching \"$FILTER\"}."
-  echo "Vibrancy keeps originals from version 1.4.0 on. If the editor was patched by an"
+  echo "Vibrancy keeps originals from version 1.3.1 on. If the editor was patched by an"
   echo "older version, or yours is installed elsewhere, pass its app/out directory:"
   echo "  $0 /path/to/resources/app/out"
   echo "Otherwise reinstalling the editor restores its files."

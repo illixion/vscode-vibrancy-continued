@@ -270,7 +270,7 @@ You can also just uninstall the extension and restart VSCode, which will automat
 
 ### Restoring an editor that won't start
 
-Disable runs inside the editor, so it can't help if the editor won't start after enabling Vibrancy, or starts with an invisible window. Vibrancy checks that its changes will load before applying them, and since 1.4.0 it also keeps the original of every file it changes. These scripts put those originals back, so you don't have to reinstall the editor. Close the editor first.
+Disable runs inside the editor, so it can't help if the editor won't start after enabling Vibrancy, or starts with an invisible window. Vibrancy checks that its changes will load before applying them, and since 1.3.1 it also keeps the original of every file it changes. These scripts put those originals back, so you don't have to reinstall the editor. Close the editor first.
 
 macOS and Linux:
 
