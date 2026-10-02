@@ -43,7 +43,9 @@ fi
 
 MAIN="$OUT/main.js"
 ELECTRON_MAIN="$OUT/vs/code/electron-main/main.js"
-# VSCode 1.95+ merged the Electron main and workbench main into one file.
+# VSCode 1.95+ merged the Electron main and workbench main into one file, and
+# 1.140 moved window creation out of it again, into a sibling mainImpl.js.
+[ -f "$ELECTRON_MAIN" ] || ELECTRON_MAIN="$OUT/mainImpl.js"
 [ -f "$ELECTRON_MAIN" ] || ELECTRON_MAIN="$MAIN"
 
 say() { printf '%-42s %s\n' "$1" "$2"; }
@@ -51,7 +53,12 @@ has() { grep -qF "$2" "$1" 2>/dev/null && echo yes || echo NO; }
 
 echo "=== Vibrancy Continued diagnostic ==="
 say "app/out:" "$OUT"
-say "electron main is a separate file:" "$([ "$ELECTRON_MAIN" = "$MAIN" ] && echo "no (merged, VSCode 1.95+)" || echo yes)"
+case "$ELECTRON_MAIN" in
+  "$MAIN") window_file="main.js (merged, VSCode 1.95-1.139)" ;;
+  */mainImpl.js) window_file="mainImpl.js (VSCode 1.140+)" ;;
+  *) window_file="vs/code/electron-main/main.js (before VSCode 1.95)" ;;
+esac
+say "window options live in:" "$window_file"
 say "VSCode version:" "$(grep -o '"version":[[:space:]]*"[^"]*"' "$OUT/../package.json" 2>/dev/null | head -1 | cut -d'"' -f4)"
 say "writable without sudo:" "$([ -w "$MAIN" ] && echo yes || echo "NO (install needs elevation)")"
 echo
