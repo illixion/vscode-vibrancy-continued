@@ -38,3 +38,5 @@ the "Open a pull request" / "Comparing changes" view.
 - Do **not** run the E2E suite (`npm run test:e2e`) locally; it needs
   platform-specific setup and is handled by CI.
 - The extension modifies VSCode's own installation files, so test with care.
+- `runtime-pre-esm/` is the only runtime, despite its name. The minimum
+  supported VSCode is 1.95; the ESM `runtime/` that existed for 1.94 is gone.

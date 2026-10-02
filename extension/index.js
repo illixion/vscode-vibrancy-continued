@@ -545,16 +545,16 @@ function activate(context) {
   } catch {
     appDir = _VSCODE_FILE_ROOT;
   }
-  // Which files get patched, and which runtime flavour they need. Probed
-  // against appDir — the directory VSCode is really running from — before any
-  // NixOS mirror retargeting below; install-paths.js explains why that order
-  // is load-bearing and how it is enforced.
+  // Which files get patched. Probed against appDir — the directory VSCode is
+  // really running from — before any NixOS mirror retargeting below;
+  // install-paths.js explains why that order is load-bearing and how it is
+  // enforced.
   var installPaths = resolveInstallPaths({ appDir, exists: (p) => fs.existsSync(p) });
 
   // Separate bindings for the ~40 read sites downstream. retargetToMirror is
   // the only thing that moves them, and it reassigns them as a group.
   var { jsFile: JSFile, electronJsFile: ElectronJSFile, htmlFile: HTMLFile, runtimeDir } = installPaths;
-  const { runtimeSrcDir, useEsmRuntime } = installPaths;
+  const { runtimeSrcDir } = installPaths;
 
   // ####  NixOS shadow install  ##############################################
   // On NixOS the install dir is a read-only /nix/store path where elevation
@@ -700,6 +700,7 @@ function activate(context) {
       theme: themeConfig,
       themeCSS: themeCSS,
       imports: imports,
+      diagnosticsPath: testMode ? path.join(path.dirname(testModeFile), 'test-diagnostics.jsonl') : null,
     };
 
     const base = __filename;
@@ -753,24 +754,21 @@ function activate(context) {
   }
 
   function generateNewJS(JS, base, injectData) {
-    const runtimePath = useEsmRuntime
-      ? path.join(runtimeDir, "index.mjs")
-      : path.join(runtimeDir, "index.cjs");
-    return _generateNewJS(JS, base, injectData, runtimePath);
+    return _generateNewJS(JS, base, injectData, path.join(runtimeDir, "index.cjs"));
   }
 
   // BrowserWindow option modification
   /**
-   * Inject the frameless/transparent BrowserWindow options into Electron's main file.
+   * Inject the frameless/transparent BrowserWindow options into the Electron
+   * main file (main.js, or mainImpl.js on VSCode 1.140+).
    *
-   * Writes through `writer` when given one; pass a falsy writer to get the
-   * patched content back instead, so a caller can fold another transform into
-   * the same buffer (see Install).
+   * Returns the patched content rather than writing it, so Install can fold
+   * the runtime injection into the same buffer.
    *
    * @returns {Promise<string|undefined>} the patched content, or undefined when
    *   this editor doesn't get window options injected at all.
    */
-  async function modifyElectronJSFile(ElectronJSFile, writer) {
+  async function modifyElectronJSFile() {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const electronMajorVersion = parseInt(process.versions.electron.split('.')[0]);
     let ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
@@ -840,10 +838,7 @@ function activate(context) {
       return;
     }
 
-    ElectronJS = injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
-
-    if (writer) await writer.writeFile(ElectronJSFile, ElectronJS, 'utf-8');
-    return ElectronJS;
+    return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
   }
 
   async function installHTML(writer) {
@@ -868,17 +863,14 @@ function activate(context) {
 
     if (knownEditors.includes(vscode.env.appName)) {
       if (ElectronJSFile === JSFile) {
-        // VSCode 1.95+: both files are the same main.js — apply all cleanups
-        // to a single in-memory copy to avoid the second write overwriting the first
+        // Both patches live in main.js; undo them on one in-memory copy so the
+        // second write can't overwrite the first.
         JS = removeElectronOptions(JS);
-        await writer.writeFile(JSFile, JS, 'utf-8');
       } else {
-        if (hadMarkers) {
-          await writer.writeFile(JSFile, JS, 'utf-8');
-        }
-        const ElectronJS = await fs.readFile(ElectronJSFile, 'utf-8');
-        await writer.writeFile(ElectronJSFile, removeElectronOptions(ElectronJS), 'utf-8');
+        const electronJS = await fs.readFile(ElectronJSFile, 'utf-8');
+        await writer.writeFile(ElectronJSFile, removeElectronOptions(electronJS), 'utf-8');
       }
+      await writer.writeFile(JSFile, JS, 'utf-8');
     } else if (hadMarkers) {
       await writer.writeFile(JSFile, JS, 'utf-8');
     }
@@ -1347,6 +1339,7 @@ function activate(context) {
     await setLocalConfig(true, {
       workbenchHtmlPath: HTMLFile,
       jsPath: JSFile,
+      // Names mainImpl.js on 1.140+, otherwise main.js (same as jsPath).
       electronJsPath: ElectronJSFile,
     }, await changeVSCodeSettings());
 
@@ -1420,6 +1413,7 @@ function activate(context) {
     try {
       await ensureMirrorIfNeeded();
       await fs.stat(JSFile);
+      await fs.stat(ElectronJSFile);
       await fs.stat(HTMLFile);
 
       if (osType === 'win10') {
@@ -1427,17 +1421,19 @@ function activate(context) {
       } else {
         await installRuntime(writer);
       }
+      // main.js is both the Electron main entry and the workbench main, so
+      // both patches have to land on a single in-memory copy. An elevated
+      // writer stages its writes to temp files, so re-reading the file between
+      // them would return the pristine original and silently drop the window
+      // options — leaving a patched but non-transparent window. uninstallJS
+      // does the same for teardown.
+      const electronJS = await modifyElectronJSFile();
       if (ElectronJSFile === JSFile) {
-        // VSCode 1.95+ merges the Electron main and workbench main into one
-        // main.js, so both patches have to land on a single in-memory copy.
-        // An elevated writer stages its writes to temp files, so re-reading
-        // the file here would return the pristine original and silently drop
-        // the window options — leaving a patched but non-transparent window.
-        // uninstallJS does the same for teardown.
-        const patchedElectronJS = await modifyElectronJSFile(ElectronJSFile, null);
-        await installJS(writer, patchedElectronJS);
+        await installJS(writer, electronJS);
       } else {
-        await modifyElectronJSFile(ElectronJSFile, writer);
+        // 1.140+: window options live in mainImpl.js, the runtime loader in
+        // main.js — separate files, so no shared buffer is needed.
+        if (electronJS !== undefined) await writer.writeFile(ElectronJSFile, electronJS, 'utf-8');
         await installJS(writer);
       }
       await installHTML(writer);

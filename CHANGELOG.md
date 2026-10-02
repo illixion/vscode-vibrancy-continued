@@ -1,3 +1,8 @@
+# Unreleased
+
+* Core:
+  * Vibrancy now requires VSCode 1.95 or newer, and the same for editors built on it such as Cursor and VSCodium. On an older version you'll simply stay on the last Vibrancy release that supports it; updating your editor brings you back to the latest
+
 # 1.1.93
 
 * Core:

@@ -18,9 +18,8 @@ const { getConfigDir } = require('../../extension/file-transforms');
  *     any abandoned uninstall left VSCode patched with the colours already
  *     gone: a visibly broken editor with no hint that re-running Disable fixes
  *     it. Guarded by "leaves the colours alone when the file work fails".
- *   - Install picks the runtime flavour by probing the install layout, and a
- *     wrong guess writes the wrong runtime and only fails afterwards. Guarded
- *     by the two "installs the ... runtime" cases.
+ *   - An install below the 1.95 floor must be refused before any file is
+ *     touched. Guarded by "refuses a 1.94 install without touching it".
  */
 
 const FIXTURES = path.join(__dirname, '..', 'fixtures');
@@ -152,7 +151,7 @@ describe('Enable', () => {
     expect(config.electronJsPath).toBe(jsPath);
   });
 
-  it('installs the CJS runtime for a modern install', async () => {
+  it('installs the runtime beside the install', async () => {
     makeInstall({ htmlRelPath: SANDBOX_HTML });
     activate();
 
@@ -160,21 +159,19 @@ describe('Enable', () => {
 
     const runtime = fs.readdirSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'));
     expect(runtime).toContain('index.cjs');
-    expect(runtime).not.toContain('index.mjs');
   });
 
-  it('installs the ESM runtime for a 1.94 install', async () => {
-    // The pairing that matters: the ESM workbench and the ESM runtime are
-    // chosen by the same probe, and getting them out of step writes a runtime
-    // the workbench cannot load — with no error until VSCode next starts.
-    makeInstall({ htmlRelPath: ESM_HTML });
+  it('refuses a 1.94 install without touching it', async () => {
+    // 1.94 is below the floor, so its workbench.esm.html is not probed for and
+    // no runtime is written that the workbench could not load.
+    const { jsPath } = makeInstall({ htmlRelPath: ESM_HTML });
+    const originalJs = read(jsPath);
     activate();
 
     await run('extension.installVibrancy');
 
-    const runtime = fs.readdirSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'));
-    expect(runtime).toContain('index.mjs');
-    expect(runtime).not.toContain('index.cjs');
+    expect(read(jsPath)).toBe(originalJs);
+    expect(fs.existsSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toBe(false);
   });
 });
 

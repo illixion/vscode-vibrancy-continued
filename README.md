@@ -49,7 +49,7 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 # Supported code editors
 
-✔ Visual Studio Code (v1.86 and newer)
+✔ Visual Studio Code (v1.95 and newer)
 
 ✔ VSCodium
 
