@@ -263,6 +263,39 @@ describe('Disable', () => {
   });
 });
 
+describe('another editor on the same machine', () => {
+  // Every VSCode-based editor shares one config directory. Disable here used to
+  // delete the one record there, including when it described another editor,
+  // whose uninstall hook was then left with nothing to unpatch it with.
+  const { writeRecord, readRecord } = require('../../extension/install-records');
+  const configDir = () => getConfigDir('vscode-vibrancy-continued');
+  const OTHER = { extensionsDir: '/elsewhere/.vscode-insiders/extensions', jsPath: '/elsewhere/insiders/out/main.js' };
+
+  it('keeps its record when this one disables', async () => {
+    makeInstall();
+    activate();
+    await run('extension.installVibrancy');
+    writeRecord(configDir(), { ...OTHER, tag: 'other' });
+
+    await run('extension.uninstallVibrancy');
+
+    expect(readRecord(configDir(), OTHER).tag).toBe('other');
+    // config.json described the other editor, so it stays for its older hook.
+    expect(JSON.parse(read(path.join(configDir(), 'config.json'))).tag).toBe('other');
+  });
+
+  it('is handed config.json when this editor\'s copy is removed', async () => {
+    writeRecord(configDir(), { ...OTHER, tag: 'other' });
+    makeInstall();
+    activate();
+    await run('extension.installVibrancy'); // config.json now describes this editor
+
+    await run('extension.uninstallVibrancy');
+
+    expect(JSON.parse(read(path.join(configDir(), 'config.json'))).tag).toBe('other');
+  });
+});
+
 describe('Reload', () => {
   it('re-patches in place and keeps the colours applied', async () => {
     const { jsPath } = makeInstall();
@@ -314,9 +347,13 @@ describe('healing a stale settings.json path', () => {
 
   const configPath = () => path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json');
 
+  /** The main.js makeInstall() lays down, which a pre-1.1.94 config.json names. */
+  const installedJsPath = () => path.join(tmpRoot, 'resources', 'app', 'out', 'main.js');
+
+  /** A config.json as an older version wrote it: no per-install record. */
   function writeConfig(contents) {
     fs.mkdirSync(path.dirname(configPath()), { recursive: true });
-    fs.writeFileSync(configPath(), JSON.stringify(contents, null, 2));
+    fs.writeFileSync(configPath(), JSON.stringify({ jsPath: installedJsPath(), ...contents }, null, 2));
   }
 
   const readConfig = () => JSON.parse(read(configPath()));
@@ -359,7 +396,6 @@ describe('healing a stale settings.json path', () => {
     const backup = { saved: true, vibrancyBackgrounds: { 'editor.background': null } };
     writeConfig({
       settingsJsonPath: profile.defaultSettingsPath,
-      jsPath: '/somewhere/main.js',
       previousCustomizations: backup,
     });
     fs.writeFileSync(profile.settingsPath, JSON.stringify({
@@ -370,7 +406,7 @@ describe('healing a stale settings.json path', () => {
 
     expect(readConfig()).toMatchObject({
       settingsJsonPath: profile.settingsPath,
-      jsPath: '/somewhere/main.js',
+      jsPath: installedJsPath(),
       previousCustomizations: backup,
     });
   });

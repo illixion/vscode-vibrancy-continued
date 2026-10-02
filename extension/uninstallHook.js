@@ -6,6 +6,7 @@ const os = require('os');
 const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-writer');
 const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
 const { applySettingsRestore } = require('./jsonc-settings');
+const { extensionsDirOf, readRecord, removeRecord } = require('./install-records');
 
 /**
  * When this actually runs, because it is not when you would expect.
@@ -367,22 +368,9 @@ module.exports = {
 if (require.main === module) (async () => {
   try {
     const configDir = getConfigDir('vscode-vibrancy-continued');
-    const configFilePath = path.join(configDir, 'config.json');
-
-    function loadConfig() {
-        if (fsSync.existsSync(configFilePath)) {
-            try {
-                return JSON.parse(fsSync.readFileSync(configFilePath, 'utf-8'));
-            } catch (err) {
-                console.error(
-                    'Vibrancy: config.json is corrupt or unreadable, treating as absent:',
-                    err.message
-                );
-                return null;
-            }
-        }
-        return null;
-    }
+    // The editor this hook belongs to is the one whose extensions directory
+    // holds this copy of the extension (see install-records.js).
+    const install = { extensionsDir: extensionsDirOf(path.join(__dirname, '..')) };
 
     // Both patches normally live in main.js; undo them on one buffer so the
     // second write can't overwrite the first. VSCode 1.140+ creates the window
@@ -440,7 +428,7 @@ if (require.main === module) (async () => {
         }
     }
 
-    const config = loadConfig();
+    const config = readRecord(configDir, install);
     if (config) {
         const { workbenchHtmlPath, jsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry } = config;
 
@@ -506,6 +494,12 @@ if (require.main === module) (async () => {
                 deferSettingsRestoreWindows(settingsJsonPath || getVSCodeSettingsPath(), cliCommand, previousCustomizations);
             } else {
                 restorePreviousSettings(previousCustomizations, settingsJsonPath);
+            }
+
+            if (!fileOpsError) {
+                // The record has served its purpose; left behind, it would sit
+                // there describing an install that is no longer patched.
+                removeRecord(configDir, install);
             }
 
             if (fileOpsError) {

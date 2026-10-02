@@ -34,6 +34,7 @@ const {
 const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tips');
 const { readColorCustomizations } = require('./jsonc-settings');
 const { resolveInstallPaths, rebaseInstallPaths } = require('./install-paths');
+const { extensionsDirOf, readRecord, writeRecord, removeRecord } = require('./install-records');
 
 /**
  * @type {(info: string) => string}
@@ -974,16 +975,13 @@ function activate(context) {
     });
   }
 
-  async function getLocalConfigPath() {
-    const configDir = getConfigDir('vscode-vibrancy-continued');
-    const configFilePath = path.join(configDir, 'config.json');
-
-    // Ensure the directory exists recursively
-    await fs.mkdir(configDir, { recursive: true }).catch(() =>
-      console.warn(`Failed to create directory: ${configDir}`)
-    );
-
-    return configFilePath;
+  /**
+   * Which editor install this is, for install-records.js: the extensions
+   * directory this copy of the extension was loaded from, plus the main.js it
+   * patches (which identifies a record written before records were per install).
+   */
+  function thisInstall() {
+    return { extensionsDir: extensionsDirOf(path.join(__dirname, '..')), jsPath: JSFile };
   }
 
   /**
@@ -1125,12 +1123,11 @@ function activate(context) {
 
     // Patch the one field rather than rewriting through setLocalConfig, which
     // would need the install paths and would drop previousCustomizations.
-    const configFilePath = await getLocalConfigPath();
-    await fs.writeFile(
-      configFilePath,
-      JSON.stringify({ ...config, settingsJsonPath: currentSettingsPath }, null, 2),
-      'utf-8',
-    );
+    writeRecord(getConfigDir('vscode-vibrancy-continued'), {
+      ...config,
+      extensionsDir: thisInstall().extensionsDir,
+      settingsJsonPath: currentSettingsPath,
+    });
     console.log(`Vibrancy: corrected the recorded settings.json path to ${currentSettingsPath}`);
   }
 
@@ -1172,12 +1169,7 @@ function activate(context) {
   }
 
   async function readLocalConfig() {
-    try {
-      const configFilePath = path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json');
-      return JSON.parse(await fs.readFile(configFilePath, 'utf-8'));
-    } catch {
-      return null;
-    }
+    return readRecord(getConfigDir('vscode-vibrancy-continued'), thisInstall());
   }
 
   /**
@@ -1209,7 +1201,7 @@ function activate(context) {
   }
 
   async function setLocalConfig(state, paths, previousCustomizations) {
-    const configFilePath = await getLocalConfigPath();
+    const configDir = getConfigDir('vscode-vibrancy-continued');
 
     // Convert undefined values in previousCustomizations to null
     if (previousCustomizations && typeof previousCustomizations === 'object') {
@@ -1225,6 +1217,8 @@ function activate(context) {
         : cliName;
       const profile = getProfileIdentity();
       const configData = {
+        // Which editor install this record belongs to (see install-records.js).
+        extensionsDir: thisInstall().extensionsDir,
         workbenchHtmlPath: paths.workbenchHtmlPath,
         jsPath: paths.jsPath,
         electronJsPath: paths.electronJsPath,
@@ -1245,9 +1239,9 @@ function activate(context) {
         configData.nixMirrorBase = nixMirror.mirrorBase();
         configData.nixDesktopEntry = nixMirror.desktopEntryPath();
       }
-      await fs.writeFile(configFilePath, JSON.stringify(configData, null, 2), 'utf-8');
+      writeRecord(configDir, configData);
     } else {
-        await fs.unlink(configFilePath).catch(() => { });
+      removeRecord(configDir, thisInstall());
     }
   }
 
