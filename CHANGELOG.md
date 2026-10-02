@@ -1,3 +1,10 @@
+# 1.3.0
+
+* Core:
+  * Support Kiro (issue [#275](https://github.com/illixion/vscode-vibrancy-continued/issues/275))
+* Themes:
+  * Fix fuzzy minimap text. The minimap draws each character on a block of the editor background colour, which Vibrancy makes transparent, so every character sat in a dark box. The minimap now gets a background at 75% opacity, the same minimum as sticky scroll; Disable restores your own value. Themes that keep the editor opaque are unchanged
+
 # 1.2.0
 
 * Core:
