@@ -144,6 +144,7 @@ const knownEditors = [
   'Antigravity',
   'Antigravity IDE',
   'Devin',
+  'Kiro',
 ];
 
 // Map editor app names to their CLI commands for relaunch
@@ -156,6 +157,7 @@ const editorCliCommands = {
   'Antigravity': 'antigravity',
   'Antigravity IDE': 'antigravity-ide',
   'Devin': 'devin-desktop',
+  'Kiro': 'kiro',
 };
 
 // Map editor app names to their config directory names (for settings.json path)
@@ -168,6 +170,7 @@ const editorConfigDirNames = {
   'Antigravity': 'Antigravity',
   'Antigravity IDE': 'Antigravity IDE',
   'Devin': 'Devin',
+  'Kiro': 'Kiro',
 };
 
 var defaultTheme = 'Default Dark';
