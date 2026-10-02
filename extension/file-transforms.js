@@ -534,7 +534,7 @@ function computeVibrancyColors({ themeBackground, opacity, originalColors = {}, 
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
     result[key] = computeTransparentHex(base, opacity);
   }
-  for (const key of STICKY_SCROLL_BG_KEYS) {
+  for (const key of [...STICKY_SCROLL_BG_KEYS, ...MINIMAP_BG_KEYS]) {
     const base = extractBaseColor(originalColors[key]) ?? themeBackground;
     result[key] = computeTransparentHex(base, Math.max(opacity, STICKY_SCROLL_MIN_OPACITY));
   }
@@ -683,6 +683,17 @@ const STICKY_SCROLL_BG_KEYS = [
   "terminalStickyScroll.background",
 ];
 
+/**
+ * The minimap shares sticky scroll's legibility floor for a different reason:
+ * it draws each character cell into its canvas close to opaque, blended against
+ * minimap.background (editor.background when unset). Over a transparent
+ * background every character then sits in its own dark box against the vibrancy
+ * behind it. Lower alphas only fade the boxes; 0.75 is where they disappear.
+ */
+const MINIMAP_BG_KEYS = [
+  "minimap.background",
+];
+
 const OPAQUE_BG_KEYS = [
   "inlineChat.background",
   "editorWidget.background",
@@ -698,6 +709,7 @@ const ALL_VIBRANCY_BG_KEYS = [
   ...TRANSPARENT_BG_KEYS,
   ...SEMITRANSPARENT_BG_KEYS,
   ...STICKY_SCROLL_BG_KEYS,
+  ...MINIMAP_BG_KEYS,
   ...OPAQUE_BG_KEYS,
 ];
 
@@ -757,6 +769,7 @@ module.exports = {
   SEMITRANSPARENT_BG_KEYS,
   STICKY_SCROLL_BG_KEYS,
   STICKY_SCROLL_MIN_OPACITY,
+  MINIMAP_BG_KEYS,
   OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
   looksLikeVibrancyValue,

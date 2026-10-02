@@ -20,6 +20,7 @@ const {
   TRANSPARENT_BG_KEYS,
   SEMITRANSPARENT_BG_KEYS,
   STICKY_SCROLL_BG_KEYS,
+  MINIMAP_BG_KEYS,
   OPAQUE_BG_KEYS,
   ALL_VIBRANCY_BG_KEYS,
 } = require('../../extension/file-transforms');
@@ -574,8 +575,8 @@ describe('computeTransparentHex', () => {
 
 describe('ALL_VIBRANCY_BG_KEYS', () => {
   it('contains expected number of keys', () => {
-    // 8 transparent + 6 semi-transparent + 5 sticky scroll + 8 opaque = 27
-    expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(27);
+    // 8 transparent + 6 semi-transparent + 5 sticky scroll + 1 minimap + 8 opaque = 28
+    expect(ALL_VIBRANCY_BG_KEYS).toHaveLength(28);
   });
 
   it('includes key representative keys', () => {
@@ -682,6 +683,10 @@ describe('computeVibrancyColors', () => {
     for (const key of STICKY_SCROLL_BG_KEYS) {
       expect(result[key]).toBe('#1e1e1ebf');
     }
+    // The minimap shares the floor so its character cells don't show as boxes
+    for (const key of MINIMAP_BG_KEYS) {
+      expect(result[key]).toBe('#1e1e1ebf');
+    }
     // Opaque keys get 0.9 opacity
     for (const key of OPAQUE_BG_KEYS) {
       expect(result[key]).toBe('#1e1e1ee6');
@@ -697,7 +702,7 @@ describe('computeVibrancyColors', () => {
     });
 
     expect(result['sideBar.background']).toBe('#1e1e1e4d');
-    for (const key of STICKY_SCROLL_BG_KEYS) {
+    for (const key of [...STICKY_SCROLL_BG_KEYS, ...MINIMAP_BG_KEYS]) {
       expect(result[key]).toBe('#1e1e1ebf');
     }
   });
