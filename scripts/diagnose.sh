@@ -82,8 +82,12 @@ echo
 # transparency, so 'transparent:true' missing here means no visible effect even
 # though everything above may be present.
 echo "--- 2. window options (electron main) ---"
-say "frame:false,transparent:true:" "$(has "$ELECTRON_MAIN" 'frame:false,transparent:true')"
-say "frame:false,transparent:false:" "$(has "$ELECTRON_MAIN" 'frame:false,transparent:false')"
+# macOS puts frame:false on the custom title bar branch (X.frame=false,) and only
+# the transparency in the options literal; elsewhere both sit in the literal.
+hasE() { grep -qE "$2" "$1" 2>/dev/null && echo yes || echo NO; }
+say "frameless (frame:false):" "$(hasE "$ELECTRON_MAIN" 'frame:false|[A-Za-z_$][A-Za-z0-9_$]*\.frame=false,')"
+say "transparent:true:" "$(hasE "$ELECTRON_MAIN" 'transparent:true|\.transparent=true,')"
+say "transparent:false:" "$(hasE "$ELECTRON_MAIN" 'transparent:false|\.transparent=false,')"
 # Options are injected at this anchor; if it's absent the injection can't apply.
 say "injection anchor present:" "$(has "$ELECTRON_MAIN" 'experimentalDarkMode')"
 echo

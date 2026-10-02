@@ -372,6 +372,46 @@ describe('injectElectronOptions', () => {
     const second = injectElectronOptions(first, { frameless: true, isMacos: true });
     expect(second).toBe(first);
   });
+
+  describe('macOS, where VSCode picks the title bar per window', () => {
+    // The shape of VSCode 1.140's builder: an options literal, then the custom
+    // title bar branch, which only runs when window.titleBarStyle isn't native.
+    const vscodeBuilder =
+      'let c={show:!1,webPreferences:{sandbox:!0},experimentalDarkMode:!0};' +
+      '!ms(s)&&(c.titleBarStyle="hidden",H||(c.frame=!1),LR(s));';
+
+    it('makes the window frameless and transparent only on the custom title bar branch', () => {
+      const result = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true });
+      expect(result).toContain('visualEffectState:"active",experimentalDarkMode');
+      expect(result).toContain('(c.frame=false,c.transparent=true,c.titleBarStyle="hidden",');
+      expect(result).not.toContain('frame:false');
+      expect(result).not.toContain('transparent:');
+    });
+
+    it('is removed byte for byte', () => {
+      const result = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true, transparent: false });
+      expect(removeElectronOptions(result)).toBe(vscodeBuilder);
+    });
+
+    it('does not double-inject', () => {
+      const first = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true });
+      expect(injectElectronOptions(first, { frameless: true, isMacos: true })).toBe(first);
+    });
+
+    it('drops the frame when switched to framed', () => {
+      const patched = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true });
+      const result = injectElectronOptions(patched, { frameless: false, isMacos: true });
+      expect(result).not.toContain('.frame=false');
+      expect(result).not.toContain('.transparent=');
+    });
+
+    it('keeps the frame in the literal on Windows and Linux', () => {
+      const result = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: false });
+      expect(result).toContain('frame:false,transparent:true,experimentalDarkMode');
+      expect(result).not.toContain('c.frame=false');
+      expect(result).not.toContain('c.transparent=');
+    });
+  });
 });
 
 // --- removeElectronOptions ---

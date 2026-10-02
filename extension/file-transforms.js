@@ -177,6 +177,31 @@ function injectFramelessWindow(electronJS, transparent = true) {
   );
 }
 
+/** VSCode's custom-title-bar branch: `X.titleBarStyle="hidden",`. */
+const HIDDEN_TITLE_BAR_ANCHOR = /(?<![\w$])[A-Za-z_$][\w$]*\.titleBarStyle=(["'])hidden\1,/;
+
+/**
+ * macOS variant of injectFramelessWindow.
+ *
+ * VSCode picks its custom title bar or the native one per window, and only the
+ * custom one assigns titleBarStyle="hidden". Under the native title bar, both
+ * frame:false and transparent:true remove the traffic lights: the first drops
+ * the frame, the second makes macOS draw no title bar at all. So both options go
+ * on that assignment, the same form Cursor's builders get, and a native title
+ * bar keeps an opaque framed window with working controls. Builders without the
+ * assignment keep the literal injection.
+ * @param {string} electronJS - Electron main.js content
+ * @param {boolean} transparent
+ * @returns {string} Patched content
+ */
+function injectMacFramelessWindow(electronJS, transparent = true) {
+  if (!HIDDEN_TITLE_BAR_ANCHOR.test(electronJS)) {
+    return injectFramelessWindow(electronJS, transparent);
+  }
+  const t = transparent ? 'true' : 'false';
+  return injectCursorWindowOptions(electronJS, (target) => `${target}.frame=false,${target}.transparent=${t},`);
+}
+
 /**
  * Whether a FRAMELESS window should be transparent (per-pixel alpha) in this
  * context.
@@ -382,7 +407,9 @@ function injectElectronOptions(electronJS, { frameless, isMacos, transparent = t
   // Add frameless + (optionally) transparent window options. The caller passes
   // transparent:false for opaque modes (Windows snapping, Win11 DWM materials).
   if (frameless) {
-    result = injectFramelessWindow(result, transparent);
+    result = isMacos
+      ? injectMacFramelessWindow(result, transparent)
+      : injectFramelessWindow(result, transparent);
   }
 
   return result;
