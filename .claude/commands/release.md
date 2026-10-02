@@ -72,8 +72,6 @@ git add package.json package-lock.json CHANGELOG.md
 git commit -m "<new_version>"
 ```
 
-Do NOT include a Co-Authored-By trailer.
-
 ## 7. Switch to main and merge
 
 Use a regular merge (NOT a squash) so main retains development's commit history:
@@ -82,8 +80,6 @@ Use a regular merge (NOT a squash) so main retains development's commit history:
 git checkout main
 git merge development -m "<new_version>"
 ```
-
-Do NOT include a Co-Authored-By trailer.
 
 ## 8. Sync development with main
 
