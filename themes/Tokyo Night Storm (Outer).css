@@ -58,9 +58,11 @@ body {
   text-shadow: 0 0 8px, 0 0 2px #000;
 }
 
-.notebookOverlay.notebook-editor,
-.cell-statusbar-container,
-.margin-view-overlays,
+/*
+ * The editor is opaque in this theme, so notebooks and the gutter keep their own
+ * colours. Clearing them only revealed editor.background underneath, which hid a
+ * custom notebook.editorBackground or editorGutter.background (issue #214).
+ */
 .monaco-list-row:hover:not(.selected):not(.focused) {
   background-color: transparent !important;
 }
