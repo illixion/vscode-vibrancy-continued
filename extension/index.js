@@ -33,7 +33,7 @@ const {
 } = require('./profile-registry');
 const { findVibrancyLeftovers, assessProfileSituation } = require('./profile-tips');
 const { readColorCustomizations } = require('./jsonc-settings');
-const { resolveInstallPaths, rebaseInstallPaths } = require('./install-paths');
+const { resolveInstallPaths, rebaseInstallPaths, findRuntimeDirs } = require('./install-paths');
 const { extensionsDirOf, readRecord, writeRecord, removeRecord } = require('./install-records');
 
 /**
@@ -878,6 +878,21 @@ function activate(context) {
     }
   }
 
+  /**
+   * Remove the runtime folders, last and best-effort: on Windows VSCode holds
+   * the runtime's .node modules open while it runs, and a folder left behind
+   * is inert once main.js no longer loads it.
+   */
+  async function removeRuntime(writer) {
+    for (const dir of findRuntimeDirs(installPaths.appDir, (d) => require('fs').readdirSync(d))) {
+      try {
+        await writer.rmdir(dir);
+      } catch (error) {
+        console.warn(`Vibrancy: could not remove ${dir}:`, error.message);
+      }
+    }
+  }
+
   async function uninstallHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
     const newHTML = removeCSPPatch(HTML);
@@ -1517,6 +1532,10 @@ function activate(context) {
 
       await fs.stat(JSFile);
       await uninstallJS(writer);
+
+      // Update reinstalls the runtime straight away, so only a real Disable
+      // removes it.
+      if (!sharedWriter) await removeRuntime(writer);
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {

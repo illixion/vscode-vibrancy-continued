@@ -93,6 +93,27 @@ function resolveInstallPaths({ appDir, exists, runtimeVersion = DEFAULT_RUNTIME_
 }
 
 /**
+ * Every runtime folder Vibrancy has installed beside VSCode: the current one
+ * and any left by an older runtime version.
+ *
+ * @param {string} appDir  VSCode's `out` directory
+ * @param {(dir: string) => string[]} readdir  directory listing (injected, as
+ *   with resolveInstallPaths; production passes fs.readdirSync)
+ * @returns {string[]}
+ */
+function findRuntimeDirs(appDir, readdir) {
+  let names = [];
+  try {
+    names = readdir(appDir);
+  } catch {
+    return [];
+  }
+  return names
+    .filter((name) => /^vscode-vibrancy-runtime(?:-|$)/.test(name))
+    .map((name) => path.join(appDir, name));
+}
+
+/**
  * Move an already-resolved layout from one install directory to another,
  * keeping each path's position within the package. Used for the NixOS shadow
  * install, where patching is redirected to a writable mirror of a read-only
@@ -132,6 +153,7 @@ function rebaseInstallPaths(paths, { fromDir, toDir } = {}) {
 
 module.exports = {
   resolveInstallPaths,
+  findRuntimeDirs,
   rebaseInstallPaths,
   DEFAULT_RUNTIME_VERSION,
   RUNTIME_SRC,

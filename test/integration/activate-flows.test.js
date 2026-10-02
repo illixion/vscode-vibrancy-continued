@@ -236,6 +236,7 @@ describe('Disable', () => {
 
     expect(read(jsPath)).toBe(originalJs);
     expect(read(htmlPath)).toBe(originalHtml);
+    expect(fs.existsSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toBe(false);
     // The user's own customization survives; vibrancy's translucent ones go.
     expect(colours()).toEqual({ 'editor.foreground': '#abcdef' });
   });
@@ -310,6 +311,7 @@ describe('Reload', () => {
     expect(colours()['editor.background']).toBeTruthy();
     // And exactly one set of markers — not one per update.
     expect(read(jsPath).match(/VSCODE-VIBRANCY-START/g)).toHaveLength(1);
+    expect(fs.readdirSync(path.join(appDir, 'vscode-vibrancy-runtime-v6'))).toContain('index.cjs');
   });
 });
 

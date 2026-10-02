@@ -7,6 +7,7 @@ const { StagedFileWriter, checkNeedsElevation } = require('./elevated-file-write
 const { removeJSMarkers, removeElectronOptions, removeCSPPatch, getConfigDir, ALL_VIBRANCY_BG_KEYS } = require('./file-transforms');
 const { applySettingsRestore } = require('./jsonc-settings');
 const { extensionsDirOf, readRecord, removeRecord } = require('./install-records');
+const { findRuntimeDirs } = require('./install-paths');
 
 /**
  * When this actually runs, because it is not when you would expect.
@@ -455,6 +456,15 @@ if (require.main === module) (async () => {
             try {
                 await uninstallJS(jsPath, writer);
                 await uninstallHTML(workbenchHtmlPath, writer);
+                // Best-effort, as in Disable: Windows may hold the runtime's
+                // .node modules open, and a leftover folder is inert.
+                for (const dir of findRuntimeDirs(path.dirname(jsPath), (d) => fsSync.readdirSync(d))) {
+                    try {
+                        await writer.rmdir(dir);
+                    } catch (err) {
+                        console.warn(`Vibrancy: could not remove ${dir}:`, err.message);
+                    }
+                }
                 await writer.flush();
             } catch (err) {
                 writer.cleanup();

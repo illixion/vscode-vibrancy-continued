@@ -3,6 +3,7 @@ const {
   resolveInstallPaths,
   rebaseInstallPaths,
   RUNTIME_SRC,
+  findRuntimeDirs,
 } = require('../../extension/install-paths');
 
 const APP = path.join('/opt', 'code', 'resources', 'app', 'out');
@@ -180,5 +181,22 @@ describe('rebaseInstallPaths', () => {
     expect(() => rebaseInstallPaths(null, move)).toThrow(/paths is required/);
     expect(() => rebaseInstallPaths(paths, { fromDir: APP })).toThrow(/fromDir and toDir are required/);
     expect(() => rebaseInstallPaths(paths)).toThrow(/fromDir and toDir are required/);
+  });
+});
+
+describe('findRuntimeDirs', () => {
+  it('finds the current runtime and ones left by older versions', () => {
+    const listing = ['main.js', 'vscode-vibrancy-runtime-v6', 'vscode-vibrancy-runtime-v5', 'vscode-vibrancy-runtime', 'vs'];
+    expect(findRuntimeDirs(APP, () => listing)).toEqual([
+      j('vscode-vibrancy-runtime-v6'), j('vscode-vibrancy-runtime-v5'), j('vscode-vibrancy-runtime'),
+    ]);
+  });
+
+  it('ignores names that only start the same way', () => {
+    expect(findRuntimeDirs(APP, () => ['vscode-vibrancy-runtimes-backup'])).toEqual([]);
+  });
+
+  it('finds nothing in a directory it cannot read', () => {
+    expect(findRuntimeDirs(APP, () => { throw new Error('ENOENT'); })).toEqual([]);
   });
 });
