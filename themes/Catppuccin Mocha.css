@@ -96,10 +96,6 @@ body {
   background-color: rgba(137, 180, 250, 0.4) !important;
 }
 
-.monaco-editor .view-overlays .current-line {
-  border-color: rgba(204, 208, 218, 0.2) !important;
-}
-
 .extension-editor,
 .monaco-workbench
   .part.editor

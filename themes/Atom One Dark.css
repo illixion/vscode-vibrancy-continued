@@ -152,10 +152,6 @@ body {
   background-color: rgba(47, 54, 64, 0.28) !important;
 }
 
-.monaco-editor .view-overlays .current-line {
-  border-color: var(--atom-one-dark-border) !important;
-}
-
 .monaco-workbench .part.statusbar,
 .monaco-workbench .part.panel.bottom .composite.title,
 .monaco-inputbox {

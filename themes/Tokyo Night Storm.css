@@ -88,7 +88,6 @@ body {
 }
 
 .monaco-editor .view-overlays .current-line {
-  border-color: rgba(51, 70, 124, 0.2) !important;
   background-color: rgba(51, 70, 124, 0.2) !important;
 }
 

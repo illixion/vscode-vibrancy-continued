@@ -82,10 +82,6 @@ body {
   background-color: hsla(210, 100%, 80%, 0.3) !important;
 }
 
-.monaco-editor .view-overlays .current-line {
-  border-color: rgba(41, 41, 41,0.2) !important;
-}
-
 .extension-editor,
 .monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title .tabs-container>.tab.active,
 .preferences-editor>.preferences-header,

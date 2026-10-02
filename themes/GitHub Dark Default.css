@@ -83,10 +83,6 @@ body {
   outline-color: transparent !important;
 }
 
-.monaco-editor .view-overlays .current-line {
-  border-color: rgba(204, 208, 218, 0.2) !important;
-}
-
 .extension-editor,
 .monaco-workbench
   .part.editor

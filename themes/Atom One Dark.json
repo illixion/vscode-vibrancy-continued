@@ -11,5 +11,8 @@
     "linux": 0.7
   },
   "colorTheme": "Atom One Dark",
-  "systemColorTheme": "dark"
+  "systemColorTheme": "dark",
+  "colorCustomizations": {
+    "editor.lineHighlightBorder": "#00000000"
+  }
 }

@@ -11,5 +11,8 @@
     "linux": 0.8
   },
   "colorTheme": "Noir Essence Light",
-  "systemColorTheme": "light"
+  "systemColorTheme": "light",
+  "colorCustomizations": {
+    "editor.lineHighlightBorder": "#00000000"
+  }
 }
