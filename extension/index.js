@@ -751,6 +751,7 @@ function activate(context) {
    * Planned from what is on disk *before* anything is unpatched, because Update
    * unpatches first: without elevation those writes land immediately, and a
    * backup taken afterwards would be our own unpatch output, not the original.
+   * prepareInstall runs it, and Update runs that first.
    */
   async function planBackups() {
     const backups = [];
@@ -1469,11 +1470,43 @@ function activate(context) {
   }
 
   /**
-   * @param {StagedFileWriter} [sharedWriter] - Flushed by the caller when given
-   * @param {{file: string, content: string}[]} [backups] - From planBackups();
-   *   Update plans them before it unpatches, so passes them in.
+   * Everything Install writes to main.js and mainImpl.js, built and checked
+   * without writing anything.
+   *
+   * Works from the files as they are, patched or not: both transforms replace
+   * an earlier patch rather than adding to it. That lets Update call this
+   * before it unpatches, so a patch that wouldn't load is refused while the
+   * editor is still exactly as it was. Afterwards, Update's unpatch has
+   * already landed on disk without elevation, and is discarded with it.
    */
-  async function Install(sharedWriter, backups) {
+  async function prepareInstall() {
+    await fs.stat(JSFile);
+    await fs.stat(HTMLFile);
+    const backups = await planBackups();
+
+    // Normally main.js is both the Electron main entry and the workbench
+    // main, so both patches have to land on a single in-memory copy. An
+    // elevated writer stages its writes to temp files, so re-reading the file
+    // between them would return the pristine original and silently drop the
+    // window options — leaving a patched but non-transparent window.
+    // uninstallJS does the same for teardown. On 1.140+ the window is created
+    // in mainImpl.js instead, so the two patches go to two different files.
+    const windowJS = await modifyElectronJSFile();
+    const mainJS = await buildMainJS(WindowOptionsFile === JSFile ? windowJS : undefined);
+    const implJS = WindowOptionsFile === JSFile ? undefined : windowJS;
+
+    checkPatchedJS(JSFile, mainJS);
+    if (implJS !== undefined) checkPatchedJS(WindowOptionsFile, implJS);
+
+    return { backups, mainJS, implJS };
+  }
+
+  /**
+   * @param {StagedFileWriter} [sharedWriter] - Flushed by the caller when given
+   * @param {Awaited<ReturnType<typeof prepareInstall>>} [prepared] - Update
+   *   prepares before it unpatches, so passes the result in.
+   */
+  async function Install(sharedWriter, prepared) {
 
     if (osType === 'unknown') {
       vscode.window.showInformationMessage(localize('messages.unsupported'));
@@ -1509,32 +1542,14 @@ function activate(context) {
 
     try {
       await ensureMirrorIfNeeded();
-      await fs.stat(JSFile);
-      await fs.stat(HTMLFile);
-      const pristineBackups = backups ?? await planBackups();
-
-      // Normally main.js is both the Electron main entry and the workbench
-      // main, so both patches have to land on a single in-memory copy. An
-      // elevated writer stages its writes to temp files, so re-reading the file
-      // between them would return the pristine original and silently drop the
-      // window options — leaving a patched but non-transparent window.
-      // uninstallJS does the same for teardown. On 1.140+ the window is created
-      // in mainImpl.js instead, so the two patches go to two different files.
-      const windowJS = await modifyElectronJSFile();
-      const mainJS = await buildMainJS(WindowOptionsFile === JSFile ? windowJS : undefined);
-      const implJS = WindowOptionsFile === JSFile ? undefined : windowJS;
-
-      // Both are checked before anything is written, so a refusal leaves the
-      // editor exactly as it was.
-      checkPatchedJS(JSFile, mainJS);
-      if (implJS !== undefined) checkPatchedJS(WindowOptionsFile, implJS);
+      const { backups, mainJS, implJS } = prepared ?? await prepareInstall();
 
       if (osType === 'win10') {
         await installRuntimeWin(writer);
       } else {
         await installRuntime(writer);
       }
-      for (const { file, content } of pristineBackups) {
+      for (const { file, content } of backups) {
         await writer.writeFile(file, content, 'utf-8');
       }
       await writer.writeFile(JSFile, mainJS, 'utf-8');
@@ -1701,14 +1716,14 @@ function activate(context) {
     const writer = new StagedFileWriter(needsElevation);
     await writer.init();
 
-    // Planned before anything is unpatched; see planBackups.
-    let backups;
+    // Prepared before anything is unpatched; see prepareInstall.
+    let prepared;
 
     try {
       await ensureMirrorIfNeeded();
-      backups = await planBackups();
+      prepared = await prepareInstall();
       await Uninstall(false, writer, true);
-      await Install(writer, backups);
+      await Install(writer, prepared);
       // Flush all file changes at once, then apply settings only on success
       await writer.flush();
       await applyPostInstallSettings();
@@ -1720,7 +1735,7 @@ function activate(context) {
         await elevatedWriter.init();
         try {
           await Uninstall(false, elevatedWriter, true);
-          await Install(elevatedWriter, backups);
+          await Install(elevatedWriter, prepared);
           await elevatedWriter.flush();
           await applyPostInstallSettings();
           enabledRestart();

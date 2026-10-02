@@ -382,6 +382,22 @@ describe('a patch that could stop the editor starting', () => {
     expect(errors().some((m) => m.includes('would no longer load'))).toBe(true);
     expect(colours()?.['editor.background']).toBeUndefined();
   });
+
+  it('refuses it on Reload too, before Reload unpatches anything', async () => {
+    // Reload unpatches and then re-patches. Without elevation the unpatch lands
+    // on disk at once, so checking only at re-patch time left a refused Reload
+    // with the editor unpatched, under colours that assume it isn't.
+    const { jsPath } = makeInstall();
+    activate();
+    await run('extension.installVibrancy');
+    fs.appendFileSync(jsPath, '\nconst experimentalDarkMode = 1;\n');
+    const installed = read(jsPath);
+
+    await run('extension.updateVibrancy');
+
+    expect(read(jsPath)).toBe(installed);
+    expect(errors().some((m) => m.includes('would no longer load'))).toBe(true);
+  });
 });
 
 describe('an editor Vibrancy has not been tested with', () => {

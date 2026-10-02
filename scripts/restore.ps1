@@ -26,9 +26,15 @@ if ($Filter -and (Test-Path -LiteralPath $Filter -PathType Container)) {
   $candidates = @(Get-Item -LiteralPath $Filter)
   $Filter = ''
 } else {
-  $roots = @($env:LOCALAPPDATA + '\Programs', $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }
+  $roots = @((Join-Path $env:LOCALAPPDATA 'Programs'), $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }
+  # Current VSCode keeps the app in a per-version folder next to Code.exe
+  # (Microsoft VS Code\<commit>\resources\app\out); older builds and some
+  # forks put it directly under the install folder.
   $candidates = foreach ($root in $roots) {
-    Get-ChildItem -Path (Join-Path $root '*\resources\app\out') -Directory -ErrorAction SilentlyContinue
+    foreach ($pattern in '*\resources\app\out', '*\*\resources\app\out') {
+      # Get-Item, not Get-ChildItem: the folders themselves, not their contents.
+      Get-Item -Path (Join-Path $root $pattern) -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer }
+    }
   }
 }
 
