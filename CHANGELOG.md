@@ -1,3 +1,11 @@
+# 1.3.1
+
+* Core:
+  * Vibrancy now checks that the editor can still load its files with Vibrancy's changes before applying them, and stops with an error instead of leaving an editor that won't start. That's what happened with Trae in issue [#201](https://github.com/illixion/vscode-vibrancy-continued/issues/201)
+  * Vibrancy keeps the original of each file it changes, so an editor that won't start after enabling it can be fixed without reinstalling. See [Restoring an editor that won't start](https://github.com/illixion/vscode-vibrancy-continued#restoring-an-editor-that-wont-start) for the restore scripts
+  * Editors that aren't on the supported list now get the effect when Vibrancy can tell exactly where its window change goes, with a warning that the editor is untested. Otherwise they're refused as before
+  * Fix Disable leaving Vibrancy's runtime folder behind when it needed administrator rights
+
 # 1.3.0
 
 * Core:
