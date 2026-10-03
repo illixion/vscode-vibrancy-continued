@@ -61,6 +61,20 @@ esac
 say "window options live in:" "$window_file"
 say "VSCode version:" "$(grep -o '"version":[[:space:]]*"[^"]*"' "$OUT/../package.json" 2>/dev/null | head -1 | cut -d'"' -f4)"
 say "writable without sudo:" "$([ -w "$MAIN" ] && echo yes || echo "NO (install needs elevation)")"
+# The patch embeds the extension's own path, which carries its version. An
+# installed version newer than the one that patched means the files predate the
+# last update (Reload Vibrancy, then fully quit and reopen, rewrites them).
+patched_by=$(grep -Eo 'illixion\.vscode-vibrancy-continued-[0-9][0-9.]*' "$MAIN" 2>/dev/null | head -1 | sed 's/.*-//')
+say "Vibrancy version that patched:" "${patched_by:-<none>}"
+installed=""
+for d in "$HOME"/.*/extensions/illixion.vscode-vibrancy-continued-*; do
+  [ -d "$d" ] || continue
+  editor_dir=${d#"$HOME"/}
+  # Open VSX installs carry a target suffix: ...-1.2.0-universal.
+  v=${d##*/illixion.vscode-vibrancy-continued-}
+  installed="$installed${installed:+, }${v%%-*} (~/${editor_dir%%/*})"
+done
+say "Vibrancy installed:" "${installed:-<not found>}"
 echo
 
 # Everything below is meaningless if Vibrancy isn't currently applied, so say so
