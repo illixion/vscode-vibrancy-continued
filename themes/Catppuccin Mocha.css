@@ -24,24 +24,11 @@
 
 .search-view .search-widget .input-box,
 .search-view .search-widget .input-box .monaco-inputbox,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title
-  .tabs-container
-  > .tab,
 .monaco-editor-background,
 .monaco-editor .margin,
 .monaco-workbench .part:not(.modal-editor-part) > .content,
 .monaco-workbench .editor > .content > .one-editor-silo.editor-one,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title,
+.monaco-workbench .part.editor :is(.editor-group-container, .one-editor-silo > .container) > .title,
 .monaco-workbench .part > .title,
 .monaco-workbench,
 .monaco-workbench .part,
@@ -49,16 +36,16 @@ body {
   background: var(--editor-background) !important;
 }
 
-.editor-group-container > .tabs {
+.editor-group-container > :is(.tabs, .title) {
   background-color: var(--base-background) !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   background-color: var(--base-background) !important;
 }
 
-.editor-group-container > .tabs .tab.active,
-.editor-group-container > .tabs .monaco-breadcrumbs {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab.active,
+.editor-group-container > :is(.tabs, .title) .monaco-breadcrumbs {
   background-color: rgba(108, 112, 134, 0.3) !important;
 }
 
@@ -97,14 +84,6 @@ body {
 }
 
 .extension-editor,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title
-  .tabs-container
-  > .tab.active,
 .preferences-editor > .preferences-header,
 .preferences-editor
   > .preferences-editors-container.side-by-side-preferences-editor
@@ -119,7 +98,7 @@ body {
   background-color: var(--base-background) !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   border: none !important;
 }
 
@@ -183,4 +162,13 @@ body {
 
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: var(--base-background) !important;
+}
+
+/* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
+:root {
+  --vibrancy-tab-strip-background: var(--base-background);
+  --vibrancy-tab-inactive-background: var(--base-background);
+  --vibrancy-tab-active-background: rgba(108, 112, 134, 0.3);
+  --vibrancy-sidebar-background: var(--base-background);
+  --vibrancy-pane-header-background: var(--base-background);
 }

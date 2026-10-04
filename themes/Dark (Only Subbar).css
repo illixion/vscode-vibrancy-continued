@@ -62,3 +62,8 @@ body {
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: transparent !important;
 }
+
+/* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
+:root {
+  --vibrancy-panel-pane-background: var(--vscode-panel-background);
+}

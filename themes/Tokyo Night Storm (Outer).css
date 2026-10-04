@@ -22,35 +22,24 @@ body {
   background: var(--vscode-editor-background) !important;
 }
 
-.editor-group-container > .tabs {
+.editor-group-container > :is(.tabs, .title) {
   background-color: transparent !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   background-color: transparent !important;
 }
 
-.editor-group-container > .tabs .tab.active,
-.editor-group-container > .tabs .monaco-breadcrumbs {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab.active,
+.editor-group-container > :is(.tabs, .title) .monaco-breadcrumbs {
   background-color: rgba(26, 27, 38, 0.3) !important;
-}
-
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title
-  .tabs-container
-  > .tab.active {
-  background: transparent !important;
 }
 
 .monaco-workbench .monaco-list-row:hover {
   background-color: rgba(26, 27, 38, 0.3) !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   border: none !important;
 }
 
@@ -89,4 +78,22 @@ body {
 .monaco-workbench.style-override .monaco-pane-view .pane,
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: transparent !important;
+}
+
+/* The editor, panel and status bar remain opaque in the Outer theme. */
+.monaco-workbench .part.panel {
+  background: var(--vscode-panel-background) !important;
+}
+
+.monaco-workbench .part.statusbar {
+  background: var(--vscode-statusBar-background) !important;
+}
+
+/* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
+:root {
+  --vibrancy-tab-strip-background: transparent;
+  --vibrancy-tab-inactive-background: transparent;
+  --vibrancy-tab-active-background: rgba(26, 27, 38, 0.3);
+  --vibrancy-sidebar-background: transparent;
+  --vibrancy-panel-pane-background: var(--vscode-panel-background);
 }

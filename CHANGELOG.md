@@ -1,3 +1,8 @@
+# Unreleased
+
+* Themes:
+  * Adapt all bundled themes to VSCode Insiders 1.141's Modern UI. Tab fills, close-button surfaces, pinned tabs and connected-tab edges now keep the theme's translucency while retaining VSCode's rounded shapes, borders and interaction indicators. Sidebar and panel panes also support the new `.modern-ui` rules, preserving opaque regions in Only Subbar and Outer themes
+
 # 1.4.0
 
 * Core:

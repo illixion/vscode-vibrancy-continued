@@ -21,7 +21,7 @@
 .monaco-editor .margin,
 .monaco-workbench .part:not(.modal-editor-part)>.content,
 .monaco-workbench .editor>.content>.one-editor-silo.editor-one,
-.monaco-workbench .part.editor>.content>.one-editor-silo>.container>.title,
+.monaco-workbench .part.editor :is(.editor-group-container, .one-editor-silo > .container) > .title,
 .monaco-workbench .part>.title,
 .monaco-workbench,
 .monaco-workbench .part,
@@ -109,4 +109,9 @@ body {
 .monaco-workbench.style-override .monaco-pane-view .pane,
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: transparent !important;
+}
+
+/* Leave tab colours to VSCode; only the sidebar surface is theme-specific. */
+:root {
+  --vibrancy-sidebar-background: rgba(37, 37, 38, 0.3);
 }
