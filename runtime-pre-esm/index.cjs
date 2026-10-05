@@ -8,6 +8,7 @@ const createDiagnostics = require('./diagnostics.cjs');
 /**
  * @type {{
  *  os: string,
+ *  macWindowButtons?: boolean,
  *  config: {
  *    type:  "auto" | "acrylic" | "transparent" | "under-window" | "fullscreen-ui" | "titlebar" | "selection" | "menu" | "popover" | "sidebar" | "content" | "header" | "hud" | "sheet" | "tooltip" | "under-page" | "window" | "appearance-based" | "dark" | "ultra-dark" | "light" | "medium-light",
  *    opacity: number,
@@ -223,6 +224,14 @@ electron.app.on('browser-window-created', (_, window) => {
       window.setBounds({
         width,
       });
+    }
+
+    // The window is borderless under VSCode's native title bar (see
+    // isCustomTitleBarForcedNative in the extension), which drops the traffic
+    // lights. Electron can show them on a frameless window, and the workbench's
+    // own title bar leaves room for them.
+    if (app.os === 'macos' && app.macWindowButtons && typeof window.setWindowButtonVisibility === 'function') {
+      window.setWindowButtonVisibility(true);
     }
 
     injectHTML(window);

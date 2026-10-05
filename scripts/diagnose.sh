@@ -118,6 +118,11 @@ for k in type windowMode windowControlsStyle forceFramelessWindow disableFramele
   v=$(printf '%s' "$CFG" | grep -Eo "\"$k\":\"?[A-Za-z0-9._-]*\"?" | head -1 | cut -d: -f2- | tr -d '"')
   say "$k:" "${v:-<not found>}"
 done
+# Set when nativeFullScreen=false forced the native title bar: the window stays
+# borderless, frame options in the literal, and the runtime restores the
+# traffic lights. Older Vibrancy versions don't write it.
+v=$(grep -Eo '"macWindowButtons":(true|false)' "$MAIN" 2>/dev/null | head -1 | cut -d: -f2)
+say "macWindowButtons:" "${v:-<not found>}"
 echo
 
 echo "--- 3. CSP (workbench.html) ---"

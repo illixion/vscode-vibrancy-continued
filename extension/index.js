@@ -9,6 +9,7 @@ var {
   resolveEffectiveWindowMode,
   resolveWindowMode,
   resolveWindowControlsStyle,
+  isCustomTitleBarForcedNative,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -687,6 +688,62 @@ function activate(context) {
    * patched the same file in memory can fold this transform into that copy
    * instead of re-reading it (see Install).
    */
+  /**
+   * Whether this macOS window keeps a borderless window under VSCode's native
+   * title bar, with the traffic lights restored by the runtime. See
+   * isCustomTitleBarForcedNative.
+   */
+  function macForcedNativeTitleBar() {
+    const win = vscode.workspace.getConfiguration('window');
+    return isCustomTitleBarForcedNative({
+      platform: process.platform,
+      titleBarStyle: win.get('titleBarStyle'),
+      nativeFullScreen: win.get('nativeFullScreen'),
+      nativeTabs: win.get('nativeTabs'),
+      customTitleBarVisibility: win.get('customTitleBarVisibility'),
+    });
+  }
+
+  /**
+   * Offer a reload when the window.* settings no longer match what was
+   * installed (see macForcedNativeTitleBar).
+   *
+   * Those settings only take effect after VSCode restarts, and VSCode prompts
+   * for that restart itself, so a prompt of ours at the time of the change
+   * would compete with it and vanish with the window. Comparing at startup
+   * catches the change once the restart has happened, which is also the first
+   * moment the stale patch is visible.
+   *
+   * Asks once per mismatch, not once per window: every window activates the
+   * extension, and they share globalState.
+   */
+  async function checkMacWindowButtonsDrift() {
+    const PROMPTED_KEY = 'macWindowButtonsPrompted';
+    let installed;
+    try {
+      const match = /"macWindowButtons":(true|false)/.exec(await fs.readFile(JSFile, 'utf-8'));
+      // Not installed, or installed by a version that didn't record it.
+      if (!match) return;
+      installed = match[1] === 'true';
+    } catch {
+      return;
+    }
+
+    const wanted = macForcedNativeTitleBar();
+    if (installed === wanted) {
+      if (context.globalState.get(PROMPTED_KEY) !== undefined) await context.globalState.update(PROMPTED_KEY, undefined);
+      return;
+    }
+    if (context.globalState.get(PROMPTED_KEY) === wanted) return;
+    await context.globalState.update(PROMPTED_KEY, wanted);
+
+    const msg = await vscode.window.showInformationMessage(
+      localize('messages.windowSettingsChanged'),
+      { title: localize('messages.reloadIde') },
+    );
+    if (msg) await runExclusive(() => Update());
+  }
+
   async function buildMainJS(baseJS) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
@@ -701,6 +758,10 @@ function activate(context) {
     const injectData = {
       os: osType,
       win11: isWindows11,
+      // The window is borderless under the native title bar, so the runtime
+      // shows the traffic lights again. Harmless on a framed window, where
+      // they're already showing.
+      macWindowButtons: macForcedNativeTitleBar(),
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
@@ -871,6 +932,7 @@ function activate(context) {
     });
     const frameCtx = { ...platformCtx, windowMode };
     const { frameless, transparent } = resolveWindowMode(frameCtx);
+    const nativeTitleBarFrameless = macForcedNativeTitleBar();
 
     // Linux has no native vibrancy material — the effect *is* the window's
     // transparency, which only a frameless window gets. So a framed window
@@ -888,7 +950,7 @@ function activate(context) {
     if (!knownEditors.includes(vscode.env.appName)) {
       if (frameless && patchSafety.hasUnambiguousWindowAnchor(ElectronJS, { isMacos: osType === 'macos' })) {
         vscode.window.showWarningMessage(localize('messages.untestedEditor').replace(/%1/g, vscode.env.appName));
-        return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
+        return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent, nativeTitleBarFrameless });
       }
       if (frameless) {
         // A frameless result on an unsupported editor has two causes with very
@@ -907,7 +969,7 @@ function activate(context) {
       return;
     }
 
-    return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
+    return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent, nativeTitleBarFrameless });
   }
 
   async function installHTML(writer) {
@@ -1844,6 +1906,11 @@ function activate(context) {
   // settings.json to revert, and nothing in activation depends on the outcome.
   healStaleSettingsPath()
     .catch((err) => console.error('Vibrancy: failed to correct the recorded settings.json path:', err));
+
+  if (process.platform === 'darwin' && !testMode) {
+    checkMacWindowButtonsDrift()
+      .catch((err) => console.error('Vibrancy: failed to check the window settings against the install:', err));
+  }
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
 

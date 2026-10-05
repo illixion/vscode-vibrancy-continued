@@ -4,6 +4,7 @@ const os = require('os');
 // Makes require('vscode') resolvable for the extension too; see the helper.
 const vscode = require('../helpers/vscode-host');
 const { getConfigDir } = require('../../extension/file-transforms');
+const localize = require('../../extension/i18n');
 
 /**
  * Drives extension/index.js the way VSCode does — activate(), then the
@@ -219,6 +220,56 @@ describe('Enable on 1.140+, where mainImpl.js creates the window', () => {
     const config = JSON.parse(read(path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json')));
     expect(config.jsPath).toBe(jsPath);
     expect(config.electronJsPath).toBe(implPath);
+  });
+
+  // The main-process half of isCustomTitleBarForcedNative: the runtime only
+  // restores the traffic lights when main.js tells it to.
+  it.runIf(process.platform === 'darwin')('tells the runtime to restore the traffic lights when nativeFullScreen is off', async () => {
+    const { jsPath } = makeInstall({ mainImpl: true });
+    activate({ settings: { 'window.nativeFullScreen': false } });
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toContain('"macWindowButtons":true');
+  });
+
+  it('leaves the traffic lights to VSCode by default', async () => {
+    const { jsPath } = makeInstall({ mainImpl: true });
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toContain('"macWindowButtons":false');
+  });
+
+  // window.nativeFullScreen only takes effect after VSCode's own restart, which
+  // would close any prompt shown at the time of the change. So the mismatch is
+  // caught at the next startup instead, once, however many windows activate.
+  it.runIf(process.platform === 'darwin')('offers a reload once after a restart changed the window settings', async () => {
+    makeInstall({ mainImpl: true });
+    activate();
+    await run('extension.installVibrancy');
+
+    const prompts = () => vscode.__state.messages
+      .filter((m) => m.message === localize('messages.windowSettingsChanged')).length;
+    const settled = () => new Promise((resolve) => setTimeout(resolve, 50));
+    const restartWith = async (settings) => {
+      const globalState = new Map(vscode.__state.globalState);
+      activate({ settings });
+      vscode.__state.globalState = globalState;
+      await settled();
+    };
+
+    await restartWith({ 'window.nativeFullScreen': false });
+    expect(prompts()).toBe(1);
+
+    // A second window, or a second restart, doesn't ask again.
+    await restartWith({ 'window.nativeFullScreen': false });
+    expect(prompts()).toBe(0);
+
+    // Nothing to ask when the install still matches.
+    await restartWith({});
+    expect(prompts()).toBe(0);
   });
 
   it('is undone byte for byte by Disable', async () => {

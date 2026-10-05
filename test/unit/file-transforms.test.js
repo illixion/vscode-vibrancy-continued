@@ -5,6 +5,7 @@ const {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  isCustomTitleBarForcedNative,
   resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
@@ -150,6 +151,38 @@ describe('resolveEffectiveWindowMode', () => {
 });
 
 // --- resolveWindowControlsStyle ---
+
+describe('isCustomTitleBarForcedNative', () => {
+  const mac = { platform: 'darwin' };
+
+  it('is true when nativeFullScreen=false forces the native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false })).toBe(true);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, titleBarStyle: 'custom' })).toBe(true);
+  });
+
+  it('is false with the defaults, where VSCode uses its custom title bar', () => {
+    expect(isCustomTitleBarForcedNative(mac)).toBe(false);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: true })).toBe(false);
+  });
+
+  it('respects an explicit native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, titleBarStyle: 'native' })).toBe(false);
+  });
+
+  it('keeps the frame for native tabs, whose tab bar lives in the native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, nativeTabs: true })).toBe(false);
+  });
+
+  it('keeps the frame when the workbench draws no title bar for the buttons', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, customTitleBarVisibility: 'never' })).toBe(false);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, customTitleBarVisibility: 'windowed' })).toBe(true);
+  });
+
+  it('only applies on macOS', () => {
+    expect(isCustomTitleBarForcedNative({ platform: 'win32', nativeFullScreen: false })).toBe(false);
+    expect(isCustomTitleBarForcedNative({ platform: 'linux', nativeFullScreen: false })).toBe(false);
+  });
+});
 
 describe('resolveWindowControlsStyle', () => {
   it("auto maps to 'custom' on Linux and Windows", () => {
@@ -411,6 +444,53 @@ describe('injectElectronOptions', () => {
       expect(result).toContain('frame:false,transparent:true,experimentalDarkMode');
       expect(result).not.toContain('c.frame=false');
       expect(result).not.toContain('c.transparent=');
+    });
+
+    // When nativeFullScreen=false forces the native title bar (see
+    // isCustomTitleBarForcedNative), the options go in the literal, which
+    // applies whichever title bar VSCode picks, so that window is borderless too.
+    describe('with nativeTitleBarFrameless', () => {
+      const opts = { frameless: true, isMacos: true, nativeTitleBarFrameless: true };
+
+      it('puts the frame options in the literal instead of the custom title bar branch', () => {
+        const result = injectElectronOptions(vscodeBuilder, opts);
+        expect(result).toContain('visualEffectState:"active",frame:false,transparent:true,experimentalDarkMode');
+        expect(result).not.toContain('c.frame=false');
+        expect(result).not.toContain('c.transparent=');
+      });
+
+      it('honours the opaque frameless mode', () => {
+        const result = injectElectronOptions(vscodeBuilder, { ...opts, transparent: false });
+        expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
+      });
+
+      it('is removed byte for byte', () => {
+        const result = injectElectronOptions(vscodeBuilder, opts);
+        expect(removeElectronOptions(result)).toBe(vscodeBuilder);
+      });
+
+      it('does not double-inject', () => {
+        const first = injectElectronOptions(vscodeBuilder, opts);
+        expect(injectElectronOptions(first, opts)).toBe(first);
+      });
+
+      it('switches cleanly in both directions on an already-patched file', () => {
+        const branch = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true });
+        const literal = injectElectronOptions(branch, opts);
+        expect(literal).toBe(injectElectronOptions(vscodeBuilder, opts));
+        expect(injectElectronOptions(literal, { frameless: true, isMacos: true })).toBe(branch);
+      });
+
+      it('does nothing when the window is framed', () => {
+        const result = injectElectronOptions(vscodeBuilder, { ...opts, frameless: false });
+        expect(result).not.toContain('frame:false');
+        expect(result).not.toContain('.frame=false');
+      });
+
+      it('is ignored off macOS', () => {
+        const result = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: false, nativeTitleBarFrameless: true });
+        expect(result).toBe(injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: false }));
+      });
     });
   });
 });

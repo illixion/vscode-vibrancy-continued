@@ -178,6 +178,12 @@ Controls how the VSCode window frame and transparency are applied. **Leave this 
 
 > The window's *transparency* is not the same as the vibrancy effect: vibrancy shows fine on an **opaque** window too (macOS via the native effect view, Windows via the DWM material / accent on the window). On Windows we use an opaque window so Aero Snap keeps working (a transparent window there is a *layered* window, which the OS excludes from snapping). On macOS we use a transparent window because an opaque one leaves stale "ghost" pixels in the file tree on some layouts — and its power cost is negligible (the GPU difference is a matter of utilization %, not actual battery draw).
 
+#### macOS: `window.nativeFullScreen` and the native title bar
+
+VSCode uses its native title bar on macOS when `window.titleBarStyle` is `native`, and also when `window.nativeFullScreen` is `false` or `window.nativeTabs` is `true`, whatever `titleBarStyle` says. Vibrancy keeps an opaque window with the standard frame under the native title bar, because macOS drops the traffic-light buttons from a borderless window.
+
+The exception is `nativeFullScreen: false`, which doesn't mean you asked for the native title bar. There Vibrancy keeps the borderless, transparent window and shows the traffic lights itself. VSCode still draws its own title bar in that case, so the window drags as usual. It doesn't apply if you also set `window.titleBarStyle` to `native`, `window.nativeTabs` to `true` (native tabs live in the native title bar), or `window.customTitleBarVisibility` to `never` (no title bar for the buttons to sit in). These settings take effect when VSCode restarts, which it offers to do itself. After that restart, Vibrancy offers to reload if the window needs updating; accept it and restart once more.
+
 > **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless-transparent` on macOS and Linux, `frameless` (opaque) on Windows and with Windows 11 Mica/Acrylic materials. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 
 #### Disable Theme Fixes (`vscode_vibrancy.disableThemeFixes`)
