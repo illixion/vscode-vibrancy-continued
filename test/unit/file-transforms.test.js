@@ -412,6 +412,53 @@ describe('injectElectronOptions', () => {
       expect(result).not.toContain('c.frame=false');
       expect(result).not.toContain('c.transparent=');
     });
+
+    // Opt-in (vscode_vibrancy.macFramelessNativeTitleBar): the options go in the
+    // literal, which applies whichever title bar VSCode picks, so a native title
+    // bar window is borderless too.
+    describe('with nativeTitleBarFrameless', () => {
+      const opts = { frameless: true, isMacos: true, nativeTitleBarFrameless: true };
+
+      it('puts the frame options in the literal instead of the custom title bar branch', () => {
+        const result = injectElectronOptions(vscodeBuilder, opts);
+        expect(result).toContain('visualEffectState:"active",frame:false,transparent:true,experimentalDarkMode');
+        expect(result).not.toContain('c.frame=false');
+        expect(result).not.toContain('c.transparent=');
+      });
+
+      it('honours the opaque frameless mode', () => {
+        const result = injectElectronOptions(vscodeBuilder, { ...opts, transparent: false });
+        expect(result).toContain('frame:false,transparent:false,experimentalDarkMode');
+      });
+
+      it('is removed byte for byte', () => {
+        const result = injectElectronOptions(vscodeBuilder, opts);
+        expect(removeElectronOptions(result)).toBe(vscodeBuilder);
+      });
+
+      it('does not double-inject', () => {
+        const first = injectElectronOptions(vscodeBuilder, opts);
+        expect(injectElectronOptions(first, opts)).toBe(first);
+      });
+
+      it('switches cleanly in both directions on an already-patched file', () => {
+        const branch = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: true });
+        const literal = injectElectronOptions(branch, opts);
+        expect(literal).toBe(injectElectronOptions(vscodeBuilder, opts));
+        expect(injectElectronOptions(literal, { frameless: true, isMacos: true })).toBe(branch);
+      });
+
+      it('does nothing when the window is framed', () => {
+        const result = injectElectronOptions(vscodeBuilder, { ...opts, frameless: false });
+        expect(result).not.toContain('frame:false');
+        expect(result).not.toContain('.frame=false');
+      });
+
+      it('is ignored off macOS', () => {
+        const result = injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: false, nativeTitleBarFrameless: true });
+        expect(result).toBe(injectElectronOptions(vscodeBuilder, { frameless: true, isMacos: false }));
+      });
+    });
   });
 });
 

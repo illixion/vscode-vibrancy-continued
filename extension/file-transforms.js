@@ -385,10 +385,13 @@ function resolveWindowMode({
 /**
  * Inject Electron BrowserWindow options (frame, transparent, visualEffectState).
  * @param {string} electronJS - Electron main.js content
- * @param {{ frameless: boolean, isMacos: boolean, transparent?: boolean }} opts
+ * `nativeTitleBarFrameless` is the macOS opt-in (vscode_vibrancy.macFramelessNativeTitleBar)
+ * for a borderless window under VSCode's native title bar too; see
+ * injectMacFramelessWindow for why that is not the default.
+ * @param {{ frameless: boolean, isMacos: boolean, transparent?: boolean, nativeTitleBarFrameless?: boolean }} opts
  * @returns {string} Modified content
  */
-function injectElectronOptions(electronJS, { frameless, isMacos, transparent = true }) {
+function injectElectronOptions(electronJS, { frameless, isMacos, transparent = true, nativeTitleBarFrameless = false }) {
   // Clear previously injected options first so the result depends only on the
   // current settings, not on install history. A plain re-install (Install, not
   // Update) never runs removeElectronOptions, so without this: switching
@@ -407,7 +410,7 @@ function injectElectronOptions(electronJS, { frameless, isMacos, transparent = t
   // Add frameless + (optionally) transparent window options. The caller passes
   // transparent:false for opaque modes (Windows snapping, Win11 DWM materials).
   if (frameless) {
-    result = isMacos
+    result = isMacos && !nativeTitleBarFrameless
       ? injectMacFramelessWindow(result, transparent)
       : injectFramelessWindow(result, transparent);
   }

@@ -242,6 +242,11 @@
           ],
           "default": "auto"
         },
+        "vscode_vibrancy.macFramelessNativeTitleBar": {
+          "description": "%configuration.macFramelessNativeTitleBar.description%",
+          "type": "boolean",
+          "default": false
+        },
         "vscode_vibrancy.windowControlsStyle": {
           "description": "%configuration.windowControlsStyle.description%",
           "type": "string",

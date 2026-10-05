@@ -871,6 +871,7 @@ function activate(context) {
     });
     const frameCtx = { ...platformCtx, windowMode };
     const { frameless, transparent } = resolveWindowMode(frameCtx);
+    const nativeTitleBarFrameless = config.macFramelessNativeTitleBar === true;
 
     // Linux has no native vibrancy material — the effect *is* the window's
     // transparency, which only a frameless window gets. So a framed window
@@ -888,7 +889,7 @@ function activate(context) {
     if (!knownEditors.includes(vscode.env.appName)) {
       if (frameless && patchSafety.hasUnambiguousWindowAnchor(ElectronJS, { isMacos: osType === 'macos' })) {
         vscode.window.showWarningMessage(localize('messages.untestedEditor').replace(/%1/g, vscode.env.appName));
-        return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
+        return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent, nativeTitleBarFrameless });
       }
       if (frameless) {
         // A frameless result on an unsupported editor has two causes with very
@@ -907,7 +908,7 @@ function activate(context) {
       return;
     }
 
-    return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent });
+    return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent, nativeTitleBarFrameless });
   }
 
   async function installHTML(writer) {
