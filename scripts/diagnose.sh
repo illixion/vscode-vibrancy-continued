@@ -61,10 +61,12 @@ esac
 say "window options live in:" "$window_file"
 say "VSCode version:" "$(grep -o '"version":[[:space:]]*"[^"]*"' "$OUT/../package.json" 2>/dev/null | head -1 | cut -d'"' -f4)"
 say "writable without sudo:" "$([ -w "$MAIN" ] && echo yes || echo "NO (install needs elevation)")"
-# The patch embeds the extension's own path, which carries its version. An
-# installed version newer than the one that patched means the files predate the
-# last update (Reload Vibrancy, then fully quit and reopen, rewrites them).
-patched_by=$(grep -Eo 'illixion\.vscode-vibrancy-continued-[0-9][0-9.]*' "$MAIN" 2>/dev/null | head -1 | sed 's/.*-//')
+# The patch records the version that made it. An installed version newer than
+# that means the files predate the last update (Reload Vibrancy, then fully quit
+# and reopen, rewrites them). Patches before 1.4.0 carry it only in the
+# extension path they embed, so fall back to that.
+patched_by=$(grep -Eo '"vibrancyVersion":"[0-9][0-9.]*"' "$MAIN" 2>/dev/null | head -1 | cut -d'"' -f4)
+[ -n "$patched_by" ] || patched_by=$(grep -Eo 'illixion\.vscode-vibrancy-continued-[0-9][0-9.]*' "$MAIN" 2>/dev/null | head -1 | sed 's/.*-//')
 say "Vibrancy version that patched:" "${patched_by:-<none>}"
 installed=""
 for d in "$HOME"/.*/extensions/illixion.vscode-vibrancy-continued-*; do

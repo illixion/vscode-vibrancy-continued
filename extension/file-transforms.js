@@ -46,19 +46,27 @@ const MARKER_REGEX = /\n\/\* !! VSCODE-VIBRANCY-START !! \*\/[\s\S]*?\/\* !! VSC
 
 /**
  * Inject vibrancy runtime markers into VSCode's main.js.
+ *
+ * The runtime loads whether or not the extension is still installed. It is
+ * copied into the install, so it doesn't need the extension folder. And the
+ * window options in mainImpl.js apply regardless, so skipping the runtime
+ * would leave a transparent window with no effect behind it. A guard that
+ * skipped it once the extension folder was gone would do exactly that after
+ * every extension update, because VSCode deletes the old version's folder, the
+ * one the patch was made from. Uninstalling reverts the files through the
+ * uninstall hook instead.
+ *
  * @param {string} js - Original main.js content
- * @param {string} base - Base directory path for existence check
  * @param {object} injectData - Data to inject as global.vscode_vibrancy_plugin
  * @param {string} runtimePath - Absolute path to the runtime entry file (index.cjs)
  * @returns {string} Modified JS content
  */
-function generateNewJS(js, base, injectData, runtimePath) {
+function generateNewJS(js, injectData, runtimePath) {
   // Remove existing injection if present
   const cleaned = js.replace(MARKER_REGEX, '');
 
   return cleaned
     + `\n${VIBRANCY_START}\n;(function(){\n`
-    + `if (!import('fs').then(fs => fs.existsSync(${JSON.stringify(base)}))) return;\n`
     + `global.vscode_vibrancy_plugin = ${JSON.stringify(injectData)}; try{ import("${pathToFileURL(runtimePath)}"); } catch (err) {console.error(err)}\n`
     + `})()\n${VIBRANCY_END}`;
 }

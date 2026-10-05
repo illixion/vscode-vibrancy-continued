@@ -157,6 +157,8 @@ describe('Enable', () => {
     await run('extension.installVibrancy');
 
     expect(read(jsPath)).toContain('VSCODE-VIBRANCY-START');
+    // What scripts/diagnose.sh reports as the version that patched.
+    expect(read(jsPath)).toContain(`"vibrancyVersion":"${require('../../package.json').version}"`);
     expect(read(htmlPath)).not.toBe(read(path.join(FIXTURES, 'workbench.html')));
     expect(colours()).toMatchObject({ 'editor.background': expect.stringMatching(/^#[0-9a-f]{8}$/i) });
   });

@@ -756,6 +756,8 @@ function activate(context) {
     const imports = await generateImports(config);
 
     const injectData = {
+      // Read back by scripts/diagnose.sh to tell a stale patch from a current one.
+      vibrancyVersion: context.extension.packageJSON.version,
       os: osType,
       win11: isWindows11,
       // The window is borderless under the native title bar, so the runtime
@@ -769,8 +771,7 @@ function activate(context) {
       diagnosticsPath: testMode ? path.join(path.dirname(testModeFile), 'test-diagnostics.jsonl') : null,
     };
 
-    const base = __filename;
-    return generateNewJS(JS, base, injectData);
+    return generateNewJS(JS, injectData);
   }
 
   /**
@@ -877,8 +878,8 @@ function activate(context) {
     return imports;
   }
 
-  function generateNewJS(JS, base, injectData) {
-    return _generateNewJS(JS, base, injectData, path.join(runtimeDir, "index.cjs"));
+  function generateNewJS(JS, injectData) {
+    return _generateNewJS(JS, injectData, path.join(runtimeDir, "index.cjs"));
   }
 
   // BrowserWindow option modification

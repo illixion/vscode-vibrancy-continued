@@ -45,7 +45,7 @@ describe('install/uninstall round-trip', () => {
       const injectData = { theme: 'Default Dark', os: 'macos' };
 
       // 1. Inject JS markers
-      const newMain = generateNewJS(originalMain, '/app', injectData, runtimePath);
+      const newMain = generateNewJS(originalMain, injectData, runtimePath);
       fs.writeFileSync(mainPath, newMain);
       expect(fs.readFileSync(mainPath, 'utf-8')).toContain('VSCODE-VIBRANCY-START');
 
@@ -89,7 +89,7 @@ describe('install/uninstall round-trip', () => {
 
       // --- Install (both JS injection and electron options on same file) ---
       let content = original;
-      content = generateNewJS(content, '/app', { theme: 'dark' }, '/runtime/index.mjs');
+      content = generateNewJS(content, { theme: 'dark' }, '/runtime/index.mjs');
       content = injectElectronOptions(content, { frameless: true, isMacos: true });
       fs.writeFileSync(mergedPath, content);
 
@@ -123,9 +123,9 @@ describe('install/uninstall round-trip', () => {
       const original = fs.readFileSync(mergedPath, 'utf-8');
 
       // Install twice
-      let content = generateNewJS(original, '/app', { v: 1 }, '/runtime/index.mjs');
+      let content = generateNewJS(original, { v: 1 }, '/runtime/index.mjs');
       content = injectElectronOptions(content, { frameless: true, isMacos: false });
-      content = generateNewJS(content, '/app', { v: 2 }, '/runtime/index.mjs');
+      content = generateNewJS(content, { v: 2 }, '/runtime/index.mjs');
       content = injectElectronOptions(content, { frameless: true, isMacos: false });
 
       // Should have exactly one set of markers

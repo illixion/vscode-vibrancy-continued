@@ -35,7 +35,7 @@ const cursorWindowBuilder = loadFixture('cursor-window-builder.js');
 describe('generateNewJS', () => {
   it('injects markers into clean JS', () => {
     const original = loadFixture('main.js');
-    const result = generateNewJS(original, '/app', { theme: 'dark' }, '/runtime/index.mjs');
+    const result = generateNewJS(original, { theme: 'dark' }, '/runtime/index.mjs');
     expect(result).toContain(VIBRANCY_START);
     expect(result).toContain(VIBRANCY_END);
     expect(result).toContain('global.vscode_vibrancy_plugin');
@@ -44,8 +44,8 @@ describe('generateNewJS', () => {
 
   it('replaces existing injection (idempotent)', () => {
     const original = loadFixture('main.js');
-    const first = generateNewJS(original, '/app', { v: 1 }, '/runtime/index.mjs');
-    const second = generateNewJS(first, '/app', { v: 2 }, '/runtime/index.mjs');
+    const first = generateNewJS(original, { v: 1 }, '/runtime/index.mjs');
+    const second = generateNewJS(first, { v: 2 }, '/runtime/index.mjs');
 
     // Should have exactly one set of markers
     const startCount = (second.match(/VSCODE-VIBRANCY-START/g) || []).length;
@@ -59,9 +59,20 @@ describe('generateNewJS', () => {
   it('includes the correct runtime path as file URL', () => {
     const original = loadFixture('main.js');
     const runtimePath = path.resolve('/some/path/index.mjs');
-    const result = generateNewJS(original, '/app', {}, runtimePath);
+    const result = generateNewJS(original, {}, runtimePath);
     const { pathToFileURL } = require('url');
     expect(result).toContain(pathToFileURL(runtimePath).href);
+  });
+
+  // The patch once began with `if (!import('fs').then(...existsSync(extension
+  // path))) return;`. A Promise is always truthy, so it never returned, and
+  // that was the safe outcome: VSCode deletes the old extension folder on every
+  // update, and a guard that worked would have stopped the runtime loading
+  // while mainImpl.js kept the window transparent.
+  it('loads the runtime without checking the extension folder still exists', () => {
+    const result = generateNewJS(loadFixture('main.js'), {}, '/runtime/index.cjs');
+    expect(result).not.toContain('existsSync');
+    expect(result).not.toMatch(/\)\s*return;/);
   });
 });
 
@@ -70,7 +81,7 @@ describe('generateNewJS', () => {
 describe('removeJSMarkers', () => {
   it('removes injected markers', () => {
     const original = loadFixture('main.js');
-    const injected = generateNewJS(original, '/app', {}, '/runtime/index.mjs');
+    const injected = generateNewJS(original, {}, '/runtime/index.mjs');
     const { result, hadMarkers } = removeJSMarkers(injected);
     expect(hadMarkers).toBe(true);
     expect(result).toBe(original);
@@ -85,7 +96,7 @@ describe('removeJSMarkers', () => {
 
   it('round-trips: inject then remove produces original', () => {
     const original = loadFixture('main-merged.js');
-    const injected = generateNewJS(original, '/app', { foo: 'bar' }, '/runtime/index.cjs');
+    const injected = generateNewJS(original, { foo: 'bar' }, '/runtime/index.cjs');
     const { result } = removeJSMarkers(injected);
     expect(result).toBe(original);
   });
