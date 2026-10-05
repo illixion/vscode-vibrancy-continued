@@ -1,3 +1,11 @@
+# 1.4.0
+
+* Core:
+  * macOS: keep the borderless, transparent window when `window.nativeFullScreen` is `false`. VSCode switches to its native title bar whenever that setting is off, whatever `window.titleBarStyle` says, so since 1.2.0 those windows got an opaque window with the standard frame. Vibrancy now keeps the window borderless and shows the traffic lights itself, and VSCode's own title bar still lets you drag the window. An explicit `titleBarStyle: native`, `nativeTabs: true` or `customTitleBarVisibility: never` keeps the framed window. After you change one of these settings and restart, Vibrancy offers to reload once (PR [#279](https://github.com/illixion/vscode-vibrancy-continued/pull/279))
+  * The diagnostic script now shows which Vibrancy version applied the current changes and which versions are installed, so an install that predates the last update is easy to spot
+* Contributors:
+  * [@gocasimiro](https://github.com/gocasimiro)
+
 # 1.3.1
 
 * Core:
