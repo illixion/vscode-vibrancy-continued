@@ -178,13 +178,11 @@ Controls how the VSCode window frame and transparency are applied. **Leave this 
 
 > The window's *transparency* is not the same as the vibrancy effect: vibrancy shows fine on an **opaque** window too (macOS via the native effect view, Windows via the DWM material / accent on the window). On Windows we use an opaque window so Aero Snap keeps working (a transparent window there is a *layered* window, which the OS excludes from snapping). On macOS we use a transparent window because an opaque one leaves stale "ghost" pixels in the file tree on some layouts — and its power cost is negligible (the GPU difference is a matter of utilization %, not actual battery draw).
 
-#### macOS: borderless window with the native title bar (`vscode_vibrancy.macFramelessNativeTitleBar`)
+#### macOS: `window.nativeFullScreen` and the native title bar
 
-By default, when VSCode uses its **native** title bar on macOS, Vibrancy keeps an opaque window with working traffic-light buttons (macOS draws no title bar on a transparent window, so the buttons would disappear). VSCode uses the native title bar when `window.titleBarStyle` is `native`, **or** when `window.nativeFullScreen` is `false` (VSCode 1.140 treats that as native whatever `titleBarStyle` says).
+VSCode uses its native title bar on macOS when `window.titleBarStyle` is `native`, and also when `window.nativeFullScreen` is `false` or `window.nativeTabs` is `true`, whatever `titleBarStyle` says. Vibrancy keeps an opaque window with the standard frame under the native title bar, because macOS drops the traffic-light buttons from a borderless window.
 
-Turn this on if you want the classic borderless look there instead: no title bar and no traffic lights, with the window transparent per `windowMode`. It only applies on macOS with a frameless `windowMode` (`auto` or `frameless-transparent`/`frameless`). You will have no title bar to drag, so move the window with a window manager or Cmd+drag. Run **Reload Vibrancy** and restart the editor after changing it.
-
-*boolean, default is false*
+The exception is `nativeFullScreen: false`, which doesn't mean you asked for the native title bar. There Vibrancy keeps the borderless, transparent window and shows the traffic lights itself. VSCode still draws its own title bar in that case, so the window drags as usual. It doesn't apply if you also set `window.titleBarStyle` to `native`, `window.nativeTabs` to `true` (native tabs live in the native title bar), or `window.customTitleBarVisibility` to `never` (no title bar for the buttons to sit in). After changing any of these, accept Vibrancy's reload prompt and restart the editor.
 
 > **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless-transparent` on macOS and Linux, `frameless` (opaque) on Windows and with Windows 11 Mica/Acrylic materials. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 

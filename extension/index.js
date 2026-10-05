@@ -9,6 +9,7 @@ var {
   resolveEffectiveWindowMode,
   resolveWindowMode,
   resolveWindowControlsStyle,
+  isCustomTitleBarForcedNative,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP: _patchCSP,
@@ -19,7 +20,7 @@ var {
   resolveManagedBgKeys,
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
-const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
+const { TITLEBAR_RESTORE_KEY, toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
 const {
   deriveProfileIdentity,
   evaluateUninstallOwnership,
@@ -687,6 +688,22 @@ function activate(context) {
    * patched the same file in memory can fold this transform into that copy
    * instead of re-reading it (see Install).
    */
+  /**
+   * Whether this macOS window keeps a borderless window under VSCode's native
+   * title bar, with the traffic lights restored by the runtime. See
+   * isCustomTitleBarForcedNative.
+   */
+  function macForcedNativeTitleBar() {
+    const win = vscode.workspace.getConfiguration('window');
+    return isCustomTitleBarForcedNative({
+      platform: process.platform,
+      titleBarStyle: win.get('titleBarStyle'),
+      nativeFullScreen: win.get('nativeFullScreen'),
+      nativeTabs: win.get('nativeTabs'),
+      customTitleBarVisibility: win.get('customTitleBarVisibility'),
+    });
+  }
+
   async function buildMainJS(baseJS) {
     const config = vscode.workspace.getConfiguration("vscode_vibrancy");
     const currentTheme = getCurrentTheme(config);
@@ -701,6 +718,10 @@ function activate(context) {
     const injectData = {
       os: osType,
       win11: isWindows11,
+      // The window is borderless under the native title bar, so the runtime
+      // shows the traffic lights again. Harmless on a framed window, where
+      // they're already showing.
+      macWindowButtons: macForcedNativeTitleBar(),
       config: config,
       theme: themeConfig,
       themeCSS: themeCSS,
@@ -871,7 +892,7 @@ function activate(context) {
     });
     const frameCtx = { ...platformCtx, windowMode };
     const { frameless, transparent } = resolveWindowMode(frameCtx);
-    const nativeTitleBarFrameless = config.macFramelessNativeTitleBar === true;
+    const nativeTitleBarFrameless = macForcedNativeTitleBar();
 
     // Linux has no native vibrancy material — the effect *is* the window's
     // transparency, which only a frameless window gets. So a framed window
@@ -1468,6 +1489,7 @@ function activate(context) {
     // them being mistaken for a user edit and popping the "config changed,
     // reload?" prompt.
     lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    lastForcedNative = macForcedNativeTitleBar();
   }
 
   /**
@@ -1847,12 +1869,20 @@ function activate(context) {
     .catch((err) => console.error('Vibrancy: failed to correct the recorded settings.json path:', err));
 
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+  // VSCode's own window.* settings decide whether the window is borderless
+  // under the native title bar, so a change there needs a reload too.
+  var lastForcedNative = macForcedNativeTitleBar();
 
   vscode.workspace.onDidChangeConfiguration(() => {
     if (operationInProgress) return;
+    // The macOS restart prompt flips window.titleBarStyle and back. Mid-toggle
+    // the flipped value reads as a real change, so wait for the restore.
+    if (context.globalState.get(TITLEBAR_RESTORE_KEY)) return;
     const newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
-    if (!deepEqual(lastConfig, newConfig)) {
+    const forcedNative = macForcedNativeTitleBar();
+    if (!deepEqual(lastConfig, newConfig) || forcedNative !== lastForcedNative) {
       lastConfig = newConfig;
+      lastForcedNative = forcedNative;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
       .then(async (msg) => {
           if (msg) {

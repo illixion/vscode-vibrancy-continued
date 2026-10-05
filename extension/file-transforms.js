@@ -383,11 +383,61 @@ function resolveWindowMode({
 }
 
 /**
+ * Whether VSCode on macOS uses the native title bar although the user left
+ * `window.titleBarStyle` on custom.
+ *
+ * VSCode returns "native" before it reads titleBarStyle when
+ * `window.nativeFullScreen` is false or `window.nativeTabs` is true (1.140's
+ * getTitleBarStyle, in both the main process and the workbench). Under the
+ * native title bar Vibrancy normally keeps a framed, opaque window, because a
+ * frameless one loses the traffic lights. For nativeFullScreen, that loses the
+ * borderless window for a setting that says nothing about the title bar, and
+ * the workbench still draws its own title bar there, so the window drags
+ * normally. So Vibrancy goes frameless anyway and the runtime brings the
+ * traffic lights back with setWindowButtonVisibility (macWindowButtons).
+ *
+ * The other cases stay framed:
+ *   - titleBarStyle "native" is an explicit choice of the native title bar.
+ *   - nativeTabs puts its tab bar in the native title bar, which a frameless
+ *     window doesn't have.
+ *   - customTitleBarVisibility "never" removes the workbench's title bar, and
+ *     with it the drag area and the space the traffic lights sit in.
+ *
+ * The workbench also hides that title bar when it would be empty (command
+ * center, layout controls and title-bar editor actions all off, activity bar
+ * on the side). That isn't modelled: it takes four settings that VSCode
+ * reshuffles between releases, and the defaults keep the title bar populated.
+ *
+ * @param {{
+ *   platform: NodeJS.Platform,
+ *   titleBarStyle?: string,
+ *   nativeFullScreen?: boolean,
+ *   nativeTabs?: boolean,
+ *   customTitleBarVisibility?: string,
+ * }} ctx - the user's `window.*` settings
+ * @returns {boolean}
+ */
+function isCustomTitleBarForcedNative({
+  platform,
+  titleBarStyle,
+  nativeFullScreen,
+  nativeTabs,
+  customTitleBarVisibility,
+}) {
+  return platform === 'darwin'
+    && nativeFullScreen === false
+    && nativeTabs !== true
+    && titleBarStyle !== 'native'
+    && customTitleBarVisibility !== 'never';
+}
+
+/**
  * Inject Electron BrowserWindow options (frame, transparent, visualEffectState).
  * @param {string} electronJS - Electron main.js content
- * `nativeTitleBarFrameless` is the macOS opt-in (vscode_vibrancy.macFramelessNativeTitleBar)
- * for a borderless window under VSCode's native title bar too; see
- * injectMacFramelessWindow for why that is not the default.
+ * `nativeTitleBarFrameless` puts the macOS frame options in the options literal,
+ * which applies under VSCode's native title bar too, instead of only on its
+ * custom title bar branch (see injectMacFramelessWindow, and
+ * isCustomTitleBarForcedNative for when that's wanted).
  * @param {{ frameless: boolean, isMacos: boolean, transparent?: boolean, nativeTitleBarFrameless?: boolean }} opts
  * @returns {string} Modified content
  */
@@ -759,6 +809,7 @@ module.exports = {
   resolveEffectiveWindowMode,
   resolveWindowMode,
   resolveWindowControlsStyle,
+  isCustomTitleBarForcedNative,
   injectElectronOptions,
   removeElectronOptions,
   patchCSP,

@@ -221,6 +221,26 @@ describe('Enable on 1.140+, where mainImpl.js creates the window', () => {
     expect(config.electronJsPath).toBe(implPath);
   });
 
+  // The main-process half of isCustomTitleBarForcedNative: the runtime only
+  // restores the traffic lights when main.js tells it to.
+  it.runIf(process.platform === 'darwin')('tells the runtime to restore the traffic lights when nativeFullScreen is off', async () => {
+    const { jsPath } = makeInstall({ mainImpl: true });
+    activate({ settings: { 'window.nativeFullScreen': false } });
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toContain('"macWindowButtons":true');
+  });
+
+  it('leaves the traffic lights to VSCode by default', async () => {
+    const { jsPath } = makeInstall({ mainImpl: true });
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toContain('"macWindowButtons":false');
+  });
+
   it('is undone byte for byte by Disable', async () => {
     const { jsPath, implPath } = makeInstall({ mainImpl: true });
     const originalJs = read(jsPath);

@@ -5,6 +5,7 @@ const {
   removeJSMarkers,
   resolveEffectiveWindowMode,
   resolveWindowMode,
+  isCustomTitleBarForcedNative,
   resolveWindowControlsStyle,
   injectElectronOptions,
   removeElectronOptions,
@@ -150,6 +151,38 @@ describe('resolveEffectiveWindowMode', () => {
 });
 
 // --- resolveWindowControlsStyle ---
+
+describe('isCustomTitleBarForcedNative', () => {
+  const mac = { platform: 'darwin' };
+
+  it('is true when nativeFullScreen=false forces the native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false })).toBe(true);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, titleBarStyle: 'custom' })).toBe(true);
+  });
+
+  it('is false with the defaults, where VSCode uses its custom title bar', () => {
+    expect(isCustomTitleBarForcedNative(mac)).toBe(false);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: true })).toBe(false);
+  });
+
+  it('respects an explicit native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, titleBarStyle: 'native' })).toBe(false);
+  });
+
+  it('keeps the frame for native tabs, whose tab bar lives in the native title bar', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, nativeTabs: true })).toBe(false);
+  });
+
+  it('keeps the frame when the workbench draws no title bar for the buttons', () => {
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, customTitleBarVisibility: 'never' })).toBe(false);
+    expect(isCustomTitleBarForcedNative({ ...mac, nativeFullScreen: false, customTitleBarVisibility: 'windowed' })).toBe(true);
+  });
+
+  it('only applies on macOS', () => {
+    expect(isCustomTitleBarForcedNative({ platform: 'win32', nativeFullScreen: false })).toBe(false);
+    expect(isCustomTitleBarForcedNative({ platform: 'linux', nativeFullScreen: false })).toBe(false);
+  });
+});
 
 describe('resolveWindowControlsStyle', () => {
   it("auto maps to 'custom' on Linux and Windows", () => {
@@ -413,9 +446,9 @@ describe('injectElectronOptions', () => {
       expect(result).not.toContain('c.transparent=');
     });
 
-    // Opt-in (vscode_vibrancy.macFramelessNativeTitleBar): the options go in the
-    // literal, which applies whichever title bar VSCode picks, so a native title
-    // bar window is borderless too.
+    // When nativeFullScreen=false forces the native title bar (see
+    // isCustomTitleBarForcedNative), the options go in the literal, which
+    // applies whichever title bar VSCode picks, so that window is borderless too.
     describe('with nativeTitleBarFrameless', () => {
       const opts = { frameless: true, isMacos: true, nativeTitleBarFrameless: true };
 
