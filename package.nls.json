@@ -39,6 +39,7 @@
   "messages.firstload": "Welcome to Vibrancy. Please make sure to read the extension's description. Click the button below to install.",
   "messages.updateNeeded": "Vibrancy needs to be updated. Click the button below to update.",
   "messages.configupdate": "Config is changed, would you like to reload?",
+  "messages.windowSettingsChanged": "Your window settings (window.nativeFullScreen, window.titleBarStyle or window.nativeTabs) changed since Vibrancy was applied. Reload Vibrancy to update the window?",
   "messages.enabled": "Vibrancy enabled. Restart to take effect. If Code complains about a corrupted installation, CLICK DON'T SHOW AGAIN. See description for more details.",
   "messages.disabled": "Vibrancy disabled and reverted to default. Restart to take effect.",
   "messages.already_disabled": "Vibrancy already disabled.",

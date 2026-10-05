@@ -65,6 +65,9 @@
     "messages.configupdate": {
       "type": "string"
     },
+    "messages.windowSettingsChanged": {
+      "type": "string"
+    },
     "messages.enabled": {
       "type": "string"
     },
@@ -144,6 +147,7 @@
     "messages.firstload",
     "messages.updateNeeded",
     "messages.configupdate",
+    "messages.windowSettingsChanged",
     "messages.enabled",
     "messages.disabled",
     "messages.already_disabled",

@@ -20,7 +20,7 @@ var {
   resolveManagedBgKeys,
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
-const { TITLEBAR_RESTORE_KEY, toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
+const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
 const {
   deriveProfileIdentity,
   evaluateUninstallOwnership,
@@ -702,6 +702,46 @@ function activate(context) {
       nativeTabs: win.get('nativeTabs'),
       customTitleBarVisibility: win.get('customTitleBarVisibility'),
     });
+  }
+
+  /**
+   * Offer a reload when the window.* settings no longer match what was
+   * installed (see macForcedNativeTitleBar).
+   *
+   * Those settings only take effect after VSCode restarts, and VSCode prompts
+   * for that restart itself, so a prompt of ours at the time of the change
+   * would compete with it and vanish with the window. Comparing at startup
+   * catches the change once the restart has happened, which is also the first
+   * moment the stale patch is visible.
+   *
+   * Asks once per mismatch, not once per window: every window activates the
+   * extension, and they share globalState.
+   */
+  async function checkMacWindowButtonsDrift() {
+    const PROMPTED_KEY = 'macWindowButtonsPrompted';
+    let installed;
+    try {
+      const match = /"macWindowButtons":(true|false)/.exec(await fs.readFile(JSFile, 'utf-8'));
+      // Not installed, or installed by a version that didn't record it.
+      if (!match) return;
+      installed = match[1] === 'true';
+    } catch {
+      return;
+    }
+
+    const wanted = macForcedNativeTitleBar();
+    if (installed === wanted) {
+      if (context.globalState.get(PROMPTED_KEY) !== undefined) await context.globalState.update(PROMPTED_KEY, undefined);
+      return;
+    }
+    if (context.globalState.get(PROMPTED_KEY) === wanted) return;
+    await context.globalState.update(PROMPTED_KEY, wanted);
+
+    const msg = await vscode.window.showInformationMessage(
+      localize('messages.windowSettingsChanged'),
+      { title: localize('messages.reloadIde') },
+    );
+    if (msg) await runExclusive(() => Update());
   }
 
   async function buildMainJS(baseJS) {
@@ -1489,7 +1529,6 @@ function activate(context) {
     // them being mistaken for a user edit and popping the "config changed,
     // reload?" prompt.
     lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
-    lastForcedNative = macForcedNativeTitleBar();
   }
 
   /**
@@ -1868,21 +1907,18 @@ function activate(context) {
   healStaleSettingsPath()
     .catch((err) => console.error('Vibrancy: failed to correct the recorded settings.json path:', err));
 
+  if (process.platform === 'darwin' && !testMode) {
+    checkMacWindowButtonsDrift()
+      .catch((err) => console.error('Vibrancy: failed to check the window settings against the install:', err));
+  }
+
   var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
-  // VSCode's own window.* settings decide whether the window is borderless
-  // under the native title bar, so a change there needs a reload too.
-  var lastForcedNative = macForcedNativeTitleBar();
 
   vscode.workspace.onDidChangeConfiguration(() => {
     if (operationInProgress) return;
-    // The macOS restart prompt flips window.titleBarStyle and back. Mid-toggle
-    // the flipped value reads as a real change, so wait for the restore.
-    if (context.globalState.get(TITLEBAR_RESTORE_KEY)) return;
     const newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
-    const forcedNative = macForcedNativeTitleBar();
-    if (!deepEqual(lastConfig, newConfig) || forcedNative !== lastForcedNative) {
+    if (!deepEqual(lastConfig, newConfig)) {
       lastConfig = newConfig;
-      lastForcedNative = forcedNative;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })
       .then(async (msg) => {
           if (msg) {
