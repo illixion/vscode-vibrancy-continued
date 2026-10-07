@@ -318,13 +318,19 @@ Please see [Windows 10/11 notes](#-windows-1011-notes) at the top of the descrip
 
 ### Effect doesn't work, but there are no errors
 
-If the vibrancy effect isn't visible but there are no error messages, first check **which patches actually landed**. Vibrancy works by modifying files inside VSCode's own installation, and an install can report success while a patch didn't apply. On Linux and macOS, run the diagnostic script:
+If the vibrancy effect isn't visible but there are no error messages, first check **which patches actually landed**. Vibrancy works by modifying files inside VSCode's own installation, and an install can report success while a patch didn't apply. Run the diagnostic script. On Linux and macOS:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.sh | bash
 ```
 
-It only reads files, never modifies anything. Run it with Vibrancy **enabled** and after a full quit and reopen of VSCode (an in-process reload doesn't re-read the patched files). If your install isn't auto-detected, pass its path — e.g. `bash diagnose.sh /usr/share/code/resources/app/out`.
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.ps1 | iex
+```
+
+It only reads files, never modifies anything. Run it with Vibrancy **enabled** and after a full quit and reopen of VSCode (an in-process reload doesn't re-read the patched files). If your install isn't auto-detected, pass its path — e.g. `bash diagnose.sh /usr/share/code/resources/app/out`, or on Windows `& ([scriptblock]::Create((irm <url above>))) -Filter 'C:\path\to\resources\app\out'`.
 
 Two results are worth acting on immediately:
 

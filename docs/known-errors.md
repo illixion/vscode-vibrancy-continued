@@ -28,6 +28,18 @@ On an editor that isn't on that list, Vibrancy only changes the window when it c
 
 If you're using an unsupported code editor and you're on Windows, you must perform these steps prior to activating Vibrancy Continued: [Windows Install Guide](https://github.com/illixion/vscode-vibrancy-continued?tab=readme-ov-file#%EF%B8%8F-important-notice-for-windows-1011-users)
 
+### An error mentions a file this version doesn't use, or Vibrancy doesn't seem to have updated
+
+For example `ENOENT ... workbench.esm.html`, which only Vibrancy 1.1.92 and older looked for. The editor can show the new version as installed while still running the old one: an extension update only takes effect once the editor fully restarts, and reloading a window isn't enough. To fix it:
+
+1. Quit the editor completely. On Windows, check that no `Code.exe` is left in Task Manager.
+2. Reopen it, and run **Developer: Show Running Extensions** to see which Vibrancy version is actually running.
+3. If it's still the old one, uninstall Vibrancy, restart the editor, and install it again.
+
+The diagnostic script below shows the version that patched your editor next to the versions installed. On Windows it also shows which version the editor has recorded as the one it loads.
+
+If the old version comes back after reinstalling, check that the extension's folder (under `~/.vscode/extensions`) and the editor's install folder aren't read-only. A sync tool, an antivirus, or a manual change can leave them read-only, and then the editor can't replace the old version. On Windows the diagnostic script reports any read-only files it finds there.
+
 ### Effect doesn't work correctly in VSCode terminal
 
 Check your settings. You should change the renderer type of the terminal to `dom`.
@@ -44,13 +56,19 @@ Please see [Important notice for Windows users](https://github.com/illixion/vsco
 
 ### Effect doesn't work, but there are no errors
 
-If the vibrancy effect isn't visible but there are no error messages, first check **which patches actually landed**. Vibrancy works by modifying files inside VSCode's own installation, and an install can report success while one of those patches didn't apply. On Linux and macOS, run the diagnostic script:
+If the vibrancy effect isn't visible but there are no error messages, first check **which patches actually landed**. Vibrancy works by modifying files inside VSCode's own installation, and an install can report success while one of those patches didn't apply. Run the diagnostic script. On Linux and macOS:
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.sh | bash
 ```
 
-It only reads files and changes nothing. Run it with Vibrancy **enabled**, and after fully quitting and reopening VSCode — an in-process reload doesn't re-read the patched files. If your install isn't auto-detected, pass its path, e.g. `bash diagnose.sh /usr/share/code/resources/app/out`.
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/diagnose.ps1 | iex
+```
+
+It only reads files and changes nothing. Run it with Vibrancy **enabled**, and after fully quitting and reopening VSCode — an in-process reload doesn't re-read the patched files. If your install isn't auto-detected, pass its path, e.g. `bash diagnose.sh /usr/share/code/resources/app/out`, or on Windows `& ([scriptblock]::Create((irm <url above>))) -Filter 'C:\path\to\resources\app\out'`.
 
 Two results are worth acting on immediately:
 

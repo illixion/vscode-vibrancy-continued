@@ -65,7 +65,7 @@ say "writable without sudo:" "$([ -w "$MAIN" ] && echo yes || echo "NO (install 
 # that means the files predate the last update (Reload Vibrancy, then fully quit
 # and reopen, rewrites them). Patches before 1.4.0 carry it only in the
 # extension path they embed, so fall back to that.
-patched_by=$(grep -Eo '"vibrancyVersion":"[0-9][0-9.]*"' "$MAIN" 2>/dev/null | head -1 | cut -d'"' -f4)
+patched_by=$(grep -Eo '"vibrancyVersion":"[0-9][0-9.]*[0-9]' "$MAIN" 2>/dev/null | head -1 | cut -d'"' -f4)
 [ -n "$patched_by" ] || patched_by=$(grep -Eo 'illixion\.vscode-vibrancy-continued-[0-9][0-9.]*' "$MAIN" 2>/dev/null | head -1 | sed 's/.*-//')
 say "Vibrancy version that patched:" "${patched_by:-<none>}"
 installed=""
