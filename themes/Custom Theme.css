@@ -21,3 +21,9 @@
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: transparent !important;
 }
+
+/* Leave these surfaces transparent; imported user CSS is injected last. */
+:root {
+  --vibrancy-auxiliarybar-background: transparent;
+  --vibrancy-pane-header-background: transparent;
+}

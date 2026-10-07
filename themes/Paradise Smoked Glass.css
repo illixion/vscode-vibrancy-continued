@@ -230,4 +230,6 @@ body {
   --vibrancy-tab-active-background: transparent;
   --vibrancy-tab-selected-background: transparent;
   --vibrancy-tab-hover-background: var(--semi-opaque);
+  --vibrancy-auxiliarybar-background: transparent;
+  --vibrancy-pane-header-background: transparent;
 }

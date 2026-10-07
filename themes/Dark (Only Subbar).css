@@ -65,5 +65,6 @@ body {
 
 /* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
 :root {
+  --vibrancy-pane-header-background: transparent;
   --vibrancy-panel-pane-background: var(--vscode-panel-background);
 }

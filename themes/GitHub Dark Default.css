@@ -157,5 +157,6 @@ body {
   --vibrancy-tab-inactive-background: var(--base-background);
   --vibrancy-tab-active-background: rgba(14, 17, 22, 0.3);
   --vibrancy-sidebar-background: var(--base-background);
+  --vibrancy-auxiliarybar-background: var(--editor-background);
   --vibrancy-pane-header-background: var(--base-background);
 }

@@ -95,5 +95,7 @@ body {
   --vibrancy-tab-inactive-background: transparent;
   --vibrancy-tab-active-background: rgba(26, 27, 38, 0.3);
   --vibrancy-sidebar-background: transparent;
+  --vibrancy-auxiliarybar-background: transparent;
+  --vibrancy-pane-header-background: transparent;
   --vibrancy-panel-pane-background: var(--vscode-panel-background);
 }
