@@ -19,24 +19,11 @@
 
 .search-view .search-widget .input-box,
 .search-view .search-widget .input-box .monaco-inputbox,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title
-  .tabs-container
-  > .tab,
 .monaco-editor-background,
 .monaco-editor .margin,
 .monaco-workbench .part:not(.modal-editor-part) > .content,
 .monaco-workbench .editor > .content > .one-editor-silo.editor-one,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title,
+.monaco-workbench .part.editor :is(.editor-group-container, .one-editor-silo > .container) > .title,
 .monaco-workbench .part > .title,
 .monaco-workbench,
 .monaco-workbench .part,
@@ -45,16 +32,16 @@ body {
   background: transparent !important;
 }
 
-.editor-group-container > .tabs {
+.editor-group-container > :is(.tabs, .title) {
   background-color: transparent !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   background-color: transparent !important;
 }
 
-.editor-group-container > .tabs .tab.active,
-.editor-group-container > .tabs .monaco-breadcrumbs {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab.active,
+.editor-group-container > :is(.tabs, .title) .monaco-breadcrumbs {
   background-color: rgba(26, 27, 38, 0.3) !important;
 }
 
@@ -92,14 +79,6 @@ body {
 }
 
 .extension-editor,
-.monaco-workbench
-  .part.editor
-  > .content
-  > .one-editor-silo
-  > .container
-  > .title
-  .tabs-container
-  > .tab.active,
 .preferences-editor > .preferences-header,
 .preferences-editor
   > .preferences-editors-container.side-by-side-preferences-editor
@@ -114,7 +93,7 @@ body {
   background-color: rgba(26, 27, 38, 0.2) !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   border: none !important;
 }
 
@@ -161,4 +140,14 @@ body {
 .monaco-workbench.style-override .monaco-pane-view .pane,
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: transparent !important;
+}
+
+/* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
+:root {
+  --vibrancy-tab-strip-background: transparent;
+  --vibrancy-tab-inactive-background: transparent;
+  --vibrancy-tab-active-background: rgba(26, 27, 38, 0.3);
+  --vibrancy-sidebar-background: rgba(26, 27, 38, 0.2);
+  --vibrancy-auxiliarybar-background: transparent;
+  --vibrancy-pane-header-background: transparent;
 }

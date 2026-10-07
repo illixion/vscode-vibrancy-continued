@@ -1,0 +1,84 @@
+/* Modern UI paints tab fills and connected edges separately from .tab.
+   Supply theme colours through native variables to preserve tab geometry and
+   indicators. Unspecified theme colours use VSCode's own colours. */
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .part.editor .editor-group-container > .title.tabs,
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .modern-ui-editor-tab-strip {
+  --modern-ui-editor-tab-active-background: var(--vibrancy-tab-active-background, var(--vscode-tab-activeBackground)) !important;
+  --modern-ui-editor-tab-unfocused-active-background: var(--vibrancy-tab-active-background, var(--vscode-tab-unfocusedActiveBackground)) !important;
+  --modern-ui-editor-tab-inactive-background: var(--vibrancy-tab-inactive-background, var(--vscode-tab-inactiveBackground)) !important;
+  --modern-ui-editor-tab-unfocused-inactive-background: var(--vibrancy-tab-inactive-background, var(--vscode-tab-unfocusedInactiveBackground)) !important;
+  --modern-ui-editor-tab-hover-background: var(--vibrancy-tab-hover-background, color-mix(in srgb, var(--vscode-foreground) 6%, var(--vibrancy-tab-inactive-background, var(--vscode-tab-inactiveBackground)))) !important;
+  --modern-ui-editor-tab-unfocused-hover-background: var(--modern-ui-editor-tab-hover-background) !important;
+  --modern-ui-editor-tab-active-hover-background: var(--modern-ui-editor-tab-active-background) !important;
+  --modern-ui-editor-tab-unfocused-active-hover-background: var(--modern-ui-editor-tab-unfocused-active-background) !important;
+  --modern-ui-connected-tab-surface: var(--modern-ui-editor-tab-active-background) !important;
+  --modern-ui-connected-tab-active-background: var(--modern-ui-editor-tab-active-background) !important;
+  --modern-ui-connected-tab-active-hover-background: var(--modern-ui-editor-tab-active-hover-background) !important;
+  --modern-ui-connected-tab-strip-background: var(--vibrancy-tab-strip-background, var(--vscode-editorGroupHeader-tabsBackground)) !important;
+  --modern-ui-connected-tab-upper-hover-background: var(--modern-ui-editor-tab-hover-background) !important;
+}
+
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .part.editor .editor-group-container:not(.active) > .title.tabs,
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .modern-ui-editor-tab-group:not(.modern-ui-editor-tab-group-active) > .modern-ui-editor-tab-strip {
+  --modern-ui-connected-tab-active-background: var(--modern-ui-editor-tab-unfocused-active-background) !important;
+  --modern-ui-connected-tab-active-hover-background: var(--modern-ui-editor-tab-unfocused-active-hover-background) !important;
+}
+
+/* Traditional themes painted .tab itself. With Modern UI only .tab-fill should
+   paint, otherwise translucent colours accumulate in two stacked backgrounds. */
+.monaco-workbench.modern-ui-tabs .part.editor .editor-group-container > .title .tabs-container > .tab {
+  background: transparent !important;
+}
+
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .part.editor .tabs-container > .tab.selected:not(.active) > .tab-fill {
+  background-color: var(--vibrancy-tab-selected-background, color-mix(in srgb, var(--vscode-foreground) 10%, var(--vibrancy-tab-active-background, var(--vscode-tab-activeBackground)))) !important;
+}
+
+/* Atom One Dark keeps its gradient on the fill, with its base surface colour
+   used by the connected shoulders. Other themes leave this image unset. */
+.monaco-workbench.modern-ui-tabs .part.editor .tabs-container > .tab.active > .tab-fill {
+  background-image: var(--vibrancy-tab-active-image, none) !important;
+}
+
+/* Reserved action slots use the native overlay colour, defaulting to transparent.
+   Native rules handle unreserved masks, button feedback and high contrast. */
+.monaco-workbench.modern-ui-tabs:not(:is(.hc-black, .hc-light)) .part.editor .editor-group-container > .title:is(.tab-actions-reserve-space, .connected-tabs-labels) .tabs-container > .tab > .tab-actions {
+  background-color: var(--modern-ui-editor-tab-action-overlay-background, transparent) !important;
+}
+
+.monaco-workbench.modern-ui-tabs .part.editor .editor-group-container > .title .sticky-tabs-background,
+.monaco-workbench.modern-ui-tabs .part.editor .editor-group-container > .title .tabs-bar-add-tab {
+  background-color: var(--vibrancy-tab-strip-background, var(--vscode-editorGroupHeader-tabsBackground)) !important;
+}
+
+/* Clear inner panes to avoid double tinting. Auxiliary-sidebar and header
+   colours follow VSCode unless the theme explicitly overrides them. */
+.monaco-workbench.modern-ui .part.sidebar {
+  background-color: var(--vibrancy-sidebar-background, transparent) !important;
+}
+
+.monaco-workbench.modern-ui .part.auxiliarybar {
+  background-color: var(--vibrancy-auxiliarybar-background, var(--vscode-sideBar-background)) !important;
+}
+
+.monaco-workbench.modern-ui :is(.part.sidebar, .part.auxiliarybar) .monaco-pane-view .pane {
+  background: transparent !important;
+}
+
+.monaco-workbench.modern-ui :is(.part.sidebar, .part.auxiliarybar) .monaco-pane-view .pane > .pane-header:not(:hover) {
+  background: var(--vibrancy-pane-header-background, var(--vscode-sideBar-background)) !important;
+}
+
+.monaco-workbench.modern-ui .part.panel .monaco-pane-view .pane {
+  background: var(--vibrancy-panel-pane-background, transparent) !important;
+}
+
+.monaco-workbench.modern-ui .part.panel .monaco-pane-view .pane > .pane-header:not(:hover) {
+  background: var(--vibrancy-panel-pane-background, var(--vibrancy-pane-header-background, var(--vscode-panel-background))) !important;
+}
+
+/* The native resting sidebar-header selector is more specific than its hover
+   selector. Reassert the hover colour at the same specificity as our surfaces. */
+.monaco-workbench.modern-ui :is(.part.sidebar, .part.auxiliarybar, .part.panel) .monaco-pane-view .pane > .pane-header:hover {
+  background-color: var(--vscode-list-hoverBackground) !important;
+}
