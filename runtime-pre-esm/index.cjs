@@ -4,6 +4,7 @@ const electron = require('electron');
  */
 const transparencyMethods = require('./methods/index.cjs');
 const createDiagnostics = require('./diagnostics.cjs');
+const { attach: attachWindowButtons } = require('./mac-window-buttons.cjs');
 
 /**
  * @type {{
@@ -229,9 +230,14 @@ electron.app.on('browser-window-created', (_, window) => {
     // The window is borderless under VSCode's native title bar (see
     // isCustomTitleBarForcedNative in the extension), which drops the traffic
     // lights. Electron can show them on a frameless window, and the workbench's
-    // own title bar leaves room for them.
+    // own title bar leaves room for them. When VSCode hides that title bar the
+    // lights would cover the tabs, so they then only show on hover.
     if (app.os === 'macos' && app.macWindowButtons && typeof window.setWindowButtonVisibility === 'function') {
       window.setWindowButtonVisibility(true);
+
+      if (!isAuxiliaryWindow) {
+        attachWindowButtons(window, electron.screen);
+      }
     }
 
     injectHTML(window);
