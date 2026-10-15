@@ -3,6 +3,7 @@
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows) Acrylic Fluent design blur",
+  "configuration.type.acrylic-classic.description": "(Windows) Clear acrylic blur without the Windows 11 frosted tint, as before 1.1.80. The blur drops while the window is dragged",
   "configuration.type.mica.description": "(Windows 11 only) Mica background material",
   "configuration.type.tabbed.description": "(Windows 11 only) Mica Alt (Tabbed) background material",
   "configuration.type.transparent.description": "Make the background transparent, without blur",

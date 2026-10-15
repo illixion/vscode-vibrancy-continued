@@ -64,6 +64,7 @@
           "enum": [
             "auto",
             "acrylic",
+            "acrylic-classic",
             "mica",
             "tabbed",
             "transparent",
@@ -90,6 +91,7 @@
           "enumDescriptions": [
             "%configuration.type.auto.description%",
             "%configuration.type.acrylic.description%",
+            "%configuration.type.acrylic-classic.description%",
             "%configuration.type.mica.description%",
             "%configuration.type.tabbed.description%",
             "%configuration.type.transparent.description%",

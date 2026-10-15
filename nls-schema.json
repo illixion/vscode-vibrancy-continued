@@ -11,6 +11,9 @@
     "configuration.type.acrylic.description": {
       "type": "string"
     },
+    "configuration.type.acrylic-classic.description": {
+      "type": "string"
+    },
     "configuration.type.macos-only.description": {
       "type": "string"
     },
