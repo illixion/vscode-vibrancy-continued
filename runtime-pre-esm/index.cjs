@@ -141,6 +141,17 @@ electron.app.on('browser-window-created', (_, window) => {
       // Windows 10, the 'acrylic-classic' type on Windows 11, or older
       // Electron without setBackgroundMaterial: legacy
       // SetWindowCompositionAttribute accent.
+      //
+      // Chromium gives its windows a Mica system backdrop by default on
+      // Windows 11, and that shows instead of the accent. Switch it off first
+      // so the accent is what the window gets.
+      if (app.win11 && typeof window.setBackgroundMaterial === 'function') {
+        try {
+          window.setBackgroundMaterial('none');
+        } catch (err) {
+          console.error('setBackgroundMaterial failed:', err);
+        }
+      }
       const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
       const bindings = require('./vibrancy.cjs');
       const applyAccent = () => {
