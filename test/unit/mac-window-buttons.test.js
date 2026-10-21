@@ -19,6 +19,8 @@ function fakeWindow(bounds = { x: 100, y: 200, width: 800, height: 600 }) {
   window.calls = [];
   window.destroyed = false;
   window.isDestroyed = () => window.destroyed;
+  window.focused = true;
+  window.isFocused = () => window.focused;
   window.getBounds = () => bounds;
   window.setWindowButtonVisibility = (v) => window.calls.push(v);
   return window;
@@ -161,6 +163,45 @@ describe('createWindowButtons', () => {
     expect(window.calls).toEqual([false, true]);
   });
 
+  it('pauses polling while the window is unfocused and resumes on focus', () => {
+    const window = fakeWindow();
+    const screen = fakeScreen();
+    const buttons = createWindowButtons(window, screen);
+    buttons.setTitleBarVisible(false);
+    cursorAt(screen, window, 5, 5);
+    tick();
+    expect(window.calls).toEqual([false, true]);
+
+    buttons.setFocused(false);
+    expect(window.calls).toEqual([false, true, false]);
+    expect(vi.getTimerCount()).toBe(0);
+    tick(10);
+    expect(window.calls).toEqual([false, true, false]);
+
+    buttons.setFocused(true);
+    expect(vi.getTimerCount()).toBe(1);
+    tick();
+    expect(window.calls).toEqual([false, true, false, true]);
+  });
+
+  it('does not poll when the title bar is hidden in an unfocused window', () => {
+    const window = fakeWindow();
+    window.focused = false;
+    const buttons = createWindowButtons(window, fakeScreen());
+    buttons.setTitleBarVisible(false);
+    expect(window.calls).toEqual([false]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('ignores focus changes until the title bar state is known', () => {
+    const window = fakeWindow();
+    const buttons = createWindowButtons(window, fakeScreen());
+    buttons.setFocused(false);
+    buttons.setFocused(true);
+    expect(window.calls).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('stops polling once the window is destroyed', () => {
     const window = fakeWindow();
     const screen = fakeScreen();
@@ -194,6 +235,17 @@ describe('attach', () => {
     attach(window, fakeScreen());
     expect(window.webContents.listenerCount('console-message')).toBe(1);
     expect(window.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it('follows the window focus', () => {
+    const window = fakeWindow();
+    attach(window, fakeScreen());
+    window.webContents.emit('console-message', {}, 0, `${MESSAGE_PREFIX}hidden`);
+    expect(vi.getTimerCount()).toBe(1);
+    window.emit('blur');
+    expect(vi.getTimerCount()).toBe(0);
+    window.emit('focus');
+    expect(vi.getTimerCount()).toBe(1);
   });
 
   it('cleans up the poll timer when the window closes', () => {
