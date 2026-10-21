@@ -17,19 +17,27 @@
 // is prevented, so the loop keeps agreeing with where we put the window, and
 // Windows still snaps it on release.
 //
-// The bounds are only ever set inside will-move/will-resize. Electron
-// remembers a setBounds made during the loop and applies it again when the
-// loop ends (pending_bounds_change_), after Windows has snapped the window,
-// but forgets it when the event is prevented. A placement from a timer would
-// survive to the end and undo the snap.
+// The geometry is all physical pixels, through the native module
+// (GetCursorPos, GetWindowRect, SetWindowPos), never Electron's setPosition or
+// setBounds. Those convert from DIPs and resize the window a little on every
+// call on a scaled display, and Electron replays a setBounds made during the
+// loop when the loop ends (pending_bounds_change_), after Windows has snapped
+// the window. Without the native functions the drag is left to Windows.
+//
+// Once a placement puts most of the window on a monitor with another DPI, the
+// rest of that drag is left to Windows, which rescales the window and keeps
+// the cursor where it was in the title bar. Rescaling it from here fights
+// Windows' own WM_DPICHANGED handling, and the window ping-pongs between
+// sizes. Windows takes about a tenth of a second to pick the drag up. Handing
+// over before the crossing is worse: with the accent on, Windows' loop then
+// stops moving the window at the crossing until the mouse is released.
 //
 // DWM draws the maximize and restore animations without the accent, on
 // Windows 10 and 11 alike, so the window shows through unblurred for a quarter
-// of a second. Transitions stay
-// off, except during a title bar drag away from the top edge and the snap
-// animation after it, so a snap to a side or corner still animates. A
-// maximize, restore or minimize turns them off at once, even if it comes
-// straight after such a drag.
+// of a second. Transitions stay off, except during a title bar drag away from
+// the top edge and the snap animation after it, so a snap to a side or corner
+// still animates. A maximize, restore or minimize turns them off at once, even
+// if it comes straight after such a drag.
 
 const WM_SYSCOMMAND = 0x0112;
 const WM_EXITSIZEMOVE = 0x0232;
@@ -41,6 +49,7 @@ const SC_RESTORE = 0xF120;
 const HTCAPTION = 2;
 // SC_SIZE's low bits are WMSZ_*: which sides follow the cursor.
 const SIZE_EDGES = { 1: 'l', 2: 'r', 3: 't', 4: 'tl', 5: 'tr', 6: 'b', 7: 'bl', 8: 'br' };
+const NATIVE_GEOMETRY = ['getCursorPos', 'getWindowRect', 'setWindowPos', 'getDpiForRect'];
 
 const RESIZE_HZ = 60;
 // Releasing a drag within this many pixels of the top edge maximizes the
@@ -51,7 +60,7 @@ const CORNER_ZONE = 24;
 const SNAP_ANIMATION_MS = 400;
 
 function sameBounds(a, b) {
-  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+  return Boolean(a && b) && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 function sizedBounds(start, dx, dy, edge, [minWidth, minHeight]) {
@@ -71,11 +80,20 @@ function inMaximizeZone(point, display) {
 
 /**
  * @param {import('electron').BrowserWindow} window
- * @param {Pick<import('electron').Screen, 'getCursorScreenPoint' | 'screenToDipPoint' | 'getDisplayMatching' | 'getDisplayNearestPoint'>} screen
- * @param {{ setTransitionsDisabled?: (hwnd: number, disabled: boolean) => void }} addon - native vibrancy module
+ * @param {Pick<import('electron').Screen, 'getCursorScreenPoint' | 'getDisplayMatching' | 'getDisplayNearestPoint'>} screen
+ * @param {{
+ *   setTransitionsDisabled?: (hwnd: number, disabled: boolean) => void,
+ *   getCursorPos?: () => { x: number, y: number } | null,
+ *   getWindowRect?: (hwnd: number) => { x: number, y: number, width: number, height: number, dpi: number } | null,
+ *   setWindowPos?: (hwnd: number, x: number, y: number, width?: number, height?: number) => void,
+ *   getDpiForRect?: (x: number, y: number, width: number, height: number) => number | null,
+ * }} addon - native vibrancy module
  * @param {{ follow?: boolean }} [options] - follow: false leaves moves and resizes to Windows
  */
 module.exports = function followCursorWhileDragging(window, screen, addon, { follow = true } = {}) {
+  const hwnd = window.getNativeWindowHandle().readInt32LE(0);
+  // An older native module can't place the window in physical pixels.
+  const canFollow = follow && NATIVE_GEOMETRY.every((name) => typeof addon[name] === 'function');
   let press = null; // what the mouse press started, where, and the window then
   let drag = null;
   let transitionsOn = null;
@@ -85,7 +103,7 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
     if (on === transitionsOn || typeof addon.setTransitionsDisabled !== 'function' || window.isDestroyed()) return;
     transitionsOn = on;
     try {
-      addon.setTransitionsDisabled(window.getNativeWindowHandle().readInt32LE(0), !on);
+      addon.setTransitionsDisabled(hwnd, !on);
     } catch (err) { /* window may be gone */ }
   }
 
@@ -112,26 +130,49 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
     return BigInt(Math.round(1e9 / hz));
   }
 
+  function targetBounds(dx, dy) {
+    if (!drag.edge) return { ...drag.bounds, x: drag.bounds.x + dx, y: drag.bounds.y + dy };
+    // getMinimumSize is in DIPs.
+    const scale = drag.bounds.dpi / 96;
+    const [minWidth, minHeight] = window.getMinimumSize();
+    return sizedBounds(drag.bounds, dx, dy, drag.edge, [Math.round(minWidth * scale), Math.round(minHeight * scale)]);
+  }
+
   // `final` is the placement when the loop ends. By then Windows may have
   // snapped or maximized the window on release, so it only corrects the
-  // position while the window is still where we last put it.
+  // position while the window is still where we last put it. Returns false
+  // when the window is mostly on a monitor with another DPI, having handed the
+  // drag back to Windows.
   function apply(final) {
     // No anchor yet: a restored drag that ended on its first, native move.
-    if (!drag || !drag.bounds || window.isDestroyed()) return;
-    if (final && drag.placed && !sameBounds(window.getBounds(), drag.placed)) return;
-    const cursor = screen.getCursorScreenPoint();
+    if (!drag || !drag.bounds || drag.native || window.isDestroyed()) return true;
+    const now = addon.getWindowRect(hwnd);
+    if (!now) return true;
+    if (final && drag.placed && !sameBounds(now, drag.placed)) return true;
+    if (now.dpi !== drag.bounds.dpi) {
+      drag.native = true;
+      return false;
+    }
+    const cursor = addon.getCursorPos();
+    if (!cursor) return true;
     const dx = cursor.x - drag.cursor.x;
     const dy = cursor.y - drag.cursor.y;
     drag.last = process.hrtime.bigint();
-    if (dx === drag.dx && dy === drag.dy) return;
+    if (dx === drag.dx && dy === drag.dy) return true;
     drag.dx = dx;
     drag.dy = dy;
-    if (drag.edge) {
-      window.setBounds(sizedBounds(drag.bounds, dx, dy, drag.edge, window.getMinimumSize()));
-    } else {
-      window.setPosition(drag.bounds.x + dx, drag.bounds.y + dy);
+    const target = targetBounds(dx, dy);
+    if (addon.getDpiForRect(target.x, target.y, target.width, target.height) !== drag.bounds.dpi) {
+      drag.native = true;
+      return false;
     }
-    drag.placed = window.getBounds();
+    if (drag.edge) {
+      addon.setWindowPos(hwnd, target.x, target.y, target.width, target.height);
+    } else {
+      addon.setWindowPos(hwnd, target.x, target.y);
+    }
+    drag.placed = addon.getWindowRect(hwnd);
+    return true;
   }
 
   // Chromium starts a mouse drag with WM_SYSCOMMAND carrying the press point:
@@ -149,8 +190,9 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
     if (command !== (SC_MOVE | HTCAPTION) && !edge) return;
     press = {
       edge,
-      cursor: screen.screenToDipPoint({ x: lParam.readInt16LE(0), y: lParam.readInt16LE(2) }),
-      bounds: window.getBounds(),
+      // Physical screen pixels, like GetCursorPos and GetWindowRect.
+      cursor: { x: lParam.readInt16LE(0), y: lParam.readInt16LE(2) },
+      bounds: canFollow ? addon.getWindowRect(hwnd) : null,
       maximized: window.isMaximized(),
     };
   });
@@ -162,14 +204,15 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
       // A maximized or snapped window gets its old size back under the cursor
       // before it moves, so the press position no longer matches. Let Windows
       // make that first move and anchor on where it put the window.
+      const before = window.getBounds();
       const restored = !isResize && (press.maximized
-        || Math.abs(newBounds.width - press.bounds.width) > 32
-        || Math.abs(newBounds.height - press.bounds.height) > 32);
+        || Math.abs(newBounds.width - before.width) > 32
+        || Math.abs(newBounds.height - before.height) > 32);
       drag = {
         edge: press.edge,
         bounds: restored ? null : press.bounds,
         cursor: restored ? null : press.cursor,
-        dx: null, dy: null, last: 0n, placed: null, frame: frameNs(isResize),
+        dx: null, dy: null, last: 0n, placed: null, native: false, frame: frameNs(isResize),
       };
       press = null;
       if (restored) return;
@@ -178,13 +221,18 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
       const cursor = screen.getCursorScreenPoint();
       setTransitions(!inMaximizeZone(cursor, screen.getDisplayNearestPoint(cursor).bounds));
     }
-    if (!follow) return;
+    if (!canFollow || drag.native) return;
     if (!drag.bounds) {
-      drag.bounds = window.getBounds();
-      drag.cursor = screen.getCursorScreenPoint();
+      drag.bounds = addon.getWindowRect(hwnd);
+      drag.cursor = addon.getCursorPos();
+      if (!drag.bounds || !drag.cursor) {
+        drag.native = true;
+        return;
+      }
     }
+    // Not prevented when apply hands the drag back: Windows makes this move.
+    if (process.hrtime.bigint() - drag.last >= drag.frame && !apply(false)) return;
     event.preventDefault();
-    if (process.hrtime.bigint() - drag.last >= drag.frame) apply(false);
   }
 
   window.on('will-move', (event, newBounds) => onWillChange(event, newBounds, false));
@@ -193,7 +241,7 @@ module.exports = function followCursorWhileDragging(window, screen, addon, { fol
   window.hookWindowMessage(WM_EXITSIZEMOVE, () => {
     press = null;
     if (!drag) return;
-    if (follow) apply(true);
+    if (canFollow) apply(true);
     drag = null;
     if (transitionsOn) transitionsOffTimer = setTimeout(() => setTransitions(false), SNAP_ANIMATION_MS);
   });

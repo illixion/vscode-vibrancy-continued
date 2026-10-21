@@ -22,11 +22,14 @@ function pointLParam(x, y) {
   return b;
 }
 
-function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized = false, addon, options } = {}) {
+// win.bounds and screen.cursor stand for physical pixels, which is what the
+// native module works in.
+function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized = false, addon, options, dpi = 96 } = {}) {
   const transitions = [];
   const win = new EventEmitter();
   const hooks = {};
   win.bounds = { ...bounds };
+  win.dpi = dpi;
   win.maximized = maximized;
   win.calls = [];
   win.hookWindowMessage = (msg, cb) => { hooks[msg] = cb; };
@@ -35,18 +38,24 @@ function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized
   win.getBounds = () => ({ ...win.bounds });
   win.getMinimumSize = () => [400, 270];
   win.getNativeWindowHandle = () => buffer32(0x1234);
-  win.setPosition = (x, y) => { win.calls.push(['setPosition', x, y]); win.bounds = { ...win.bounds, x, y }; };
-  win.setBounds = (b) => { win.calls.push(['setBounds', b]); win.bounds = { ...b }; };
   win.maximize = () => { win.calls.push(['maximize', transitions.at(-1)]); win.maximized = true; };
 
   const screen = {
     cursor: { x: 0, y: 0 },
     getCursorScreenPoint: () => ({ ...screen.cursor }),
-    screenToDipPoint: (p) => p,
     getDisplayMatching: () => ({ displayFrequency: 100 }), // 10 ms frames
     getDisplayNearestPoint: () => ({ bounds: { x: 0, y: 0, width: 2560, height: 1440 } }),
   };
-  const nativeAddon = addon || { setTransitionsDisabled: (hwnd, disabled) => transitions.push([hwnd, disabled]) };
+  const nativeAddon = addon || {
+    setTransitionsDisabled: (hwnd, disabled) => transitions.push([hwnd, disabled]),
+    getCursorPos: () => ({ ...screen.cursor }),
+    getWindowRect: () => ({ ...win.bounds, dpi: win.dpi }),
+    getDpiForRect: () => win.dpi,
+    setWindowPos: (hwnd, x, y, width, height) => {
+      win.calls.push(width === undefined ? ['setWindowPos', x, y] : ['setWindowPos', x, y, width, height]);
+      win.bounds = width === undefined ? { ...win.bounds, x, y } : { x, y, width, height };
+    },
+  };
 
   let now = 1000000000n;
   vi.spyOn(process.hrtime, 'bigint').mockImplementation(() => now);
@@ -67,7 +76,7 @@ function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized
   };
   const exit = () => hooks[WM_EXITSIZEMOVE](buffer32(0), buffer32(0));
 
-  return { win, screen, transitions, advance, press, willChange, exit, hooks };
+  return { win, screen, transitions, advance, press, willChange, exit, hooks, addon: nativeAddon };
 }
 
 describe('followCursorWhileDragging', () => {
@@ -80,7 +89,7 @@ describe('followCursorWhileDragging', () => {
     const t = setup();
     t.press(SC_MOVE_CAPTION, 300, 110);
     expect(t.willChange('will-move', 310, 115)).toBe(true);
-    expect(t.win.calls).toEqual([['setPosition', 110, 105]]);
+    expect(t.win.calls).toEqual([['setWindowPos', 110, 105]]);
     t.advance(10);
     expect(t.willChange('will-move', 400, 150)).toBe(true);
     expect(t.win.bounds).toMatchObject({ x: 200, y: 140 });
@@ -153,6 +162,37 @@ describe('followCursorWhileDragging', () => {
     t.advance(10);
     t.willChange('will-move', 1105, 62);
     expect(t.win.bounds).toMatchObject({ x: 700, y: 52, width: 800, height: 600 });
+  });
+
+  it('works in physical pixels on a scaled display, with the minimum size scaled to match', () => {
+    const t = setup({ bounds: { x: 150, y: 150, width: 1200, height: 900 }, dpi: 144 });
+    t.press(SC_SIZE_LEFT, 150, 600);
+    t.willChange('will-resize', 1000, 600);
+    // 400x270 DIPs at 150%
+    expect(t.win.calls).toEqual([['setWindowPos', 750, 150, 600, 900]]);
+  });
+
+  it('hands the drag back to Windows once the window would be mostly on a monitor with another DPI', () => {
+    const t = setup();
+    t.addon.getDpiForRect = (x, y, width) => (x + width / 2 >= 2000 ? 144 : 96);
+    t.press(SC_MOVE_CAPTION, 300, 110);
+    expect(t.willChange('will-move', 1500, 110)).toBe(true); // 1400..2200: mostly on the first
+    t.advance(10);
+    expect(t.willChange('will-move', 1800, 110)).toBe(false); // 1700..2500: mostly on the 150% one
+    t.advance(10);
+    expect(t.willChange('will-move', 1900, 110)).toBe(false);
+    t.exit();
+    expect(t.win.calls).toEqual([['setWindowPos', 1300, 100]]);
+  });
+
+  it('hands it back when Windows has already rescaled the window', () => {
+    const t = setup();
+    t.press(SC_MOVE_CAPTION, 300, 110);
+    expect(t.willChange('will-move', 400, 110)).toBe(true);
+    t.win.dpi = 144;
+    t.advance(10);
+    expect(t.willChange('will-move', 500, 110)).toBe(false);
+    expect(t.win.calls).toEqual([['setWindowPos', 200, 100]]);
   });
 
   it('copes with a restored drag that ends on its first, native move', () => {
@@ -276,11 +316,12 @@ describe('followCursorWhileDragging', () => {
       expect(t.transitions).toEqual([[0x1234, true]]);
     });
 
-    it('works with an older native module that has no setTransitionsDisabled', () => {
+    it('leaves the drag to Windows with an older native module', () => {
       const t = setup({ addon: {} });
       t.press(SC_MOVE_CAPTION, 300, 110);
-      expect(t.willChange('will-move', 310, 115)).toBe(true);
+      expect(t.willChange('will-move', 310, 115)).toBe(false);
       expect(() => t.exit()).not.toThrow();
+      expect(t.transitions).toEqual([]);
     });
   });
 });
