@@ -87,7 +87,7 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 
 On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
 
-- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
+- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
 - **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
 
 > [!TIP]
@@ -312,7 +312,9 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 ### I'm on Windows 10 and I'm experiencing lag when dragging the window
 
-[Please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
+With acrylic, Windows 10 redraws the blur every time the window moves, and a mouse that reports faster than the display refreshes outpaces it, so the window trails the cursor ([background](https://github.com/EYHN/vscode-vibrancy/discussions/80)). Vibrancy moves and resizes the window itself while you drag it, at most once per display frame, which keeps it with the cursor without dropping the blur. Snapping works as usual.
+
+Windows 10 also draws the maximize, restore and minimize animations without the blur, so Vibrancy turns those animations off for VSCode's window. Snapping to a side or corner still animates.
 
 ### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
 

@@ -70,7 +70,6 @@ const universalType = ['transparent'];
 
 // Windows AccentState values (must match enum in native/vibrancy.cc)
 const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
-const ACCENT_BLUR = 3;        // ACCENT_ENABLE_BLURBEHIND
 const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
 
 // Map a vibrancy type to an Electron BrowserWindow backgroundMaterial value
@@ -155,27 +154,22 @@ electron.app.on('browser-window-created', (_, window) => {
       }
       const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
       const bindings = require('./vibrancy.cjs');
-      const applyAccent = (accent = effect) => {
-        if (window.isDestroyed()) return;
-        bindings.setVibrancy(
-          window.getNativeWindowHandle().readInt32LE(0),
-          accent,
-          backgroundRGB.r,
-          backgroundRGB.g,
-          backgroundRGB.b,
-          0
-        );
-      };
-      applyAccent();
+      bindings.setVibrancy(
+        window.getNativeWindowHandle().readInt32LE(0),
+        effect,
+        backgroundRGB.r,
+        backgroundRGB.g,
+        backgroundRGB.b,
+        0
+      );
 
       // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Windows 10,
-      // so swap it for the plain blur during move/resize and restore it once
-      // the window goes idle. Windows 11 doesn't lag with it: a 1000-4000 Hz
-      // synthetic drag or resize kept the window within a few pixels of the
-      // cursor, so 'acrylic-classic' keeps its blur while it moves.
+      // so take the move/resize over there (see win-acrylic-drag.cjs). Windows
+      // 11 doesn't lag with it: a 1000-4000 Hz synthetic drag or resize kept
+      // the window within a few pixels of the cursor.
       if (effect === ACCENT_ACRYLIC && !app.win11) {
-        const suppressAcrylicWhileDragging = require('./win-acrylic-drag.cjs');
-        suppressAcrylicWhileDragging(window, () => applyAccent(ACCENT_BLUR), () => applyAccent());
+        const followCursorWhileDragging = require('./win-acrylic-drag.cjs');
+        followCursorWhileDragging(window, electron.screen, bindings);
       }
     }
 

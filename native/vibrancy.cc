@@ -1,6 +1,8 @@
 #include <napi.h>
 #include <dwmapi.h>
 
+#pragma comment(lib, "dwmapi.lib")
+
 enum AccentState {
     ACCENT_DISABLED = 0,
     ACCENT_ENABLE_GRADIENT = 1,
@@ -122,11 +124,31 @@ void disableVibrancy(const Napi::CallbackInfo &info) {
     }
 }
 
+// DWMWA_TRANSITIONS_FORCEDISABLED: turn off the window's maximize, restore and
+// snap animations. DWM draws them without the legacy acrylic accent, so the
+// window shows through unblurred until the animation ends.
+void setTransitionsDisabled(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    if (info.Length() != 2) {
+        Napi::TypeError::New(env, "PARAMETER_ERROR").ThrowAsJavaScriptException();
+        return;
+    }
+    if (!info[0].IsNumber() || !info[1].IsBoolean()) {
+        Napi::TypeError::New(env, "UNKNOWN").ThrowAsJavaScriptException();
+        return;
+    }
+    HWND hWnd = (HWND) info[0].As<Napi::Number>().Int64Value();
+    BOOL disabled = info[1].As<Napi::Boolean>().Value() ? TRUE : FALSE;
+    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disabled, sizeof(disabled));
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "setVibrancy"),
                 Napi::Function::New(env, setVibrancy));
     exports.Set(Napi::String::New(env, "disableVibrancy"),
                 Napi::Function::New(env, disableVibrancy));
+    exports.Set(Napi::String::New(env, "setTransitionsDisabled"),
+                Napi::Function::New(env, setTransitionsDisabled));
     return exports;
 }
 
