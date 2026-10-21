@@ -200,6 +200,12 @@ Prevent Vibrancy from modifying `workbench.colorCustomizations` which is used to
 
 *boolean, default is false*
 
+#### Disable smooth dragging (`vscode_vibrancy.disableSmoothDragging`)
+
+Windows 10 with acrylic only. Vibrancy normally moves and resizes the window itself while you drag it, so the blur keeps up with the cursor (see [the lag FAQ](#im-on-windows-10-and-im-experiencing-lag-when-dragging-the-window)). Turn this on to leave dragging to Windows if it misbehaves, for example with a window manager. The window then trails the cursor while dragged. The fix for the unblurred maximize animation still applies.
+
+*boolean, default is false*
+
 #### Refresh interval (`vscode_vibrancy.refreshInterval`)
 
 Refresh interval (in milliseconds) for making the background transparent after window resizing. Lower values make the update less visible at the cost of increased CPU utilization. **Ignored when using "Prevent Flash" method.**
@@ -315,6 +321,8 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 ### I'm on Windows 10 and I'm experiencing lag when dragging the window
 
 With acrylic, Windows 10 redraws the blur every time the window moves, and a mouse that reports faster than the display refreshes outpaces it, so the window trails the cursor ([background](https://github.com/EYHN/vscode-vibrancy/discussions/80)). Vibrancy moves and resizes the window itself while you drag it, at most once per display frame, which keeps it with the cursor without dropping the blur. Snapping works as usual, including PowerToys FancyZones and moving between monitors with different scaling.
+
+If dragging or resizing misbehaves on your setup, turn on `vscode_vibrancy.disableSmoothDragging` and [open an issue](https://github.com/illixion/vscode-vibrancy-continued/issues). Windows then handles the drag itself, and the window trails the cursor again.
 
 Windows 10 also draws the maximize, restore and minimize animations without the blur, and so does Windows 11 with `acrylic-classic`. Vibrancy turns those animations off for VSCode's window in both cases. Snapping to a side or corner still animates.
 

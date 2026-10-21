@@ -16,7 +16,8 @@ const { attach: attachWindowButtons } = require('./mac-window-buttons.cjs');
  *    theme: "Default Dark" | "Dark (Only Subbar)" | "Default Light" | "Light (Only Subbar)" | "Tokyo Night Storm" | "Tokyo Night Storm (Outer)" | "Noir et blanc" | "Dark (Exclude Tab Line)" | "Solarized Dark+",
  *    imports: string[],
  *    refreshInterval: number,
- *    preventFlash: boolean
+ *    preventFlash: boolean,
+ *    disableSmoothDragging?: boolean
  *  },
  *  themeCSS: string,
  *  theme: any,
@@ -169,9 +170,13 @@ electron.app.on('browser-window-created', (_, window) => {
       // 11 doesn't lag with it: a 1000-4000 Hz synthetic drag or resize kept
       // the window within a few pixels of the cursor. Both draw the maximize
       // animation unblurred, which the module handles either way.
+      // disableSmoothDragging is the way out if taking the drag over clashes
+      // with something on the user's machine, such as a window manager.
       if (effect === ACCENT_ACRYLIC) {
         const followCursorWhileDragging = require('./win-acrylic-drag.cjs');
-        followCursorWhileDragging(window, electron.screen, bindings, { follow: !app.win11 });
+        followCursorWhileDragging(window, electron.screen, bindings, {
+          follow: !app.win11 && !app.config.disableSmoothDragging,
+        });
       }
     }
 

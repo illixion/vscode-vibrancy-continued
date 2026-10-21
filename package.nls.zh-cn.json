@@ -34,6 +34,7 @@
   "configuration.preferedLightTheme.deprecation": "已重命名为 vscode_vibrancy.preferredLightTheme（拼写修正）。你的值仍然有效；如需消除此警告，请迁移到新设置。",
   "configuration.disableThemeFixes.description": "禁用对 Cursor 等非标准 VSCode 编辑器的修复。",
   "configuration.disableColorCustomizations.description": "阻止 Vibrancy 修改 `workbench.colorCustomizations`。如果您想自行管理颜色自定义，或使用自定义CSS主题来处理自身背景，请启用此选项。",
+  "configuration.disableSmoothDragging.description": "（Windows 10，acrylic）将窗口的移动和缩放交还给 Windows。Vibrancy 通常会在拖动时自行移动窗口，使模糊效果跟上光标。如果拖动行为异常（例如与窗口管理工具冲突），请启用此选项；启用后，拖动时窗口会落后于光标。",
   "extension.installVibrancy.title": "安装毛玻璃效果",
   "extension.uninstallVibrancy.title": "卸载毛玻璃效果",
   "extension.updateVibrancy.title": "重新安装毛玻璃效果",

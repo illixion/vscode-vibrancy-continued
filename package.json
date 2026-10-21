@@ -284,6 +284,11 @@
           "description": "%configuration.disableColorCustomizations.description%",
           "type": "boolean",
           "default": false
+        },
+        "vscode_vibrancy.disableSmoothDragging": {
+          "description": "%configuration.disableSmoothDragging.description%",
+          "type": "boolean",
+          "default": false
         }
       }
     }
