@@ -413,8 +413,10 @@ function resolveWindowMode({
  *
  * The workbench also hides that title bar when it would be empty (command
  * center, layout controls and title-bar editor actions all off, activity bar
- * on the side). That isn't modelled: it takes four settings that VSCode
- * reshuffles between releases, and the defaults keep the title bar populated.
+ * on the side), and in Zen Mode or with a maximized panel. That isn't modelled
+ * here: it takes settings that VSCode reshuffles between releases. The runtime
+ * watches the title bar instead (runtime-pre-esm/mac-window-buttons.cjs) and
+ * keeps the traffic lights hidden, except on hover, while it's hidden.
  *
  * @param {{
  *   platform: NodeJS.Platform,

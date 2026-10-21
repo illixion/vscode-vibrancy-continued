@@ -1,3 +1,21 @@
+# 1.5.0
+
+* Core:
+  * Windows: add the `acrylic-classic` vibrancy type, the clear blur Windows 11 had before 1.1.80. Windows 11's `acrylic` can read milky at low opacity because the system picks its tint; `acrylic-classic` uses the same blur as Windows 10 instead. The default type is unchanged. Vibrancy also switches off Chromium's default Mica backdrop for it, which used to show a static dark tint in place of the blur (PR [#285](https://github.com/illixion/vscode-vibrancy-continued/pull/285), issue [#284](https://github.com/illixion/vscode-vibrancy-continued/issues/284))
+  * Windows 10: fix the window and cursor trailing behind your hand when dragging or resizing with acrylic on (issue [#52](https://github.com/illixion/vscode-vibrancy-continued/issues/52)). Vibrancy now follows the drag itself, at most once per display frame, so acrylic stays on while you move the window instead of going black or see-through. Keyboard moves, Aero Snap and FancyZones still work as before
+  * Windows: fix dragging on scaled displays. Windows are now placed in physical pixels, so a drag no longer freezes or grows the window by 100-120 px at 125% and 150% scaling, and moving between monitors with different scaling no longer shrinks it
+  * Windows: keep the blur through the maximize, restore and minimize animations, which used to show the desktop unblurred for about 300 ms
+  * Windows: add the `vscode_vibrancy.disableSmoothDragging` setting to leave moving and resizing to Windows again, for when the drag handling clashes with something such as a window manager
+  * macOS: with `window.nativeFullScreen` off, show the traffic lights only on hover while VSCode's title bar is hidden (Zen Mode, a maximized panel), so they no longer draw over the first tab (PR [#281](https://github.com/illixion/vscode-vibrancy-continued/pull/281))
+* Themes:
+  * Fix Modern UI backgrounds for tabs, sidebars and panels on VSCode 1.141 and newer while preserving theme colours and transparency, native tab shapes and interaction feedback, and opaque regions in Only Subbar and Outer themes (PR [#278](https://github.com/illixion/vscode-vibrancy-continued/pull/278))
+* i18n:
+  * Correct the Japanese and Simplified Chinese translations: fix mistranslated and garbled setting descriptions, terminology and a few broken or missing strings
+* Contributors:
+  * [@dluffy121](https://github.com/dluffy121)
+  * [@gocasimiro](https://github.com/gocasimiro)
+  * [@wtalioy](https://github.com/wtalioy)
+
 # 1.4.0
 
 * Core:

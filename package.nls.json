@@ -1,8 +1,9 @@
 {
-  "$schema": "https://json.schemastore.org/coffeelint",
+  "$schema": "./nls-schema.json",
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows) Acrylic Fluent design blur",
+  "configuration.type.acrylic-classic.description": "(Windows) Clear acrylic blur without the Windows 11 frosted tint, as before 1.1.80",
   "configuration.type.mica.description": "(Windows 11 only) Mica background material",
   "configuration.type.tabbed.description": "(Windows 11 only) Mica Alt (Tabbed) background material",
   "configuration.type.transparent.description": "Make the background transparent, without blur",
@@ -33,6 +34,7 @@
   "configuration.preferedLightTheme.deprecation": "Renamed to vscode_vibrancy.preferredLightTheme (corrected spelling). Your value is still honored, but move it to the new setting to silence this warning.",
   "configuration.disableThemeFixes.description": "Disable fixes for non-standard VSCode editors like Cursor.",
   "configuration.disableColorCustomizations.description": "Prevent Vibrancy from modifying `workbench.colorCustomizations`. Enable this if you manage color customizations yourself or use a custom CSS theme that handles its own backgrounds.",
+  "configuration.disableSmoothDragging.description": "(Windows 10, acrylic) Leave moving and resizing the window to Windows. Vibrancy normally moves the window itself while you drag it, so the blur keeps up with the cursor. Turn this on if dragging misbehaves, for example with a window manager; the window then trails the cursor while dragged.",
   "extension.installVibrancy.title": "Enable Vibrancy",
   "extension.uninstallVibrancy.title": "Disable Vibrancy",
   "extension.updateVibrancy.title": "Reload Vibrancy",

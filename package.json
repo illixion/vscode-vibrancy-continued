@@ -2,7 +2,7 @@
   "name": "vscode-vibrancy-continued",
   "displayName": "Vibrancy Continued",
   "description": "Vibrancy Effect for Visual Studio Code",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "publisher": "illixion",
   "author": {
     "email": "illixion@illixion.com",
@@ -64,6 +64,7 @@
           "enum": [
             "auto",
             "acrylic",
+            "acrylic-classic",
             "mica",
             "tabbed",
             "transparent",
@@ -90,6 +91,7 @@
           "enumDescriptions": [
             "%configuration.type.auto.description%",
             "%configuration.type.acrylic.description%",
+            "%configuration.type.acrylic-classic.description%",
             "%configuration.type.mica.description%",
             "%configuration.type.tabbed.description%",
             "%configuration.type.transparent.description%",
@@ -280,6 +282,11 @@
         },
         "vscode_vibrancy.disableColorCustomizations": {
           "description": "%configuration.disableColorCustomizations.description%",
+          "type": "boolean",
+          "default": false
+        },
+        "vscode_vibrancy.disableSmoothDragging": {
+          "description": "%configuration.disableSmoothDragging.description%",
           "type": "boolean",
           "default": false
         }

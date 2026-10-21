@@ -4,6 +4,7 @@ const electron = require('electron');
  */
 const transparencyMethods = require('./methods/index.cjs');
 const createDiagnostics = require('./diagnostics.cjs');
+const { attach: attachWindowButtons } = require('./mac-window-buttons.cjs');
 
 /**
  * @type {{
@@ -15,7 +16,8 @@ const createDiagnostics = require('./diagnostics.cjs');
  *    theme: "Default Dark" | "Dark (Only Subbar)" | "Default Light" | "Light (Only Subbar)" | "Tokyo Night Storm" | "Tokyo Night Storm (Outer)" | "Noir et blanc" | "Dark (Exclude Tab Line)" | "Solarized Dark+",
  *    imports: string[],
  *    refreshInterval: number,
- *    preventFlash: boolean
+ *    preventFlash: boolean,
+ *    disableSmoothDragging?: boolean
  *  },
  *  themeCSS: string,
  *  theme: any,
@@ -53,7 +55,18 @@ const macosType = [
 
 // 'mica' and 'tabbed' (Mica Alt) are Windows 11 DWM backdrop materials. On
 // Windows 10 they have no legacy equivalent and fall back to acrylic blur.
-const windowsType = ['acrylic', 'mica', 'tabbed'];
+// 'acrylic-classic' keeps Windows 11 on the legacy accent that every Windows
+// version used before the DWM materials: a clear blur, coloured only by the
+// theme's opacity, where the DWM acrylic material lays its own frosted tint
+// and noise over the blur. On Windows 10 it is the same as 'acrylic'.
+//
+// Why it exists (issue #284): setBackgroundMaterial('acrylic') sets
+// DWMSBT_TRANSIENTWINDOW, which Microsoft documents as Desktop Acrylic "in its
+// brightest variant", and DWM takes no tint or luminosity for it. Its
+// luminosity layer lifts dark backdrops toward grey, so at the low opacities
+// that looked clear before 1.1.80 the window now reads milky, not tinted.
+const windowsType = ['acrylic', 'acrylic-classic', 'mica', 'tabbed'];
+const CLASSIC_ACRYLIC_TYPE = 'acrylic-classic';
 
 const universalType = ['transparent'];
 
@@ -120,35 +133,50 @@ electron.app.on('browser-window-created', (_, window) => {
     // Windows 11 with a recent enough Electron: use the modern DWM backdrop
     // material (Mica / Acrylic / Tabbed). No per-frame blur cost, so no drag lag
     // (issue #52), and it enables Mica/Mica Alt (issue #19).
-    if (app.win11 && typeof window.setBackgroundMaterial === 'function') {
+    if (app.win11 && type !== CLASSIC_ACRYLIC_TYPE && typeof window.setBackgroundMaterial === 'function') {
       try {
         window.setBackgroundMaterial(backgroundMaterialForType(type));
       } catch (err) {
         console.error('setBackgroundMaterial failed:', err);
       }
     } else {
-      // Windows 10 (or older Electron without setBackgroundMaterial): legacy
+      // Windows 10, the 'acrylic-classic' type on Windows 11, or older
+      // Electron without setBackgroundMaterial: legacy
       // SetWindowCompositionAttribute accent.
+      //
+      // Chromium gives its windows a Mica system backdrop by default on
+      // Windows 11, and that shows instead of the accent. Switch it off first
+      // so the accent is what the window gets.
+      if (app.win11 && typeof window.setBackgroundMaterial === 'function') {
+        try {
+          window.setBackgroundMaterial('none');
+        } catch (err) {
+          console.error('setBackgroundMaterial failed:', err);
+        }
+      }
       const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
       const bindings = require('./vibrancy.cjs');
-      const applyAccent = () => {
-        if (window.isDestroyed()) return;
-        bindings.setVibrancy(
-          window.getNativeWindowHandle().readInt32LE(0),
-          effect,
-          backgroundRGB.r,
-          backgroundRGB.g,
-          backgroundRGB.b,
-          0
-        );
-      };
-      applyAccent();
+      bindings.setVibrancy(
+        window.getNativeWindowHandle().readInt32LE(0),
+        effect,
+        backgroundRGB.r,
+        backgroundRGB.g,
+        backgroundRGB.b,
+        0
+      );
 
-      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Win10, so
-      // drop it during move/resize and restore it once the window goes idle.
+      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Windows 10,
+      // so take the move/resize over there (see win-acrylic-drag.cjs). Windows
+      // 11 doesn't lag with it: a 1000-4000 Hz synthetic drag or resize kept
+      // the window within a few pixels of the cursor. Both draw the maximize
+      // animation unblurred, which the module handles either way.
+      // disableSmoothDragging is the way out if taking the drag over clashes
+      // with something on the user's machine, such as a window manager.
       if (effect === ACCENT_ACRYLIC) {
-        const suppressAcrylicWhileDragging = require('./win-acrylic-drag.cjs');
-        suppressAcrylicWhileDragging(window, bindings, applyAccent);
+        const followCursorWhileDragging = require('./win-acrylic-drag.cjs');
+        followCursorWhileDragging(window, electron.screen, bindings, {
+          follow: !app.win11 && !app.config.disableSmoothDragging,
+        });
       }
     }
 
@@ -229,9 +257,14 @@ electron.app.on('browser-window-created', (_, window) => {
     // The window is borderless under VSCode's native title bar (see
     // isCustomTitleBarForcedNative in the extension), which drops the traffic
     // lights. Electron can show them on a frameless window, and the workbench's
-    // own title bar leaves room for them.
+    // own title bar leaves room for them. When VSCode hides that title bar the
+    // lights would cover the tabs, so they then only show on hover.
     if (app.os === 'macos' && app.macWindowButtons && typeof window.setWindowButtonVisibility === 'function') {
       window.setWindowButtonVisibility(true);
+
+      if (!isAuxiliaryWindow) {
+        attachWindowButtons(window, electron.screen);
+      }
     }
 
     injectHTML(window);

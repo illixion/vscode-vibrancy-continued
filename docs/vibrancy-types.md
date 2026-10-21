@@ -1,6 +1,6 @@
 # Vibrancy Continued Types - Visual Reference
 
-This page showcases how the different `vscode_vibrancy.type` settings will look as of macOS Sequoia 15.5 and Windows 11 24H2. Note that their visual appearance is tied to the current OS and Electron versions, and are subject to change. Acrylic type is only available on Windows, and all other styles are only available on macOS.
+This page showcases how the different `vscode_vibrancy.type` settings will look as of macOS Sequoia 15.5 and Windows 11 24H2. Note that their visual appearance is tied to the current OS and Electron versions, and are subject to change. The Acrylic and Acrylic-Classic types are only available on Windows, and all other styles are only available on macOS.
 
 All screenshots use an opacity value of 0, whereas the default value in most themes is 0.4, you can increase this value to darken the background.
 
@@ -10,6 +10,7 @@ All screenshots use an opacity value of 0, whereas the default value in most the
 |---|---|
 | Auto | <img src="../images/types/auto.png" alt="Auto UI Type" width="1024"> |
 | Acrylic | <img src="../images/types/acrylic.png" alt="Acrylic UI Type" width="1024"> |
+| Acrylic-Classic | <img src="../images/types/acrylic-classic.png" alt="Acrylic-Classic UI Type" width="1024"><br>The same blur without the frosted tint Windows 11 adds to its acrylic material, as acrylic looked before 1.1.80. On Windows 10 it looks the same as Acrylic. |
 | Under-Window | <img src="../images/types/under-window.png" alt="Under-Window UI Type" width="1024"> |
 | Fullscreen-UI | <img src="../images/types/fullscreen-ui.png" alt="Fullscreen-UI UI Type" width="1024"> |
 | Titlebar | <img src="../images/types/titlebar.png" alt="Titlebar UI Type" width="1024"> |

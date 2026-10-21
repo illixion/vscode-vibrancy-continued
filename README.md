@@ -87,7 +87,7 @@ Each time VS Code is updated, please re-enable Vibrancy using the same steps. If
 
 On Windows there's one unavoidable trade-off, because a *transparent* window on Windows is a "layered" window that the OS **excludes from Aero Snap and maximize**:
 
-- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (it disappears while you drag, and Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
+- **Default (`windowMode: auto` / `frameless`)** — opaque window. **Snap, maximize, and resize work**, but Windows 10 draws a **thin 1px border** around the window (Windows 11 doesn't show it at all). This is a cosmetic limitation of opaque resizable windows on Win10 that can't be removed without breaking snapping. (On older VSCode builds, where opaque vibrancy rendered incorrectly, `auto` instead uses a transparent window — no border, but no snapping; this matches `frameless-transparent` below.)
 - **Pixel-perfect (`windowMode: frameless-transparent`)** — fully transparent window. **No border at all**, the cleanest possible look — but **Aero Snap / maximize stop working**.
 
 > [!TIP]
@@ -98,6 +98,7 @@ On Windows there's one unavoidable trade-off, because a *transparent* window on 
 On Windows 11 you can choose the backdrop material via `vscode_vibrancy.type`:
 
 - **`acrylic`** (default) — a real-time translucent blur of *whatever is behind the window*, including your other windows and the desktop. This is the classic see-through "glass" vibrancy effect.
+- **`acrylic-classic`** — the same see-through blur, without the frosted tint Windows 11 adds to its acrylic material. This is how acrylic looked on Windows 11 before 1.1.80, and in the theme screenshots below: a clear blur coloured only by the theme and `opacity`. It uses the older blur that Windows 10 uses, and keeps blurring while you drag or resize the window.
 - **`mica`** — samples only your *desktop wallpaper* (not the windows behind VSCode) and is mostly static, so it costs almost nothing on GPU/battery. It's Microsoft's recommended material for app backgrounds and gives a subtle, native Windows 11 feel rather than a see-through effect.
 - **`tabbed`** — "Mica Alt", a more strongly tinted variant of Mica.
 
@@ -125,6 +126,7 @@ Native method of Vibrancy effect. See here for screenshots of all available opti
 * auto : Automatically switch with system version.
 * transparent: Make VSCode transparent only, without blur. (Linux default)
 * acrylic : Acrylic Fluent Design blur. (Windows)
+* acrylic-classic : Clear acrylic blur without the Windows 11 frosted tint, as before 1.1.80. (Windows)
 * mica : Mica background material — tints with the desktop wallpaper. (Windows 11 only)
 * tabbed : Mica Alt (Tabbed) background material — a stronger Mica variant. (Windows 11 only)
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
@@ -184,6 +186,8 @@ VSCode uses its native title bar on macOS when `window.titleBarStyle` is `native
 
 The exception is `nativeFullScreen: false`, which doesn't mean you asked for the native title bar. There Vibrancy keeps the borderless, transparent window and shows the traffic lights itself. VSCode still draws its own title bar in that case, so the window drags as usual. It doesn't apply if you also set `window.titleBarStyle` to `native`, `window.nativeTabs` to `true` (native tabs live in the native title bar), or `window.customTitleBarVisibility` to `never` (no title bar for the buttons to sit in). These settings take effect when VSCode restarts, which it offers to do itself. After that restart, Vibrancy offers to reload if the window needs updating; accept it and restart once more.
 
+When VSCode hides its title bar (Zen Mode, a maximized panel, an empty title bar), the traffic lights would sit on top of the tabs. Like iTerm2, Vibrancy then hides them and shows them only while the mouse is in the window's top-left corner.
+
 > **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless-transparent` on macOS and Linux, `frameless` (opaque) on Windows and with Windows 11 Mica/Acrylic materials. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 
 #### Disable Theme Fixes (`vscode_vibrancy.disableThemeFixes`)
@@ -193,6 +197,12 @@ Disable fixes to Default Dark and Default Light themes for non-VSCode editors li
 #### Disable Color Customizations (`vscode_vibrancy.disableColorCustomizations`)
 
 Prevent Vibrancy from modifying `workbench.colorCustomizations` which is used to make some elements like the terminal vibrant. Enable this if you want to manage color customizations yourself, or if you use a custom CSS theme that handles its own background colors and transparency. When enabled mid-session, any previously written vibrancy colors will be restored to their original values.
+
+*boolean, default is false*
+
+#### Disable smooth dragging (`vscode_vibrancy.disableSmoothDragging`)
+
+Windows 10 with acrylic only. Vibrancy normally moves and resizes the window itself while you drag it, so the blur keeps up with the cursor (see [the lag FAQ](#im-on-windows-10-and-im-experiencing-lag-when-dragging-the-window)). Turn this on to leave dragging to Windows if it misbehaves, for example with a window manager. The window then trails the cursor while dragged. The fix for the unblurred maximize animation still applies.
 
 *boolean, default is false*
 
@@ -310,7 +320,11 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 ### I'm on Windows 10 and I'm experiencing lag when dragging the window
 
-[Please read here for details](https://github.com/EYHN/vscode-vibrancy/discussions/80).
+With acrylic, Windows 10 redraws the blur every time the window moves, and a mouse that reports faster than the display refreshes outpaces it, so the window trails the cursor ([background](https://github.com/EYHN/vscode-vibrancy/discussions/80)). Vibrancy moves and resizes the window itself while you drag it, at most once per display frame, which keeps it with the cursor without dropping the blur. Snapping works as usual, including PowerToys FancyZones and moving between monitors with different scaling.
+
+If dragging or resizing misbehaves on your setup, turn on `vscode_vibrancy.disableSmoothDragging` and [open an issue](https://github.com/illixion/vscode-vibrancy-continued/issues). Windows then handles the drag itself, and the window trails the cursor again.
+
+Windows 10 also draws the maximize, restore and minimize animations without the blur, and so does Windows 11 with `acrylic-classic`. Vibrancy turns those animations off for VSCode's window in both cases. Snapping to a side or corner still animates.
 
 ### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
 
