@@ -22,7 +22,7 @@ function pointLParam(x, y) {
   return b;
 }
 
-function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized = false, addon } = {}) {
+function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized = false, addon, options } = {}) {
   const transitions = [];
   const win = new EventEmitter();
   const hooks = {};
@@ -52,7 +52,7 @@ function setup({ bounds = { x: 100, y: 100, width: 800, height: 600 }, maximized
   vi.spyOn(process.hrtime, 'bigint').mockImplementation(() => now);
   const advance = (ms) => { now += BigInt(ms * 1e6); };
 
-  followCursorWhileDragging(win, screen, nativeAddon);
+  followCursorWhileDragging(win, screen, nativeAddon, options);
 
   const press = (command, x, y) => {
     screen.cursor = { x, y };
@@ -153,6 +153,42 @@ describe('followCursorWhileDragging', () => {
     t.advance(10);
     t.willChange('will-move', 1105, 62);
     expect(t.win.bounds).toMatchObject({ x: 700, y: 52, width: 800, height: 600 });
+  });
+
+  it('copes with a restored drag that ends on its first, native move', () => {
+    const t = setup({ bounds: { x: 0, y: 0, width: 2560, height: 1400 }, maximized: true });
+    t.press(SC_MOVE_CAPTION, 1000, 10);
+    t.willChange('will-move', 1005, 12, { x: 600, y: 2, width: 800, height: 600 });
+    expect(() => t.exit()).not.toThrow();
+    expect(t.win.calls).toEqual([]);
+  });
+
+  describe('with follow: false (Windows 11)', () => {
+    it('leaves moves and resizes to Windows', () => {
+      const t = setup({ options: { follow: false } });
+      t.press(SC_MOVE_CAPTION, 300, 110);
+      expect(t.willChange('will-move', 310, 115)).toBe(false);
+      t.exit();
+      t.press(SC_SIZE_LEFT, 100, 400);
+      expect(t.willChange('will-resize', 150, 400)).toBe(false);
+      t.exit();
+      expect(t.win.calls).toEqual([]);
+    });
+
+    it('still keeps transitions off except for a title bar drag away from the top', () => {
+      vi.useFakeTimers();
+      const t = setup({ options: { follow: false } });
+      expect(t.transitions).toEqual([[0x1234, true]]);
+      t.press(SC_MOVE_CAPTION, 300, 110);
+      t.willChange('will-move', 0, 700);
+      expect(t.transitions.at(-1)).toEqual([0x1234, false]);
+      t.willChange('will-move', 800, 3);
+      expect(t.transitions.at(-1)).toEqual([0x1234, true]);
+      t.willChange('will-move', 0, 700);
+      t.exit();
+      vi.advanceTimersByTime(400);
+      expect(t.transitions.at(-1)).toEqual([0x1234, true]);
+    });
   });
 
   it('resizes from the left edge with the right edge fixed, down to the minimum size', () => {

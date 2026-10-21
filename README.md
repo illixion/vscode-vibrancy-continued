@@ -314,7 +314,7 @@ sudo xattr -dr com.apple.quarantine "/Applications/Visual Studio Code.app"
 
 With acrylic, Windows 10 redraws the blur every time the window moves, and a mouse that reports faster than the display refreshes outpaces it, so the window trails the cursor ([background](https://github.com/EYHN/vscode-vibrancy/discussions/80)). Vibrancy moves and resizes the window itself while you drag it, at most once per display frame, which keeps it with the cursor without dropping the blur. Snapping works as usual.
 
-Windows 10 also draws the maximize, restore and minimize animations without the blur, so Vibrancy turns those animations off for VSCode's window. Snapping to a side or corner still animates.
+Windows 10 also draws the maximize, restore and minimize animations without the blur, and so does Windows 11 with `acrylic-classic`. Vibrancy turns those animations off for VSCode's window in both cases. Snapping to a side or corner still animates.
 
 ### VSCode window cannot be resized/moved/maximized after enabling Vibrancy
 

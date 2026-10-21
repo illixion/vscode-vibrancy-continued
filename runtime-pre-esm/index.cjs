@@ -166,10 +166,11 @@ electron.app.on('browser-window-created', (_, window) => {
       // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Windows 10,
       // so take the move/resize over there (see win-acrylic-drag.cjs). Windows
       // 11 doesn't lag with it: a 1000-4000 Hz synthetic drag or resize kept
-      // the window within a few pixels of the cursor.
-      if (effect === ACCENT_ACRYLIC && !app.win11) {
+      // the window within a few pixels of the cursor. Both draw the maximize
+      // animation unblurred, which the module handles either way.
+      if (effect === ACCENT_ACRYLIC) {
         const followCursorWhileDragging = require('./win-acrylic-drag.cjs');
-        followCursorWhileDragging(window, electron.screen, bindings);
+        followCursorWhileDragging(window, electron.screen, bindings, { follow: !app.win11 });
       }
     }
 

@@ -6,7 +6,8 @@
 // A mouse that reports faster than the display refreshes (1000 Hz against 60
 // to 240 Hz) queues more than DWM gets through, so the window, and the cursor
 // DWM draws, trail the hand as if at a speed limit. Windows 11 doesn't have
-// this cost, so it doesn't use this module.
+// this cost, so it passes `follow: false` and only gets the transitions
+// handling below.
 //
 // Instead of dropping the accent for the drag, take the drag over: block each
 // change the loop proposes (will-move is WM_MOVING, will-resize is WM_SIZING)
@@ -22,8 +23,9 @@
 // but forgets it when the event is prevented. A placement from a timer would
 // survive to the end and undo the snap.
 //
-// DWM draws the maximize and restore animations without the accent, so the
-// window shows through unblurred for a quarter of a second. Transitions stay
+// DWM draws the maximize and restore animations without the accent, on
+// Windows 10 and 11 alike, so the window shows through unblurred for a quarter
+// of a second. Transitions stay
 // off, except during a title bar drag away from the top edge and the snap
 // animation after it, so a snap to a side or corner still animates. A
 // maximize, restore or minimize turns them off at once, even if it comes
@@ -71,8 +73,9 @@ function inMaximizeZone(point, display) {
  * @param {import('electron').BrowserWindow} window
  * @param {Pick<import('electron').Screen, 'getCursorScreenPoint' | 'screenToDipPoint' | 'getDisplayMatching' | 'getDisplayNearestPoint'>} screen
  * @param {{ setTransitionsDisabled?: (hwnd: number, disabled: boolean) => void }} addon - native vibrancy module
+ * @param {{ follow?: boolean }} [options] - follow: false leaves moves and resizes to Windows
  */
-module.exports = function followCursorWhileDragging(window, screen, addon) {
+module.exports = function followCursorWhileDragging(window, screen, addon, { follow = true } = {}) {
   let press = null; // what the mouse press started, where, and the window then
   let drag = null;
   let transitionsOn = null;
@@ -113,7 +116,8 @@ module.exports = function followCursorWhileDragging(window, screen, addon) {
   // snapped or maximized the window on release, so it only corrects the
   // position while the window is still where we last put it.
   function apply(final) {
-    if (!drag || window.isDestroyed()) return;
+    // No anchor yet: a restored drag that ended on its first, native move.
+    if (!drag || !drag.bounds || window.isDestroyed()) return;
     if (final && drag.placed && !sameBounds(window.getBounds(), drag.placed)) return;
     const cursor = screen.getCursorScreenPoint();
     const dx = cursor.x - drag.cursor.x;
@@ -170,15 +174,16 @@ module.exports = function followCursorWhileDragging(window, screen, addon) {
       press = null;
       if (restored) return;
     }
+    if (!drag.edge) {
+      const cursor = screen.getCursorScreenPoint();
+      setTransitions(!inMaximizeZone(cursor, screen.getDisplayNearestPoint(cursor).bounds));
+    }
+    if (!follow) return;
     if (!drag.bounds) {
       drag.bounds = window.getBounds();
       drag.cursor = screen.getCursorScreenPoint();
     }
     event.preventDefault();
-    if (!drag.edge) {
-      const cursor = screen.getCursorScreenPoint();
-      setTransitions(!inMaximizeZone(cursor, screen.getDisplayNearestPoint(cursor).bounds));
-    }
     if (process.hrtime.bigint() - drag.last >= drag.frame) apply(false);
   }
 
@@ -188,7 +193,7 @@ module.exports = function followCursorWhileDragging(window, screen, addon) {
   window.hookWindowMessage(WM_EXITSIZEMOVE, () => {
     press = null;
     if (!drag) return;
-    apply(true);
+    if (follow) apply(true);
     drag = null;
     if (transitionsOn) transitionsOffTimer = setTimeout(() => setTransitions(false), SNAP_ANIMATION_MS);
   });
