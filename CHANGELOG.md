@@ -1,3 +1,8 @@
+# Unreleased
+
+* Themes:
+  * Fix Modern UI backgrounds for tabs, sidebars and panels while preserving theme colours and transparency, native tab shapes and interaction feedback, and opaque regions in Only Subbar and Outer themes
+
 # 1.4.0
 
 * Core:

@@ -750,7 +750,13 @@ function activate(context) {
     const themeConfigPath = path.resolve(__dirname, themeConfigPaths[currentTheme]);
     const themeConfig = require(themeConfigPath);
     const themeStylePath = path.join(__dirname, themeStylePaths[currentTheme]);
-    const themeCSS = await fs.readFile(themeStylePath, 'utf-8');
+    // Shared Modern UI rules consume each theme's surface colours. Keep them in
+    // the same payload so backgroundOverride recolours them and imports stay last.
+    const [modernUICSS, selectedThemeCSS] = await Promise.all([
+      fs.readFile(path.join(__dirname, '../themes/modern-ui.css'), 'utf-8'),
+      fs.readFile(themeStylePath, 'utf-8'),
+    ]);
+    const themeCSS = `${selectedThemeCSS}\n${modernUICSS}`;
     const JS = baseJS !== undefined ? baseJS : await fs.readFile(JSFile, 'utf-8');
 
     const imports = await generateImports(config);

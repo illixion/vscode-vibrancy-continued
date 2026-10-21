@@ -61,9 +61,9 @@ body {
   background-color: var(--vscode-quickInput-background) !important;
 }
 
-.editor-group-container > .tabs,
-.editor-group-container > .tabs .tab,
-.monaco-workbench .part.editor > .content > .one-editor-silo > .container > .title,
+.editor-group-container > :is(.tabs, .title),
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab,
+.monaco-workbench .part.editor :is(.editor-group-container, .one-editor-silo > .container) > .title,
 .monaco-workbench .part.sidebar,
 .monaco-workbench .part.auxiliarybar,
 .monaco-workbench .part.panel.bottom > .content,
@@ -119,14 +119,14 @@ body {
   background-color: var(--atom-one-dark-base) !important;
 }
 
-.editor-group-container > .tabs .tab.active,
-.monaco-workbench .part.editor > .content > .one-editor-silo > .container > .title .tabs-container > .tab.active {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab.active,
+.monaco-workbench:not(.modern-ui-tabs) .part.editor :is(.editor-group-container, .one-editor-silo > .container) > .title .tabs-container > .tab.active {
   background:
     linear-gradient(135deg, rgba(97, 175, 239, 0.08), rgba(198, 120, 221, 0.05)),
     var(--atom-one-dark-surface-strong) !important;
 }
 
-.editor-group-container > .tabs .monaco-breadcrumbs,
+.editor-group-container > :is(.tabs, .title) .monaco-breadcrumbs,
 .monaco-breadcrumbs,
 .monaco-breadcrumbs .breadcrumbs-control {
   background: var(--atom-one-dark-surface) !important;
@@ -138,7 +138,7 @@ body {
   background-color: var(--atom-one-dark-base) !important;
 }
 
-.editor-group-container > .tabs .tab {
+.monaco-workbench:not(.modern-ui-tabs) .editor-group-container > :is(.tabs, .title) .tab {
   border: none !important;
 }
 
@@ -220,4 +220,15 @@ body {
 
 .monaco-workbench.style-override .monaco-pane-view .pane > .pane-header {
   background: var(--atom-one-dark-surface) !important;
+}
+
+/* Surfaces consumed by the shared Modern UI compatibility stylesheet. */
+:root {
+  --vibrancy-tab-strip-background: var(--atom-one-dark-surface);
+  --vibrancy-tab-inactive-background: var(--atom-one-dark-surface);
+  --vibrancy-tab-active-background: var(--atom-one-dark-surface-strong);
+  --vibrancy-sidebar-background: var(--atom-one-dark-surface);
+  --vibrancy-auxiliarybar-background: var(--atom-one-dark-surface);
+  --vibrancy-pane-header-background: var(--atom-one-dark-surface);
+  --vibrancy-tab-active-image: linear-gradient(135deg, rgba(97, 175, 239, 0.08), rgba(198, 120, 221, 0.05));
 }
