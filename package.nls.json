@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json.schemastore.org/coffeelint",
+  "$schema": "./nls-schema.json",
   "configuration.type.description": "Native method of Vibrancy Effect",
   "configuration.type.auto.description": "Automatically switch with system version",
   "configuration.type.acrylic.description": "(Windows) Acrylic Fluent design blur",
