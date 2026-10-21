@@ -168,10 +168,12 @@ electron.app.on('browser-window-created', (_, window) => {
       };
       applyAccent();
 
-      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging, so swap it
-      // for the plain blur during move/resize and restore it once the window
-      // goes idle.
-      if (effect === ACCENT_ACRYLIC) {
+      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging on Windows 10,
+      // so swap it for the plain blur during move/resize and restore it once
+      // the window goes idle. Windows 11 doesn't lag with it: a 1000-4000 Hz
+      // synthetic drag or resize kept the window within a few pixels of the
+      // cursor, so 'acrylic-classic' keeps its blur while it moves.
+      if (effect === ACCENT_ACRYLIC && !app.win11) {
         const suppressAcrylicWhileDragging = require('./win-acrylic-drag.cjs');
         suppressAcrylicWhileDragging(window, () => applyAccent(ACCENT_BLUR), () => applyAccent());
       }

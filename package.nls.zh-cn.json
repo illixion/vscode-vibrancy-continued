@@ -3,7 +3,7 @@
   "configuration.type.description": "设置毛玻璃效果的类型。",
   "configuration.type.auto.description": "自动",
   "configuration.type.acrylic.description": "(Windows) Acrylic Fluent design blur",
-  "configuration.type.acrylic-classic.description": "(Windows) 不带 Windows 11 磨砂色调的清透亚克力模糊，与 1.1.80 之前相同。拖动窗口时模糊会暂时消失",
+  "configuration.type.acrylic-classic.description": "(Windows) 不带 Windows 11 磨砂色调的清透亚克力模糊，与 1.1.80 之前相同",
   "configuration.type.mica.description": "(仅限 Windows 11) Mica 背景材质",
   "configuration.type.tabbed.description": "(仅限 Windows 11) Mica Alt (Tabbed) 背景材质",
   "configuration.type.transparent.description": "仅使背景透明，无模糊效果",

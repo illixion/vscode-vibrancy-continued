@@ -1,12 +1,12 @@
 // Suppress the legacy acrylic accent while a window is being moved or resized
-// (Windows 10, and the 'acrylic-classic' type on Windows 11).
+// on Windows 10.
 //
 // ACCENT_ENABLE_ACRYLICBLURBEHIND forces DWM to re-blur the whole backdrop every
 // frame on the legacy composition path. During the modal move/resize loop the
 // window's content present can't keep up, so the contents lag behind the window
 // frame — the classic "ghost cursor trailing the window" drag lag (issue #52).
-// Windows 11's 'acrylic' goes through a modern backdrop that doesn't have this
-// cost; 'acrylic-classic' opts back into the legacy accent, and with it this.
+// Windows 11 doesn't have this cost, with the legacy accent ('acrylic-classic')
+// as much as with its own backdrop materials, so this is Win10-only.
 //
 // Swapping the accent for a cheaper one for the duration of the drag and
 // restoring it shortly after the window goes idle keeps movement smooth while

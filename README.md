@@ -98,7 +98,7 @@ On Windows there's one unavoidable trade-off, because a *transparent* window on 
 On Windows 11 you can choose the backdrop material via `vscode_vibrancy.type`:
 
 - **`acrylic`** (default) — a real-time translucent blur of *whatever is behind the window*, including your other windows and the desktop. This is the classic see-through "glass" vibrancy effect.
-- **`acrylic-classic`** — the same see-through blur, without the frosted tint Windows 11 adds to its acrylic material. This is how acrylic looked on Windows 11 before 1.1.80, and in the theme screenshots below: a clear blur coloured only by the theme and `opacity`. It uses the older blur that Windows 10 uses, so the blur drops while you drag or resize the window and comes back as soon as you stop.
+- **`acrylic-classic`** — the same see-through blur, without the frosted tint Windows 11 adds to its acrylic material. This is how acrylic looked on Windows 11 before 1.1.80, and in the theme screenshots below: a clear blur coloured only by the theme and `opacity`. It uses the older blur that Windows 10 uses, and keeps blurring while you drag or resize the window.
 - **`mica`** — samples only your *desktop wallpaper* (not the windows behind VSCode) and is mostly static, so it costs almost nothing on GPU/battery. It's Microsoft's recommended material for app backgrounds and gives a subtle, native Windows 11 feel rather than a see-through effect.
 - **`tabbed`** — "Mica Alt", a more strongly tinted variant of Mica.
 
@@ -126,7 +126,7 @@ Native method of Vibrancy effect. See here for screenshots of all available opti
 * auto : Automatically switch with system version.
 * transparent: Make VSCode transparent only, without blur. (Linux default)
 * acrylic : Acrylic Fluent Design blur. (Windows)
-* acrylic-classic : Clear acrylic blur without the Windows 11 frosted tint, as before 1.1.80. The blur drops while the window is dragged. (Windows)
+* acrylic-classic : Clear acrylic blur without the Windows 11 frosted tint, as before 1.1.80. (Windows)
 * mica : Mica background material — tints with the desktop wallpaper. (Windows 11 only)
 * tabbed : Mica Alt (Tabbed) background material — a stronger Mica variant. (Windows 11 only)
 * under-window, fullscreen-ui, appearance-based, light, dark, titlebar, selection, menu, popover, sidebar, medium-light, ultra-dark: (MacOS only)
