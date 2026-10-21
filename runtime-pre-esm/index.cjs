@@ -70,6 +70,7 @@ const universalType = ['transparent'];
 
 // Windows AccentState values (must match enum in native/vibrancy.cc)
 const ACCENT_TRANSPARENT = 2; // ACCENT_ENABLE_TRANSPARENTGRADIENT
+const ACCENT_BLUR = 3;        // ACCENT_ENABLE_BLURBEHIND
 const ACCENT_ACRYLIC = 4;     // ACCENT_ENABLE_ACRYLICBLURBEHIND
 
 // Map a vibrancy type to an Electron BrowserWindow backgroundMaterial value
@@ -154,11 +155,11 @@ electron.app.on('browser-window-created', (_, window) => {
       }
       const effect = type === 'transparent' ? ACCENT_TRANSPARENT : ACCENT_ACRYLIC;
       const bindings = require('./vibrancy.cjs');
-      const applyAccent = () => {
+      const applyAccent = (accent = effect) => {
         if (window.isDestroyed()) return;
         bindings.setVibrancy(
           window.getNativeWindowHandle().readInt32LE(0),
-          effect,
+          accent,
           backgroundRGB.r,
           backgroundRGB.g,
           backgroundRGB.b,
@@ -167,11 +168,12 @@ electron.app.on('browser-window-created', (_, window) => {
       };
       applyAccent();
 
-      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging, so drop it
-      // during move/resize and restore it once the window goes idle.
+      // ACCENT_ENABLE_ACRYLICBLURBEHIND lags badly while dragging, so swap it
+      // for the plain blur during move/resize and restore it once the window
+      // goes idle.
       if (effect === ACCENT_ACRYLIC) {
         const suppressAcrylicWhileDragging = require('./win-acrylic-drag.cjs');
-        suppressAcrylicWhileDragging(window, bindings, applyAccent);
+        suppressAcrylicWhileDragging(window, () => applyAccent(ACCENT_BLUR), () => applyAccent());
       }
     }
 
