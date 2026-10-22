@@ -2,10 +2,11 @@
 
 // With macWindowButtons the window is frameless and the native traffic lights
 // are put back, relying on the workbench's title bar to leave room for them.
-// When VSCode hides that title bar (Zen Mode, a maximized panel, an empty
-// title bar) the tabs start at the top of the window and the lights sit on
-// top of them. Like iTerm2, keep the lights hidden then, and show them only
-// while the cursor is in the window's top-left corner.
+// When VSCode hides that title bar (it does when the title bar would be
+// empty) the tabs start at the top of the window and the lights sit on top of
+// them. Like iTerm2, keep the lights hidden then, and show them only while the
+// cursor is in the window's top-left corner. The cursor is only polled while
+// the window has focus.
 
 const MESSAGE_PREFIX = '__vscode_vibrancy_titlebar__:';
 
@@ -81,6 +82,9 @@ function createWindowButtons(window, screen) {
   /** @type {ReturnType<typeof setInterval> | null} */
   let timer = null;
   let outsidePolls = 0;
+  /** @type {boolean | null} null until the workbench first reports */
+  let titleBarVisible = null;
+  let focused = window.isFocused();
 
   const setShown = (visible) => {
     if (shown === visible || window.isDestroyed()) return;
@@ -109,13 +113,25 @@ function createWindowButtons(window, screen) {
     }
   };
 
+  const update = () => {
+    stop();
+    if (titleBarVisible === null) return;
+    if (titleBarVisible) return setShown(true);
+    setShown(false);
+    if (focused) timer = setInterval(poll, POLL_MS);
+  };
+
   return {
     /** @param {boolean} visible - whether the workbench's title bar is visible */
     setTitleBarVisible(visible) {
-      stop();
-      if (visible) return setShown(true);
-      setShown(false);
-      timer = setInterval(poll, POLL_MS);
+      titleBarVisible = visible;
+      update();
+    },
+    /** @param {boolean} value - whether the window has focus */
+    setFocused(value) {
+      if (focused === value) return;
+      focused = value;
+      update();
     },
     dispose: stop,
   };
@@ -139,6 +155,8 @@ function attach(window, screen) {
       const visible = parseMessage(typeof message === 'string' ? message : event && event.message);
       if (visible !== null) buttons.setTitleBarVisible(visible);
     });
+    window.on('focus', () => buttons.setFocused(true));
+    window.on('blur', () => buttons.setFocused(false));
     window.once('closed', buttons.dispose);
   }
   return window.webContents.executeJavaScript(rendererScript());
