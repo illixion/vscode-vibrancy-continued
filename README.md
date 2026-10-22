@@ -28,16 +28,6 @@ Maintenance of this project is made possible by all the <a href="https://github.
 <a href="https://github.com/hjnnjh"><img src="https://avatars.githubusercontent.com/u/37699150?s=64&v=4" width="32px" alt="User avatar of user hjnnjh" /></a>
 </p>
 
-# ⚠️ "Your VSCode installation appears to be corrupt"
-
-This extension works by editing VS Code's workbench HTML, a file whose checksum the editor verifies at startup. A changed file makes it warn that the installation is corrupt and add `[Unsupported]` to the title bar.
-
-Vibrancy updates the stored checksum of that file when it patches it, so neither appears. It only does this for its own change: if something else has also modified the file, the warning stays. Disabling Vibrancy puts the checksum back. You can turn this off with [`vscode_vibrancy.fixChecksums`](#fix-checksums-vscode_vibrancyfixchecksums).
-
-![screenshot](./images/warn.png)
-
-If you still see the warning, another extension or tool has changed one of the editor's files. It's safe to disregard, and in VSCode you can hide it with the cogwheel and **Don't Show Again**. Some editors, such as Cursor and Kiro, don't offer that option; there, [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) updates every checksum. Vibrancy works alongside it: once it has accepted the other changes, Vibrancy keeps the checksum up to date through reloads and when it's disabled.
-
 # Supported Operating Systems
 
 ✔ macOS (Intel & Apple Silicon)
@@ -393,6 +383,18 @@ Zen Mode then stays in a normal window and keeps the effect, centered layout inc
 ### Linux: Why is the background transparent but not blurred?
 
 Currently, we do not support native blur effects on Linux. While transparency can work on its own, blur usually depends on additional support from the system compositor. To achieve a blur effect, use transparent mode together with a compositor such as KWin, Hyprland, or Picom.
+
+### ⚠️ "Your VSCode installation appears to be corrupt"
+
+This extension works by editing VS Code's workbench HTML, a file whose checksum the editor verifies at startup. A changed file makes it warn that the installation is corrupt and add `[Unsupported]` to the title bar.
+
+Vibrancy updates the stored checksum of that file when it patches it, so neither appears. It only does this for its own change: if something else has also modified the file, the warning stays. Disabling Vibrancy puts the checksum back.
+
+To keep the editor's warning and have Vibrancy leave the checksum alone, set [`vscode_vibrancy.fixChecksums`](#fix-checksums-vscode_vibrancyfixchecksums) to `false` and run **Reload Vibrancy**. This suits you if you want the editor to flag every change to its files, or if another tool already manages the checksums. The warning then comes back after the next restart. Reload also takes back a checksum Vibrancy wrote earlier, but never one a different tool wrote.
+
+![screenshot](./images/warn.png)
+
+If you still see the warning, another extension or tool has changed one of the editor's files. It's safe to disregard, and in VSCode you can hide it with the cogwheel and **Don't Show Again**. Some editors, such as Cursor and Kiro, don't offer that option; there, [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) updates every checksum. Vibrancy works alongside it: once it has accepted the other changes, Vibrancy keeps the checksum up to date through reloads and when it's disabled.
 
 # Contributing
 

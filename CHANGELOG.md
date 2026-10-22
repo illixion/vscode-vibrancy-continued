@@ -1,3 +1,15 @@
+# 1.6.0
+
+* Core:
+  * Stop the editor warning that its installation "appears to be corrupt" and adding `[Unsupported]` to the title bar. Vibrancy now updates the stored checksum of the workbench HTML to match its own change, and puts it back when you disable it or uninstall. Foreign changes still warn: the checksum is only touched when it matches the file before or after Vibrancy's patch, so another patcher's edit isn't hidden. Cursor and Kiro, which can't dismiss the warning, benefit most. Turn it off with the new `vscode_vibrancy.fixChecksums` setting. **Run Reload Vibrancy after updating** (accept the update prompt) for this to apply
+  * Warn before a restart the editor wouldn't survive. After Enable, Reload and Disable, and again when you click Restart, Vibrancy checks every file the editor loads before any extension can run (`main.js`, `mainImpl.js`, `product.json`, `package.json` and the workbench bundle). If one is broken, it names the file and the error instead of offering the restart, and says whether the restore script can fix it or another extension probably changed it. Restart Anyway is still available
+  * Enable now says so when a file was already broken before Vibrancy touched it, instead of blaming its own change
+  * Keep a backup of `product.json` next to the other originals, and have `restore.sh` and `restore.ps1` restore it. See [Restoring an editor that won't start](https://github.com/illixion/vscode-vibrancy-continued#restoring-an-editor-that-wont-start)
+  * Restart prompts no longer tell you to click Don't Show Again on the corruption warning
+  * macOS: stop the traffic-light hover check from running while the window isn't focused (PR [#286](https://github.com/illixion/vscode-vibrancy-continued/pull/286))
+* Contributors:
+  * [@gocasimiro](https://github.com/gocasimiro)
+
 # 1.5.0
 
 * Core:
