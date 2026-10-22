@@ -9,6 +9,7 @@ const { applySettingsRestore } = require('./jsonc-settings');
 const { extensionsDirOf, readRecord, removeRecord } = require('./install-records');
 const { findRuntimeDirs } = require('./install-paths');
 const { backupPathFor } = require('./patch-safety');
+const { productFileFor, checksumKey, planUninstallChecksum } = require('./checksums');
 
 /**
  * When this actually runs, because it is not when you would expect.
@@ -391,11 +392,26 @@ if (require.main === module) (async () => {
         }
     }
 
-    async function uninstallHTML(htmlFilePath, writer) {
+    async function uninstallHTML(htmlFilePath, appDir, checksumRecord, writer) {
         const HTML = await fs.readFile(htmlFilePath, 'utf-8');
         const newHTML = removeCSPPatch(HTML);
         if (newHTML !== HTML) {
             await writer.writeFile(htmlFilePath, newHTML, 'utf-8');
+        }
+        // Take back the checksum Vibrancy stored, as Disable does (see
+        // checksums.js), also when another patcher already removed the patch.
+        // Best-effort: at worst the editor shows its integrity warning.
+        try {
+            const productFile = productFileFor(appDir);
+            const updated = planUninstallChecksum(
+                await fs.readFile(productFile, 'utf-8'),
+                checksumKey(appDir, htmlFilePath),
+                { before: HTML, after: newHTML },
+                checksumRecord,
+            );
+            if (updated !== null) await writer.writeFile(productFile, updated, 'utf-8');
+        } catch (err) {
+            console.warn('Vibrancy: could not update the workbench checksum:', err.message);
         }
     }
 
@@ -432,7 +448,7 @@ if (require.main === module) (async () => {
 
     const config = readRecord(configDir, install);
     if (config) {
-        const { workbenchHtmlPath, jsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry } = config;
+        const { workbenchHtmlPath, jsPath, settingsJsonPath, cliCommand, previousCustomizations, nixMirrorBase, nixDesktopEntry, checksum } = config;
 
         // Determine elevation needs from the JS file path (part of VSCode install dir)
         const appDir = path.dirname(jsPath);
@@ -456,7 +472,7 @@ if (require.main === module) (async () => {
             let fileOpsError = null;
             try {
                 await uninstallJS(jsPath, writer);
-                await uninstallHTML(workbenchHtmlPath, writer);
+                await uninstallHTML(workbenchHtmlPath, appDir, checksum, writer);
                 // Best-effort, as in Disable: Windows may hold the runtime's
                 // .node modules open, and a leftover folder is inert.
                 for (const dir of findRuntimeDirs(path.dirname(jsPath), (d) => fsSync.readdirSync(d))) {

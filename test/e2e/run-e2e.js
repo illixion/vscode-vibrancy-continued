@@ -27,6 +27,10 @@
  *      opaque), and the magenta beacon is present
  *   8. Uninstall, relaunch, verify green/magenta are gone
  *
+ * After install and after uninstall it also checks VSCode's integrity list
+ * (product.json checksums) against the files on disk, so neither state shows
+ * the "installation appears to be corrupt" warning (extension/checksums.js).
+ *
  * Usage:   node test/e2e/run-e2e.js
  * Linux:   xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node test/e2e/run-e2e.js
  *          (requires openbox, picom, xwallpaper for the transparency check)
@@ -37,6 +41,7 @@ const fs = require('fs');
 const os = require('os');
 const { execSync, spawn } = require('child_process');
 const { ALL_VIBRANCY_BG_KEYS } = require('../../extension/file-transforms');
+const { checksumOf } = require('../../extension/checksums');
 const { parseEvents, summarizeEvents } = require('./background-diagnostics');
 
 function getConfigDir() {
@@ -72,6 +77,12 @@ async function main() {
     const cliPath = resolveCliPathFromVSCodeExecutablePath(vscodeExe);
     console.log(`  Executable: ${vscodeExe}`);
     console.log(`  CLI: ${cliPath}`);
+
+    const productPath = findProductJson(vscodeExe);
+    console.log(`  product.json: ${productPath || 'NOT FOUND'}`);
+    const baselineChecksums = verifyChecksums(productPath);
+    console.log(`  Checksums before install: ${baselineChecksums.ok ? 'match' : 'MISMATCH (the download itself)'}`);
+    for (const err of baselineChecksums.errors) console.log(`    - ${err}`);
 
     const versionInfo = getVSCodeVersionInfo(cliPath);
     console.log(`  VSCode version: ${versionInfo.version}`);
@@ -180,6 +191,10 @@ async function main() {
       for (const err of installSettingsCheck.errors) console.log(`    - ${err}`);
     }
 
+    const installChecksums = verifyChecksums(productPath);
+    console.log(`  Checksums after install: ${installChecksums.ok ? 'PASS' : 'FAIL'}`);
+    for (const err of installChecksums.errors) console.log(`    - ${err}`);
+
     // --- Step 6: Second launch (post-restart, vibrancy active) ---
     console.log('\n[6/9] Second launch (post-restart, screenshot)...');
     const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-post-restart.png`);
@@ -248,6 +263,10 @@ async function main() {
       for (const err of uninstallSettingsCheck.errors) console.log(`    - ${err}`);
     }
 
+    const uninstallChecksums = verifyChecksums(productPath);
+    console.log(`  Checksums after uninstall: ${uninstallChecksums.ok ? 'PASS' : 'FAIL'}`);
+    for (const err of uninstallChecksums.errors) console.log(`    - ${err}`);
+
     // --- Step 8: Fourth launch (post-uninstall, verify clean) ---
     console.log('\n[8/9] Fourth launch (post-uninstall, verify clean)...');
     const screenshot4 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-3-post-uninstall.png`);
@@ -278,7 +297,9 @@ async function main() {
     const uninstallOk = thirdResult.signal && thirdResult.signal.status === 'uninstalled';
     const uninstallSettingsOk = uninstallSettingsCheck.ok;
     const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
-    const success = baseline.supported && installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && uninstallOk && uninstallSettingsOk && postUninstallNocrash && uninstallClean;
+    const installChecksumsOk = installChecksums.ok;
+    const uninstallChecksumsOk = uninstallChecksums.ok;
+    const success = baseline.supported && installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && installChecksumsOk && uninstallOk && uninstallSettingsOk && uninstallChecksumsOk && postUninstallNocrash && uninstallClean;
 
     console.log(`  Desktop baseline: ${baseline.supported ? 'PASS' : 'FAIL'}`);
     console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
@@ -287,8 +308,10 @@ async function main() {
     console.log(`  Transparency (sidebar): ${sidebarOk ? 'PASS' : 'FAIL'}`);
     console.log(`  CSS import beacon: ${beaconOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Settings after install: ${installSettingsOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Checksums after install: ${installChecksumsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Uninstall signal: ${uninstallOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Settings after uninstall: ${uninstallSettingsOk ? 'PASS' : 'FAIL'}`);
+    console.log(`  Checksums after uninstall: ${uninstallChecksumsOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-uninstall crash: ${postUninstallNocrash ? 'PASS' : 'FAIL'}`);
     console.log(`  Vibrancy removed: ${uninstallClean ? 'PASS' : 'FAIL'}`);
     console.log(`  Overall: ${success ? 'PASS' : 'FAIL'}`);
@@ -302,7 +325,7 @@ async function main() {
 
     writeGitHubSummary(success, screenshot2, {
       installOk, nocrash, greenOk, greenPct, sidebarOk, sidebarPct, beaconOk, beaconPct,
-      installSettingsOk, uninstallOk, uninstallSettingsOk, postUninstallNocrash,
+      installSettingsOk, installChecksumsOk, uninstallOk, uninstallSettingsOk, uninstallChecksumsOk, postUninstallNocrash,
       uninstallClean, postUninstallGreen, postUninstallBeacon,
       baselineSupported: baseline.supported, baselinePct: baseline.pct,
     }, { vscodeVersion, versionInfo });
@@ -1013,6 +1036,42 @@ function fmtPct(pct) {
  * Read and parse the VSCode settings.json from the user-data-dir.
  * Returns the parsed object, or null if the file doesn't exist or is invalid.
  */
+/**
+ * product.json of the VSCode under test: Contents/Resources/app on macOS,
+ * resources/app beside the executable on Linux, and on Windows either that or
+ * a per-commit folder in between.
+ * @returns {string|null}
+ */
+function findProductJson(vscodeExe) {
+  const dir = path.dirname(vscodeExe);
+  const candidates = [
+    path.join(dir, '..', 'Resources', 'app', 'product.json'),
+    path.join(dir, 'resources', 'app', 'product.json'),
+  ];
+  try {
+    for (const name of fs.readdirSync(dir)) candidates.push(path.join(dir, name, 'resources', 'app', 'product.json'));
+  } catch {}
+  return candidates.find((p) => fs.existsSync(p)) || null;
+}
+
+/**
+ * The files VSCode's integrity check would report: those whose checksum in
+ * product.json doesn't match the file on disk. A missing file counts, as it
+ * does in VSCode.
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
+function verifyChecksums(productPath) {
+  if (!productPath) return { ok: false, errors: ['product.json not found'] };
+  const out = path.join(path.dirname(productPath), 'out');
+  const errors = [];
+  for (const [key, expected] of Object.entries(JSON.parse(fs.readFileSync(productPath, 'utf-8')).checksums || {})) {
+    let actual = '';
+    try { actual = checksumOf(fs.readFileSync(path.join(out, key))); } catch {}
+    if (actual !== expected) errors.push(`${key}: stored ${expected}, file ${actual || 'missing'}`);
+  }
+  return { ok: errors.length === 0, errors };
+}
+
 function readSettings(settingsPath) {
   try {
     return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
@@ -1135,8 +1194,10 @@ function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   md += `| Transparency: wallpaper through sidebar (${pct(checks.sidebarPct)}) | ${chk(checks.sidebarOk)} |\n`;
   md += `| CSS import beacon (${pct(checks.beaconPct)}) | ${chk(checks.beaconOk)} |\n`;
   md += `| Settings after install | ${chk(checks.installSettingsOk)} |\n`;
+  md += `| Checksums after install | ${chk(checks.installChecksumsOk)} |\n`;
   md += `| Uninstall signal | ${chk(checks.uninstallOk)} |\n`;
   md += `| Settings after uninstall | ${chk(checks.uninstallSettingsOk)} |\n`;
+  md += `| Checksums after uninstall | ${chk(checks.uninstallChecksumsOk)} |\n`;
   md += `| Post-uninstall crash | ${chk(checks.postUninstallNocrash)} |\n`;
   md += `| Vibrancy removed (green ${pct(checks.postUninstallGreen)}, beacon ${pct(checks.postUninstallBeacon)}) | ${chk(checks.uninstallClean)} |\n`;
   md += `\n`;

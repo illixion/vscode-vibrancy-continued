@@ -5,6 +5,7 @@ const os = require('os');
 const vscode = require('../helpers/vscode-host');
 const { getConfigDir } = require('../../extension/file-transforms');
 const localize = require('../../extension/i18n');
+const { checksumOf } = require('../../extension/checksums');
 
 /**
  * Drives extension/index.js the way VSCode does — activate(), then the
@@ -53,6 +54,15 @@ function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   // the check here, standing in for the editor's binary.
   const appRoot = path.dirname(appDir);
   fs.writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({ type: 'module' }));
+  // The integrity check's list, tab-indented as VSCode ships it (see checksums.js).
+  const htmlKey = htmlRelPath.split(path.sep).join('/');
+  fs.writeFileSync(path.join(appRoot, 'product.json'), JSON.stringify({
+    nameShort: 'Code',
+    checksums: {
+      'vs/workbench/workbench.desktop.main.css': 'PirHmpfaxj7WX+5PZv7v8aYTyHB2i7e3d2+MT3QCrjo',
+      [htmlKey]: checksumOf(fs.readFileSync(path.join(appDir, htmlRelPath))),
+    },
+  }, null, '\t'));
   fs.mkdirSync(path.join(appRoot, 'bin'));
   fs.writeFileSync(path.join(appRoot, 'bin', 'code'), 'ELECTRON_RUN_AS_NODE=1 "$ELECTRON" "$CLI" "$@"\n');
 
@@ -61,6 +71,8 @@ function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   globalThis._VSCODE_FILE_ROOT = appDir;
   return {
     htmlPath: path.join(appDir, htmlRelPath),
+    productPath: path.join(appRoot, 'product.json'),
+    htmlKey,
     jsPath: path.join(appDir, 'main.js'),
     implPath: path.join(appDir, 'mainImpl.js'),
   };
@@ -325,6 +337,213 @@ describe('Disable', () => {
     expect(vscode.__state.messages.some((m) => m.kind === 'error')).toBe(true);
     // Still on record as installed, so re-running Disable can finish the job.
     expect(fs.existsSync(path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json'))).toBe(true);
+  });
+});
+
+describe('the integrity check', () => {
+  // Editors such as Cursor give their "installation appears to be corrupt"
+  // warning no Don't Show Again, so the stored checksum of the patched HTML is
+  // kept in step with it instead (see checksums.js).
+  const stored = ({ productPath, htmlKey }) => JSON.parse(read(productPath)).checksums[htmlKey];
+
+  it('matches the patched HTML after Enable', async () => {
+    const install = makeInstall();
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(stored(install)).toBe(checksumOf(fs.readFileSync(install.htmlPath)));
+    expect(stored(install)).not.toBe(JSON.parse(originalProduct).checksums[install.htmlKey]);
+    // The one value changed; everything else is left as it was.
+    expect(read(install.productPath).replace(stored(install), JSON.parse(originalProduct).checksums[install.htmlKey]))
+      .toBe(originalProduct);
+  });
+
+  it('still matches after Reload', async () => {
+    const install = makeInstall();
+    activate();
+
+    await run('extension.installVibrancy');
+    await run('extension.updateVibrancy');
+
+    expect(stored(install)).toBe(checksumOf(fs.readFileSync(install.htmlPath)));
+  });
+
+  it('is put back byte for byte by Disable', async () => {
+    const install = makeInstall();
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    await run('extension.uninstallVibrancy');
+
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  it('is left alone when fixChecksums is off', async () => {
+    const install = makeInstall();
+    const originalProduct = read(install.productPath);
+    activate({ settings: { 'vscode_vibrancy.fixChecksums': false } });
+
+    await run('extension.installVibrancy');
+
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  it('goes back to the original when fixChecksums is turned off and Vibrancy reloads', async () => {
+    const install = makeInstall();
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    vscode.__state.settings['vscode_vibrancy.fixChecksums'] = false;
+    await run('extension.updateVibrancy');
+
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  it('keeps reporting a file something else has changed', async () => {
+    const install = makeInstall();
+    fs.writeFileSync(install.htmlPath, read(install.htmlPath).replace('</head>', '<script src="other.js"></script></head>'));
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(install.htmlPath)).not.toBe(read(path.join(FIXTURES, 'workbench.html')));
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  // Another patcher-style extension (Custom CSS and JS Loader, say) editing the
+  // same file, and Fix VSCode Checksums Next, which rehashes every listed file
+  // and keeps the original product.json to restore (product.json.orig.<version>).
+  const OTHER = '<script src="other-patcher.js"></script>';
+  const otherPatch = ({ htmlPath }) => fs.writeFileSync(htmlPath, read(htmlPath).replace('</head>', `${OTHER}</head>`));
+  const otherUnpatch = ({ htmlPath }) => fs.writeFileSync(htmlPath, read(htmlPath).replace(OTHER, ''));
+  const fixerApply = ({ productPath }) => {
+    const product = JSON.parse(read(productPath));
+    for (const key of Object.keys(product.checksums)) {
+      const file = path.join(appDir, ...key.split('/'));
+      if (fs.existsSync(file)) product.checksums[key] = checksumOf(fs.readFileSync(file));
+    }
+    if (!fs.existsSync(`${productPath}.orig`)) fs.copyFileSync(productPath, `${productPath}.orig`);
+    fs.writeFileSync(productPath, JSON.stringify(product, null, '\t'));
+  };
+  const fixerRestore = ({ productPath }) => fs.copyFileSync(`${productPath}.orig`, productPath);
+  const pure = (install) => stored(install) === checksumOf(fs.readFileSync(install.htmlPath));
+
+  it('leaves no stale checksum when another patcher changes the file after Enable', async () => {
+    const install = makeInstall();
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    otherPatch(install);
+    await run('extension.uninstallVibrancy');
+
+    // The other patch is still there, so the editor should still say so...
+    expect(pure(install)).toBe(false);
+    // ...and once it is removed too, the file is clean and so is the check.
+    otherUnpatch(install);
+    expect(read(install.htmlPath)).toBe(read(path.join(FIXTURES, 'workbench.html')));
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  it('gives up its checksum on Reload once another patcher has changed the file', async () => {
+    const install = makeInstall();
+    activate();
+
+    await run('extension.installVibrancy');
+    otherPatch(install);
+    await run('extension.updateVibrancy');
+
+    expect(pure(install)).toBe(false);
+    expect(stored(install)).toBe(checksumOf(read(path.join(FIXTURES, 'workbench.html'))));
+  });
+
+  it('leaves the checksum fixer\'s value alone on Reload with fixChecksums off', async () => {
+    const install = makeInstall();
+    activate({ settings: { 'vscode_vibrancy.fixChecksums': false } });
+
+    await run('extension.installVibrancy');
+    fixerApply(install);
+    await run('extension.updateVibrancy');
+
+    expect(pure(install)).toBe(true);
+  });
+
+  it('takes its checksum back on Disable when another patcher put its own copy of the file back', async () => {
+    const install = makeInstall();
+    const original = read(install.htmlPath);
+    const originalProduct = read(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    fs.writeFileSync(install.htmlPath, original);
+    await run('extension.uninstallVibrancy');
+
+    expect(read(install.productPath)).toBe(originalProduct);
+  });
+
+  it('works with the checksum fixer accepting another patcher\'s change', async () => {
+    const install = makeInstall();
+    otherPatch(install);
+    activate();
+
+    await run('extension.installVibrancy');
+    // The other patch hasn't been accepted, so Vibrancy doesn't cover it.
+    expect(pure(install)).toBe(false);
+
+    fixerApply(install);
+    expect(pure(install)).toBe(true);
+    await run('extension.updateVibrancy');
+    expect(pure(install)).toBe(true);
+
+    await run('extension.uninstallVibrancy');
+    expect(read(install.htmlPath)).not.toContain('VscodeVibrancy');
+    expect(pure(install)).toBe(true);
+  });
+
+  it('recovers on Reload after the checksum fixer restores the original product.json', async () => {
+    // A user of the fixer from before Vibrancy did this itself: the fixer's
+    // copy of product.json holds the original checksum.
+    const install = makeInstall();
+    activate({ settings: { 'vscode_vibrancy.fixChecksums': false } });
+
+    await run('extension.installVibrancy');
+    fixerApply(install);
+    vscode.__state.settings['vscode_vibrancy.fixChecksums'] = true;
+    await run('extension.updateVibrancy');
+    expect(pure(install)).toBe(true);
+
+    fixerRestore(install);
+    expect(pure(install)).toBe(false);
+
+    await run('extension.updateVibrancy');
+    expect(pure(install)).toBe(true);
+  });
+
+  it('records what it stored, so the uninstall hook can take it back', async () => {
+    const install = makeInstall();
+    const original = JSON.parse(read(install.productPath)).checksums[install.htmlKey];
+    activate();
+
+    await run('extension.installVibrancy');
+
+    const config = JSON.parse(read(path.join(getConfigDir('vscode-vibrancy-continued'), 'config.json')));
+    expect(config.checksum).toEqual({ key: install.htmlKey, written: stored(install), previous: original });
+  });
+
+  it('does not stand in the way of an install without product.json', async () => {
+    const install = makeInstall();
+    fs.rmSync(install.productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(install.jsPath)).toContain('VSCODE-VIBRANCY-START');
+    expect(vscode.__state.messages.some((m) => m.kind === 'error')).toBe(false);
   });
 });
 

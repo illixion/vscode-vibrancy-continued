@@ -37,6 +37,7 @@ const { readColorCustomizations } = require('./jsonc-settings');
 const { resolveInstallPaths, rebaseInstallPaths, findRuntimeDirs } = require('./install-paths');
 const { extensionsDirOf, readRecord, writeRecord, removeRecord } = require('./install-records');
 const patchSafety = require('./patch-safety');
+const { productFileFor, checksumKey, planInstallChecksum, planUninstallChecksum } = require('./checksums');
 
 /**
  * @type {(info: string) => string}
@@ -979,19 +980,45 @@ function activate(context) {
     return injectElectronOptions(ElectronJS, { frameless, isMacos: osType === 'macos', transparent, nativeTitleBarFrameless });
   }
 
+  /** @returns {Promise<{ before: string, after: string } | null>} null when nothing was written */
   async function installHTML(writer) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
     const { result, alreadyPatched, noMetaTag } = _patchCSP(HTML);
 
-    if (noMetaTag) return;
+    if (noMetaTag) return null;
 
     // Always write if already patched to overwrite any staged uninstall in Update flow
     if (alreadyPatched) {
       await writer.writeFile(HTMLFile, HTML, 'utf-8');
-      return;
+      return { before: HTML, after: HTML };
     }
 
     await writer.writeFile(HTMLFile, result, 'utf-8');
+    return { before: HTML, after: result };
+  }
+
+  /**
+   * What the last successful install stored in product.json, for the install
+   * record (see checksums.js). Set by Install, saved by setLocalConfig.
+   * @type {import('./checksums').ChecksumRecord | null}
+   */
+  var checksumRecord = null;
+
+  /**
+   * Update the workbench HTML's checksum in product.json (see checksums.js).
+   * Never fails the operation: at worst the integrity warning stays.
+   * @param {StagedFileWriter} writer
+   * @param {(productText: string, key: string, record: import('./checksums').ChecksumRecord | null) => string | null} plan
+   */
+  async function updateHTMLChecksum(writer, plan) {
+    try {
+      const productFile = productFileFor(installPaths.appDir);
+      const record = (await readLocalConfig())?.checksum ?? null;
+      const updated = plan(await fs.readFile(productFile, 'utf-8'), checksumKey(installPaths.appDir, HTMLFile), record);
+      if (updated !== null) await writer.writeFile(productFile, updated, 'utf-8');
+    } catch (error) {
+      console.warn('Vibrancy: could not update the workbench checksum:', error.message);
+    }
   }
 
   async function uninstallJS(writer) {
@@ -1044,12 +1071,24 @@ function activate(context) {
     }
   }
 
-  async function uninstallHTML(writer) {
+  /**
+   * @param {StagedFileWriter} writer
+   * @param {boolean} reinstalling - Update, which patches again straight after
+   */
+  async function uninstallHTML(writer, reinstalling) {
     const HTML = await fs.readFile(HTMLFile, 'utf-8');
     const newHTML = removeCSPPatch(HTML);
     if (newHTML !== HTML) {
       await writer.writeFile(HTMLFile, newHTML, 'utf-8');
     }
+    // Also when the patch is already gone, e.g. another patcher put back its
+    // own copy of the file: the checksum Vibrancy stored may still be there.
+    // Update with fixChecksums off stores nothing afterwards, so it must not
+    // move a checksum fixer's value off the patched file either.
+    const moveAlong = !reinstalling || vscode.workspace.getConfiguration("vscode_vibrancy").get("fixChecksums", true);
+    await updateHTMLChecksum(writer, (text, key, record) => (
+      planUninstallChecksum(text, key, { before: HTML, after: newHTML }, record, { moveAlong })
+    ));
   }
 
   function enabledRestart() {
@@ -1398,6 +1437,9 @@ function activate(context) {
         // them. Installing always claims ownership.
         ownerProfileKey: profile?.key ?? null,
         ownerProfileHint: profile?.hint ?? null,
+        // The product.json checksum this install stored, so Disable and the
+        // uninstall hook can take it back (see checksums.js).
+        checksum: checksumRecord,
       };
       // NixOS mirror bookkeeping so the uninstall hook can clean up the
       // shadow install ($HOME mirror + desktop entry) too
@@ -1623,7 +1665,15 @@ function activate(context) {
       }
       await writer.writeFile(JSFile, mainJS, 'utf-8');
       if (implJS !== undefined) await writer.writeFile(WindowOptionsFile, implJS, 'utf-8');
-      await installHTML(writer);
+      const html = await installHTML(writer);
+      checksumRecord = null;
+      if (html && vscode.workspace.getConfiguration("vscode_vibrancy").get("fixChecksums", true)) {
+        await updateHTMLChecksum(writer, (text, key, record) => {
+          const plan = planInstallChecksum(text, key, { ...html, unpatched: removeCSPPatch(html.before) }, record);
+          checksumRecord = plan.record;
+          return plan.text;
+        });
+      }
 
       // Flush if we own the writer (not shared). Shared writer is flushed by caller.
       if (!sharedWriter) {
@@ -1713,7 +1763,7 @@ function activate(context) {
     try {
       // uninstall old version
       await fs.stat(HTMLFile);
-      await uninstallHTML(writer);
+      await uninstallHTML(writer, reinstalling);
 
       await fs.stat(JSFile);
       await uninstallJS(writer);

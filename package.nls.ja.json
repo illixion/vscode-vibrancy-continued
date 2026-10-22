@@ -32,6 +32,7 @@
   "configuration.disableFramelessWindow.deprecation": "vscode_vibrancy.windowMode に置き換えられました。代わりに windowMode を 'framed' に設定してください。",
   "configuration.preferedDarkTheme.deprecation": "vscode_vibrancy.preferredDarkTheme に名称変更されました（スペル修正）。現在の値は引き続き有効ですが、この警告を消すには新しい設定に移してください。",
   "configuration.preferedLightTheme.deprecation": "vscode_vibrancy.preferredLightTheme に名称変更されました（スペル修正）。現在の値は引き続き有効ですが、この警告を消すには新しい設定に移してください。",
+  "configuration.fixChecksums.description": "Vibrancy が変更するファイルについて、エディタが保存しているチェックサムを更新します。これにより「インストールが壊れている」という警告やタイトルバーの [Unsupported] が表示されなくなります。更新されるのは Vibrancy による変更のチェックサムのみです。",
   "configuration.disableThemeFixes.description": "Cursor などの非標準の VSCode エディタ向けの修正を無効にします。",
   "configuration.disableColorCustomizations.description": "Vibrancy による `workbench.colorCustomizations` の変更を無効にします。カラーカスタマイズを自分で管理したい場合や、独自の背景を処理するカスタムCSSテーマを使用している場合に有効にしてください。",
   "configuration.disableSmoothDragging.description": "（Windows 10、acrylic）ウィンドウの移動とサイズ変更を Windows に任せます。通常、Vibrancy はドラッグ中にウィンドウを自ら動かし、ぼかしがカーソルに追従するようにします。ウィンドウ管理ツールなどでドラッグの動作がおかしい場合は有効にしてください。その場合、ドラッグ中のウィンドウはカーソルより遅れて動きます。",

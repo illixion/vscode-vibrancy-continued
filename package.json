@@ -275,6 +275,11 @@
           "deprecationMessage": "%configuration.disableFramelessWindow.deprecation%",
           "markdownDeprecationMessage": "%configuration.disableFramelessWindow.deprecation%"
         },
+        "vscode_vibrancy.fixChecksums": {
+          "description": "%configuration.fixChecksums.description%",
+          "type": "boolean",
+          "default": true
+        },
         "vscode_vibrancy.disableThemeFixes": {
           "description": "%configuration.disableThemeFixes.description%",
           "type": "boolean",

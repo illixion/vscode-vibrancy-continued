@@ -44,6 +44,9 @@
     "configuration.disableFramelessWindow.description": {
       "type": "string"
     },
+    "configuration.fixChecksums.description": {
+      "type": "string"
+    },
     "configuration.disableThemeFixes.description": {
       "type": "string"
     },
@@ -143,6 +146,7 @@
     "configuration.preventFlash.description",
     "configuration.forceFramelessWindow.description",
     "configuration.disableFramelessWindow.description",
+    "configuration.fixChecksums.description",
     "configuration.disableThemeFixes.description",
     "extension.installVibrancy.title",
     "extension.uninstallVibrancy.title",

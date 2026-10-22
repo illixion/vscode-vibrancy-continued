@@ -30,12 +30,13 @@ Maintenance of this project is made possible by all the <a href="https://github.
 
 # ⚠️ "Your VSCode installation appears to be corrupt"
 
-This extension works by editing VS Code's checksum-verified HTML files, which means that a warning prompt will appear after installing and enabling Vibrancy Continued. This warning is safe to disregard, and all changes can be reverted. Click on the cogwheel and select **Don't Show Again** to hide it.
+This extension works by editing VS Code's workbench HTML, a file whose checksum the editor verifies at startup. A changed file makes it warn that the installation is corrupt and add `[Unsupported]` to the title bar.
+
+Vibrancy updates the stored checksum of that file when it patches it, so neither appears. It only does this for its own change: if something else has also modified the file, the warning stays. Disabling Vibrancy puts the checksum back. You can turn this off with [`vscode_vibrancy.fixChecksums`](#fix-checksums-vscode_vibrancyfixchecksums).
 
 ![screenshot](./images/warn.png)
-![screenshot](./images/warnfix.png)
 
-If you don't have the option to hide the alert, or to fix an `[Unsupported]` warning in VSCode's title bar, please refer to this extension: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
+If you still see the warning, another extension or tool has changed one of the editor's files. It's safe to disregard, and in VSCode you can hide it with the cogwheel and **Don't Show Again**. Some editors, such as Cursor and Kiro, don't offer that option; there, [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next) updates every checksum. Vibrancy works alongside it: once it has accepted the other changes, Vibrancy keeps the checksum up to date through reloads and when it's disabled.
 
 # Supported Operating Systems
 
@@ -65,7 +66,7 @@ If you don't have the option to hide the alert, or to fix an `[Unsupported]` war
 
 Other editors built on VSCode may work too. Vibrancy changes their window only when it can tell exactly where the change goes, and warns that the result is untested. If it can't tell, it refuses with "Your code editor is not supported". If an editor won't start afterwards, see [Restoring an editor that won't start](#restoring-an-editor-that-wont-start).
 
-Some editors may present a [persistent warning](#️-your-vscode-installation-appears-to-be-corrupt) warning about the installation being corrupted, use this extension to fix it: [Fix VSCode Checksums Next](https://marketplace.visualstudio.com/items?itemName=RimuruChan.vscode-fix-checksums-next).
+Vibrancy keeps the editor's [integrity check](#️-your-vscode-installation-appears-to-be-corrupt) quiet in these editors too, including those that don't let you dismiss its warning.
 
 # Getting Started
 
@@ -190,6 +191,12 @@ When VSCode hides its title bar, which it does when the title bar would be empty
 
 > **Deprecated settings:** `vscode_vibrancy.forceFramelessWindow` and `vscode_vibrancy.disableFramelessWindow` are replaced by `windowMode`. If still set (and `windowMode` is left at `auto`) they are migrated automatically: `disableFramelessWindow` → `framed`, and `forceFramelessWindow` → the frameless mode appropriate for your platform — `frameless-transparent` on macOS and Linux, `frameless` (opaque) on Windows and with Windows 11 Mica/Acrylic materials. You don't need to do anything, but you can switch to `windowMode` directly to silence the deprecation warning.
 
+#### Fix checksums (`vscode_vibrancy.fixChecksums`)
+
+Update the editor's stored checksum of the workbench HTML when Vibrancy patches it, so the editor doesn't warn that the installation is corrupt or show `[Unsupported]` in its title bar. Only Vibrancy's own change is covered. Turn it off to keep the warning.
+
+*boolean, default is true*
+
 #### Disable Theme Fixes (`vscode_vibrancy.disableThemeFixes`)
 
 Disable fixes to Default Dark and Default Light themes for non-VSCode editors like Cursor.
@@ -262,7 +269,7 @@ On NixOS the VSCode package lives in the read-only `/nix/store`, so its files ca
 2. Applies the vibrancy patches to that copy.
 3. Adds a **"Visual Studio Code (Vibrancy)"** entry to your application menu that launches the patched copy.
 
-Use the *(Vibrancy)* menu entry as your daily driver. The first launch may show the usual ["installation appears to be corrupt" warning](#️-your-vscode-installation-appears-to-be-corrupt) — click **Don't Show Again**.
+Use the *(Vibrancy)* menu entry as your daily driver. Vibrancy updates the copy's checksums too, so it shouldn't show the ["installation appears to be corrupt" warning](#️-your-vscode-installation-appears-to-be-corrupt).
 
 **Terminal / `code` CLI**: typing `code` in a shell still launches the unpatched store installation. The copy is always reachable at the stable path `~/.local/share/vscode-vibrancy/current/bin/code` (`.../bin/codium` for VSCodium) — the `current` symlink is updated automatically whenever the copy is rebuilt, so it survives system updates. To make it your default `code`, add an alias to your shell config (or the equivalent `programs.bash`/`programs.zsh` option in your Nix config):
 
