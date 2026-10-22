@@ -5,7 +5,9 @@
   start after enabling Vibrancy, or its window is invisible, Disable can't help:
   it runs inside the editor. Since 1.3.1 Vibrancy keeps the original of every
   file it patches next to it (main.js.vibrancy-orig), and this copies those
-  originals back, so the editor starts again without being reinstalled.
+  originals back, so the editor starts again without being reinstalled. It also
+  keeps product.json's original (one level up, beside out\), which it edits to
+  keep the editor's integrity check quiet.
 
   Usage, in PowerShell with the editor closed:
     irm https://raw.githubusercontent.com/illixion/vscode-vibrancy-continued/main/scripts/restore.ps1 | iex
@@ -42,7 +44,9 @@ $restored = 0
 foreach ($out in $candidates) {
   if ($Filter -and ($out.FullName -notlike "*$Filter*")) { continue }
 
-  foreach ($backup in Get-ChildItem -LiteralPath $out.FullName -Filter "*$Suffix" -File -ErrorAction SilentlyContinue) {
+  $backups = @(Get-ChildItem -LiteralPath $out.FullName -Filter "*$Suffix" -File -ErrorAction SilentlyContinue)
+  $backups += @(Get-Item -LiteralPath (Join-Path $out.Parent.FullName "product.json$Suffix") -ErrorAction SilentlyContinue)
+  foreach ($backup in $backups) {
     $original = $backup.FullName.Substring(0, $backup.FullName.Length - $Suffix.Length)
     try {
       Copy-Item -LiteralPath $backup.FullName -Destination $original -Force -ErrorAction Stop

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const {
   backupPathFor,
   isPatched,
@@ -9,6 +9,11 @@ const {
   moduleTypeOf,
   canRunAsNode,
   checkSyntax,
+  checkFileSyntax,
+  checkJSON,
+  startupFiles,
+  findStartupProblems,
+  planJSONBackup,
   hasUnambiguousWindowAnchor,
 } = require('../../extension/patch-safety');
 
@@ -126,6 +131,122 @@ describe('checkSyntax', () => {
   it('cleans up its temp file', () => {
     check(PRISTINE);
     expect(fs.readdirSync(tmpDir)).toEqual([]);
+  });
+});
+
+describe('checkFileSyntax', () => {
+  // As checkSyntax, with Node standing in for the editor's binary.
+  let tmpDir;
+  beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vibrancy-file-syntax-')); });
+  afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const write = (name, code) => {
+    const file = path.join(tmpDir, name);
+    fs.writeFileSync(file, code);
+    return file;
+  };
+  const check = (file, overrides = {}) => checkFileSyntax(file, { execPath: process.execPath, spawn, ...overrides });
+
+  it('passes a file that parses and fails one that does not', async () => {
+    expect(await check(write('ok.js', WINDOW_PATCHED))).toEqual({ ok: true });
+    const broken = await check(write('broken.js', 'const x = {;\n'));
+    expect(broken.ok).toBe(false);
+    expect(broken.message).toMatch(/SyntaxError/);
+  });
+
+  it('parses with the module system of where the file is', async () => {
+    // Sloppy-mode code: fine as CommonJS, a SyntaxError in a module.
+    const sloppy = 'with ({}) { var x = 1; }\n';
+    expect((await check(write('plain.js', sloppy))).ok).toBe(true);
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+    expect((await check(write('module.js', sloppy))).ok).toBe(false);
+  });
+
+  it('reports a check that could not run as skipped, not as a failure', async () => {
+    const result = await check(write('ok.js', PRISTINE), { execPath: path.join(tmpDir, 'no-such-binary') });
+    expect(result).toMatchObject({ ok: true, skipped: true });
+  });
+
+  it('reports a check that ran out of time as skipped', async () => {
+    const slow = write('slow.js', PRISTINE);
+    const result = await check(slow, { execPath: process.execPath, timeout: 1, spawn: (exe) => spawn(exe, ['-e', 'setTimeout(() => {}, 5000)']) });
+    expect(result).toMatchObject({ ok: true, skipped: true });
+  });
+});
+
+describe('checkJSON', () => {
+  it('reads JSON as require() does, ignoring a BOM', () => {
+    expect(checkJSON('\uFEFF{"a":1}')).toEqual({ ok: true });
+  });
+
+  it('fails JSON that does not parse', () => {
+    expect(checkJSON('{"a":').ok).toBe(false);
+  });
+});
+
+describe('startupFiles', () => {
+  const appDir = path.join('/x', 'resources', 'app', 'out');
+  const all = () => true;
+
+  it('lists what the editor loads before any extension runs', () => {
+    const files = startupFiles({ appDir, jsFile: path.join(appDir, 'main.js'), windowOptionsFile: path.join(appDir, 'mainImpl.js') }, all);
+    expect(files).toEqual([
+      { file: path.join(appDir, 'main.js'), kind: 'js' },
+      { file: path.join(appDir, 'mainImpl.js'), kind: 'js' },
+      { file: path.join('/x', 'resources', 'app', 'product.json'), kind: 'json' },
+      { file: path.join('/x', 'resources', 'app', 'package.json'), kind: 'json' },
+      { file: path.join(appDir, 'vs', 'workbench', 'workbench.desktop.main.js'), kind: 'js' },
+    ]);
+  });
+
+  it('lists main.js once when it also creates the window, and skips what is not there', () => {
+    const main = path.join(appDir, 'main.js');
+    const files = startupFiles({ appDir, jsFile: main, windowOptionsFile: main }, (p) => !p.endsWith('package.json'));
+    expect(files.map((f) => path.basename(f.file))).toEqual(['main.js', 'product.json', 'workbench.desktop.main.js']);
+  });
+});
+
+describe('findStartupProblems', () => {
+  const files = [{ file: 'main.js', kind: 'js' }, { file: 'product.json', kind: 'json' }];
+  const readFile = (contents) => (p) => { if (!(p in contents)) throw new Error(`ENOENT ${p}`); return contents[p]; };
+
+  it('finds nothing when everything loads', async () => {
+    const problems = await findStartupProblems(files, { readFile: readFile({ 'product.json': '{}' }), checkJS: async () => ({ ok: true }) });
+    expect(problems).toEqual([]);
+  });
+
+  it('reports each file that would not load', async () => {
+    const problems = await findStartupProblems(files, {
+      readFile: readFile({ 'product.json': '{' }),
+      checkJS: async () => ({ ok: false, message: 'SyntaxError: x' }),
+    });
+    expect(problems.map((p) => p.file)).toEqual(['main.js', 'product.json']);
+  });
+
+  it('still checks the JSON files when JavaScript cannot be checked', async () => {
+    const problems = await findStartupProblems(files, { readFile: readFile({}) });
+    expect(problems).toEqual([{ file: 'product.json', message: 'ENOENT product.json' }]);
+  });
+});
+
+describe('planJSONBackup', () => {
+  const product = (commit, extra = '') => JSON.stringify({ commit, version: '1.0' }) + extra;
+
+  it('keeps a copy of a product.json that parses', () => {
+    expect(planJSONBackup(product('a'), undefined)).toBe(product('a'));
+  });
+
+  it('leaves the first copy while the editor is the same build', () => {
+    expect(planJSONBackup(product('a', ' '), product('a'))).toBeNull();
+  });
+
+  it('replaces it once the editor has updated, or the copy is unusable', () => {
+    expect(planJSONBackup(product('b'), product('a'))).toBe(product('b'));
+    expect(planJSONBackup(product('a'), '{')).toBe(product('a'));
+  });
+
+  it('never keeps a copy that would not load', () => {
+    expect(planJSONBackup('{', undefined)).toBeNull();
   });
 });
 

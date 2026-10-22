@@ -78,9 +78,10 @@ function makeInstall({ htmlRelPath = SANDBOX_HTML, mainImpl = false } = {}) {
   };
 }
 
-function activate({ settings = {}, appName } = {}) {
+function activate({ settings = {}, appName, responses } = {}) {
   vscode.__reset({
     appName,
+    responses,
     appRoot: appDir && path.dirname(appDir),
     settings: {
       // Matching the theme keeps the "your colour theme doesn't match" prompt
@@ -669,6 +670,120 @@ describe('a patch that could stop the editor starting', () => {
 
     expect(read(jsPath)).toBe(installed);
     expect(errors().some((m) => m.includes('would no longer load'))).toBe(true);
+  });
+});
+
+describe('an editor that would not start', () => {
+  // A file the main process or the workbench loads that doesn't parse stops the
+  // editor before any extension runs, so nothing inside it can undo the damage.
+  // Other patcher-style extensions edit the same files, so Vibrancy checks them
+  // all, whoever changed them.
+  const errors = () => vscode.__state.messages.filter((m) => m.kind === 'error').map((m) => m.message);
+  const startedMessage = (key, file) => localize(key).replace(/%1/g, 'Visual Studio Code').replace('%2', file);
+  const workbenchBundle = () => path.join(appDir, 'vs', 'workbench', 'workbench.desktop.main.js');
+  const backup = (p) => p + '.vibrancy-orig';
+
+  it('keeps a copy of product.json for the restore scripts, through Reload, until Disable', async () => {
+    const { productPath } = makeInstall();
+    const originalProduct = read(productPath);
+    activate();
+
+    await run('extension.installVibrancy');
+    expect(read(backup(productPath))).toBe(originalProduct);
+    await run('extension.updateVibrancy');
+    expect(read(backup(productPath))).toBe(originalProduct);
+    await run('extension.uninstallVibrancy');
+    expect(fs.existsSync(backup(productPath))).toBe(false);
+  });
+
+  it('refuses to patch a main.js another patcher already broke, and says so', async () => {
+    const { jsPath, htmlPath } = makeInstall();
+    fs.appendFileSync(jsPath, '\nconst broken = {;\n');
+    const brokenJs = read(jsPath);
+    const originalHtml = read(htmlPath);
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toBe(brokenJs);
+    expect(read(htmlPath)).toBe(originalHtml);
+    const expected = localize('messages.brokenBeforePatch').replace('%1', 'main.js').split('%2')[0];
+    expect(errors().some((m) => m.includes(expected))).toBe(true);
+    expect(errors().some((m) => m.includes(localize('messages.patchWontLoad').split('%1')[0]))).toBe(false);
+  });
+
+  it('refuses to patch when product.json is already broken', async () => {
+    const { jsPath, productPath } = makeInstall();
+    const originalJs = read(jsPath);
+    fs.writeFileSync(productPath, '{ "checksums": {');
+    activate();
+
+    await run('extension.installVibrancy');
+
+    expect(read(jsPath)).toBe(originalJs);
+    const expected = localize('messages.brokenBeforePatch').replace('%1', 'product.json').split('%2')[0];
+    expect(errors().some((m) => m.includes(expected))).toBe(true);
+  });
+
+  it('warns instead of offering a restart when another file would stop the editor', async () => {
+    makeInstall();
+    fs.mkdirSync(path.dirname(workbenchBundle()), { recursive: true });
+    fs.writeFileSync(workbenchBundle(), 'export const x = {;\n');
+    activate();
+
+    await run('extension.installVibrancy');
+
+    await vi.waitFor(() => expect(errors().length).toBeGreaterThan(0));
+    expect(errors()[0]).toContain(startedMessage('messages.editorWontStartOther', 'workbench.desktop.main.js').split('%3')[0]);
+    expect(vscode.__state.messages.some((m) => m.message === localize('messages.enabled'))).toBe(false);
+  });
+
+  it('refuses a Reload on a main.js damaged since it was patched', async () => {
+    const { jsPath } = makeInstall();
+    activate();
+    await run('extension.installVibrancy');
+    vscode.__state.messages.length = 0;
+
+    fs.writeFileSync(jsPath, read(jsPath).slice(0, 200));
+    const damaged = read(jsPath);
+    await run('extension.updateVibrancy');
+
+    expect(read(jsPath)).toBe(damaged);
+    expect(errors().some((m) => m.includes(localize('messages.brokenBeforePatch').replace('%1', 'main.js').split('%2')[0]))).toBe(true);
+  });
+
+  it('points at the restore script when Vibrancy kept the original of the broken file', async () => {
+    const { productPath } = makeInstall();
+    let clickRestart;
+    activate({ responses: [new Promise((resolve) => { clickRestart = resolve; })] });
+
+    await run('extension.installVibrancy');
+    await vi.waitFor(() => expect(vscode.__state.messages.some((m) => m.message === localize('messages.enabled'))).toBe(true));
+    fs.writeFileSync(productPath, read(productPath).slice(0, 40));
+    clickRestart({ title: localize('messages.restartIde') });
+
+    await vi.waitFor(() => expect(errors().length).toBe(1));
+    expect(errors()[0]).toContain(startedMessage('messages.editorWontStartRestorable', 'product.json').split('%3')[0]);
+  });
+
+  it('checks again when Restart is clicked, and leaves the editor running', async () => {
+    makeInstall();
+    let clickRestart;
+    activate({ responses: [new Promise((resolve) => { clickRestart = resolve; })] });
+
+    await run('extension.installVibrancy');
+    await vi.waitFor(() => expect(vscode.__state.messages.some((m) => m.message === localize('messages.enabled'))).toBe(true));
+    expect(errors()).toEqual([]);
+
+    // Another extension breaks the workbench while the prompt is open.
+    fs.mkdirSync(path.dirname(workbenchBundle()), { recursive: true });
+    fs.writeFileSync(workbenchBundle(), 'export const x = {;\n');
+    clickRestart({ title: localize('messages.restartIde') });
+
+    await vi.waitFor(() => expect(errors().length).toBe(1));
+    const warning = vscode.__state.messages.find((m) => m.kind === 'error');
+    expect(warning.message).toContain('workbench.desktop.main.js');
+    expect(warning.options.map((o) => o && o.title)).toContain(localize('messages.restartAnyway'));
   });
 });
 

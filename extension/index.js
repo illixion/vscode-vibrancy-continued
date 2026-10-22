@@ -786,33 +786,114 @@ function activate(context) {
    * patch-safety.js). Runs before anything is written, so a refusal leaves the
    * editor untouched.
    */
-  function checkPatchedJS(file, content) {
-    const fsSync = require('fs');
+  const syntaxIO = {
+    readdir: (d) => require('fs').readdirSync(d),
+    readFile: (p) => require('fs').readFileSync(p, 'utf-8'),
+  };
+
+  /** Whether this editor's binary can parse JavaScript for us (see canRunAsNode). */
+  function canCheckSyntax() {
     const binDirs = [
       vscode.env.appRoot && path.join(vscode.env.appRoot, 'bin'),
       path.join(path.dirname(process.execPath), 'bin'),
     ].filter(Boolean);
-    const io = {
-      readdir: (d) => fsSync.readdirSync(d),
-      readFile: (p) => fsSync.readFileSync(p, 'utf-8'),
-    };
-    if (!patchSafety.canRunAsNode(binDirs, io)) return;
+    return patchSafety.canRunAsNode(binDirs, syntaxIO);
+  }
 
+  /** The parser's message if `content` wouldn't load as `file`, else null. */
+  function syntaxErrorIn(file, content) {
+    if (!canCheckSyntax()) return null;
+    const fsSync = require('fs');
     const result = patchSafety.checkSyntax(content, {
       execPath: process.execPath,
-      moduleType: patchSafety.moduleTypeOf(file, io.readFile),
+      moduleType: patchSafety.moduleTypeOf(file, syntaxIO.readFile),
       tmpDir: os.tmpdir(),
       spawnSync: require('child_process').spawnSync,
       writeFile: (p, s) => fsSync.writeFileSync(p, s, 'utf-8'),
       unlink: (p) => fsSync.unlinkSync(p),
     });
-    if (result.skipped) {
-      console.warn(`Vibrancy: couldn't check ${file}: ${result.message}`);
-    } else if (!result.ok) {
-      throw new Error(localize('messages.patchWontLoad')
-        .replace('%1', path.basename(file))
-        .replace('%2', result.message));
+    if (result.skipped) console.warn(`Vibrancy: couldn't check ${file}: ${result.message}`);
+    return result.ok ? null : result.message;
+  }
+
+  function checkPatchedJS(file, content) {
+    const error = syntaxErrorIn(file, content);
+    if (error) {
+      throw new Error(localize('messages.patchWontLoad').replace('%1', path.basename(file)).replace('%2', error));
     }
+  }
+
+  /**
+   * Refuse a patched file the editor couldn't load, saying whether Vibrancy's
+   * patch is to blame or the file was broken already, by another patcher-style
+   * extension, say. Then the editor won't start either way, and the user needs
+   * to hear that rather than "Vibrancy's patch failed".
+   */
+  async function checkPatchedFile(file, content) {
+    const error = syntaxErrorIn(file, content);
+    if (!error) return;
+    const unpatched = removeElectronOptions(removeJSMarkers(await fs.readFile(file, 'utf-8')).result);
+    const before = syntaxErrorIn(file, unpatched);
+    throw new Error(localize(before ? 'messages.brokenBeforePatch' : 'messages.patchWontLoad')
+      .replace('%1', path.basename(file))
+      .replace('%2', before || error));
+  }
+
+  /** The files the editor loads before any extension can run (see patch-safety.js). */
+  function editorStartupFiles() {
+    return patchSafety.startupFiles(installPaths, (p) => require('fs').existsSync(p));
+  }
+
+  /**
+   * Which of them wouldn't load as they are on disk now. A check that can't
+   * run finds nothing: it warns, it never stands in the way of a restart.
+   */
+  async function findStartupProblems() {
+    try {
+      const spawnCheck = (file) => patchSafety.checkFileSyntax(file, { execPath: process.execPath, spawn });
+      return await patchSafety.findStartupProblems(editorStartupFiles(), {
+        readFile: syntaxIO.readFile,
+        checkJS: canCheckSyntax() ? spawnCheck : undefined,
+      });
+    } catch (error) {
+      console.warn('Vibrancy: could not check the editor\'s startup files:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * The warning for a file that would stop the editor starting. Whether
+   * Vibrancy kept an original of it decides the fix: its restore script, or
+   * undoing whatever else changed it.
+   */
+  function startupProblemMessage({ file, message }) {
+    const restorable = require('fs').existsSync(patchSafety.backupPathFor(file));
+    return localize(restorable ? 'messages.editorWontStartRestorable' : 'messages.editorWontStartOther')
+      .replace(/%1/g, vscode.env.appName)
+      .replace('%2', path.basename(file))
+      .replace('%3', message);
+  }
+
+  /**
+   * After an operation: if a file the editor needs wouldn't load, say so
+   * instead of offering a restart. Returns whether it did.
+   */
+  async function warnIfEditorWontStart() {
+    const problems = await findStartupProblems();
+    if (problems.length === 0) return false;
+    vscode.window.showErrorMessage(startupProblemMessage(problems[0]), { modal: true });
+    return true;
+  }
+
+  /**
+   * Right before Vibrancy restarts the editor, check again: the restart prompt
+   * can sit unanswered while another extension patches the same files.
+   */
+  async function confirmRestart() {
+    const problems = await findStartupProblems();
+    if (problems.length === 0) return true;
+    const anyway = { title: localize('messages.restartAnyway') };
+    return (await vscode.window.showErrorMessage(startupProblemMessage(problems[0]), { modal: true }, anyway)) === anyway;
   }
 
   /**
@@ -835,7 +916,7 @@ function activate(context) {
   }
 
   async function removeBackups(writer) {
-    for (const file of new Set([JSFile, WindowOptionsFile])) {
+    for (const file of new Set([JSFile, WindowOptionsFile, productFileFor(installPaths.appDir)])) {
       const backupFile = patchSafety.backupPathFor(file);
       if (require('fs').existsSync(backupFile)) await writer.removeFile(backupFile);
     }
@@ -1014,8 +1095,17 @@ function activate(context) {
     try {
       const productFile = productFileFor(installPaths.appDir);
       const record = (await readLocalConfig())?.checksum ?? null;
-      const updated = plan(await fs.readFile(productFile, 'utf-8'), checksumKey(installPaths.appDir, HTMLFile), record);
-      if (updated !== null) await writer.writeFile(productFile, updated, 'utf-8');
+      const current = await fs.readFile(productFile, 'utf-8');
+      const updated = plan(current, checksumKey(installPaths.appDir, HTMLFile), record);
+      if (updated === null) return;
+      // The main process loads product.json, so keep a copy that the restore
+      // scripts can put back (see patch-safety.js).
+      const backupFile = patchSafety.backupPathFor(productFile);
+      let existing;
+      try { existing = await fs.readFile(backupFile, 'utf-8'); } catch { existing = undefined; }
+      const backup = patchSafety.planJSONBackup(current, existing);
+      if (backup !== null) await writer.writeFile(backupFile, backup, 'utf-8');
+      await writer.writeFile(productFile, updated, 'utf-8');
     } catch (error) {
       console.warn('Vibrancy: could not update the workbench checksum:', error.message);
     }
@@ -1091,8 +1181,9 @@ function activate(context) {
     ));
   }
 
-  function enabledRestart() {
+  async function enabledRestart() {
     if (testMode) return;
+    if (await warnIfEditorWontStart()) return;
     // In mirror mode the patched files belong to a different copy of VSCode
     // than the one currently running — restarting this instance won't show
     // vibrancy. Point the user at the mirror's desktop entry instead. Modal,
@@ -1108,16 +1199,17 @@ function activate(context) {
       return;
     }
     vscode.window.showInformationMessage(localize('messages.enabled'), { title: localize('messages.restartIde') })
-      .then(function (msg) {
-        msg && promptRestart(true, context.globalState);
+      .then(async function (msg) {
+        if (msg && await confirmRestart()) promptRestart(true, context.globalState);
       });
   }
 
-  function disabledRestart() {
+  async function disabledRestart() {
     if (testMode) return;
+    if (await warnIfEditorWontStart()) return;
     vscode.window.showInformationMessage(localize('messages.disabled'), { title: localize('messages.restartIde') })
-      .then(function (msg) {
-        msg && promptRestart(false, context.globalState);
+      .then(async function (msg) {
+        if (msg && await confirmRestart()) promptRestart(false, context.globalState);
       });
   }
 
@@ -1606,8 +1698,18 @@ function activate(context) {
     const mainJS = await buildMainJS(WindowOptionsFile === JSFile ? windowJS : undefined);
     const implJS = WindowOptionsFile === JSFile ? undefined : windowJS;
 
-    checkPatchedJS(JSFile, mainJS);
-    if (implJS !== undefined) checkPatchedJS(WindowOptionsFile, implJS);
+    await checkPatchedFile(JSFile, mainJS);
+    if (implJS !== undefined) await checkPatchedFile(WindowOptionsFile, implJS);
+    // product.json and package.json are read before any window opens too, and
+    // Vibrancy can't fix either: refuse rather than patch an editor that
+    // already won't start.
+    for (const { file, kind } of editorStartupFiles()) {
+      if (kind !== 'json') continue;
+      const result = patchSafety.checkJSON(await fs.readFile(file, 'utf-8'));
+      if (!result.ok) {
+        throw new Error(localize('messages.brokenBeforePatch').replace('%1', path.basename(file)).replace('%2', result.message));
+      }
+    }
 
     return { backups, mainJS, implJS };
   }

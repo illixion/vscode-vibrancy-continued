@@ -199,6 +199,7 @@ async function main() {
     console.log('\n[6/9] Second launch (post-restart, screenshot)...');
     const screenshot2 = path.join(screenshotDir, `vibrancy-e2e-${process.platform}-2-post-restart.png`);
     try { fs.unlinkSync(diagnosticsFile); } catch {}
+    const secondLaunchAt = Date.now();
 
     const secondResult = await launchAndWaitForSignal(vscodeExe, userDataDir, extensionsInstallDir, tmpWorkspace, {
       signalFile: null,
@@ -207,6 +208,8 @@ async function main() {
       killTimeout: 20000,
     });
     console.log(`  Exit code: ${secondResult.exitCode}`);
+    const workbenchStarted = verifyWorkbenchStarted(userDataDir, secondLaunchAt);
+    console.log(`  Patched workbench started: ${workbenchStarted.ok ? 'PASS' : 'FAIL'} (${workbenchStarted.detail})`);
 
     // True-transparency checks on the post-restart screenshot. Green comes
     // exclusively from the wallpaper behind the window, so each region proves
@@ -299,11 +302,13 @@ async function main() {
     const postUninstallNocrash = fourthResult.exitCode === 0 || fourthResult.exitCode === null;
     const installChecksumsOk = installChecksums.ok;
     const uninstallChecksumsOk = uninstallChecksums.ok;
-    const success = baseline.supported && installOk && nocrash && greenOk && sidebarOk && beaconOk && installSettingsOk && installChecksumsOk && uninstallOk && uninstallSettingsOk && uninstallChecksumsOk && postUninstallNocrash && uninstallClean;
+    const workbenchStartedOk = workbenchStarted.ok;
+    const success = baseline.supported && installOk && nocrash && workbenchStartedOk && greenOk && sidebarOk && beaconOk && installSettingsOk && installChecksumsOk && uninstallOk && uninstallSettingsOk && uninstallChecksumsOk && postUninstallNocrash && uninstallClean;
 
     console.log(`  Desktop baseline: ${baseline.supported ? 'PASS' : 'FAIL'}`);
     console.log(`  Install signal: ${installOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Post-install crash: ${nocrash ? 'PASS' : 'FAIL'}`);
+    console.log(`  Patched workbench started: ${workbenchStartedOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Transparency (center): ${greenOk ? 'PASS' : 'FAIL'}`);
     console.log(`  Transparency (sidebar): ${sidebarOk ? 'PASS' : 'FAIL'}`);
     console.log(`  CSS import beacon: ${beaconOk ? 'PASS' : 'FAIL'}`);
@@ -324,7 +329,7 @@ async function main() {
     }
 
     writeGitHubSummary(success, screenshot2, {
-      installOk, nocrash, greenOk, greenPct, sidebarOk, sidebarPct, beaconOk, beaconPct,
+      installOk, nocrash, workbenchStartedOk, greenOk, greenPct, sidebarOk, sidebarPct, beaconOk, beaconPct,
       installSettingsOk, installChecksumsOk, uninstallOk, uninstallSettingsOk, uninstallChecksumsOk, postUninstallNocrash,
       uninstallClean, postUninstallGreen, postUninstallBeacon,
       baselineSupported: baseline.supported, baselinePct: baseline.pct,
@@ -1072,6 +1077,34 @@ function verifyChecksums(productPath) {
   return { ok: errors.length === 0, errors };
 }
 
+/**
+ * Whether a workbench window came up during a launch that began at
+ * `sinceMs`: VSCode writes window<N>/renderer.log under a new logs folder for
+ * each start. The exit code can't tell: when the main process fails to load a
+ * file, VSCode shows an error dialog and keeps running until it is killed, and
+ * a patched workbench that doesn't parse leaves an empty window the same way.
+ * @returns {{ ok: boolean, detail: string }}
+ */
+function verifyWorkbenchStarted(userDataDir, sinceMs) {
+  const logsDir = path.join(userDataDir, 'logs');
+  let dirs = [];
+  try {
+    dirs = fs.readdirSync(logsDir).map((name) => path.join(logsDir, name))
+      .filter((dir) => fs.statSync(dir).mtimeMs >= sinceMs - 2000);
+  } catch {}
+  for (const dir of dirs) {
+    let windows = [];
+    try { windows = fs.readdirSync(dir).filter((name) => /^window\d+$/.test(name)); } catch {}
+    for (const win of windows) {
+      const renderer = path.join(dir, win, 'renderer.log');
+      try {
+        if (fs.statSync(renderer).size > 0) return { ok: true, detail: path.relative(logsDir, renderer) };
+      } catch {}
+    }
+  }
+  return { ok: false, detail: dirs.length ? `no renderer.log in ${dirs.map((d) => path.basename(d)).join(', ')}` : 'no new logs folder' };
+}
+
 function readSettings(settingsPath) {
   try {
     return JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
@@ -1190,6 +1223,7 @@ function writeGitHubSummary(success, screenshotPath, checks, meta = {}) {
   md += `| Desktop baseline is green (${pct(checks.baselinePct)}) | ${chk(checks.baselineSupported)} |\n`;
   md += `| Install signal | ${chk(checks.installOk)} |\n`;
   md += `| Post-install crash | ${chk(checks.nocrash)} |\n`;
+  md += `| Patched workbench started | ${chk(checks.workbenchStartedOk)} |\n`;
   md += `| Transparency: wallpaper through window (${pct(checks.greenPct)}) | ${chk(checks.greenOk)} |\n`;
   md += `| Transparency: wallpaper through sidebar (${pct(checks.sidebarPct)}) | ${chk(checks.sidebarOk)} |\n`;
   md += `| CSS import beacon (${pct(checks.beaconPct)}) | ${chk(checks.beaconOk)} |\n`;

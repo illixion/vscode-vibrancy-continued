@@ -95,6 +95,18 @@
     "messages.patchWontLoad": {
       "type": "string"
     },
+    "messages.brokenBeforePatch": {
+      "type": "string"
+    },
+    "messages.editorWontStartRestorable": {
+      "type": "string"
+    },
+    "messages.editorWontStartOther": {
+      "type": "string"
+    },
+    "messages.restartAnyway": {
+      "type": "string"
+    },
     "messages.untestedEditor": {
       "type": "string"
     },
@@ -162,6 +174,10 @@
     "messages.unsupported",
     "messages.unsupportedEditor",
     "messages.patchWontLoad",
+    "messages.brokenBeforePatch",
+    "messages.editorWontStartRestorable",
+    "messages.editorWontStartOther",
+    "messages.restartAnyway",
     "messages.untestedEditor",
     "messages.admin",
     "messages.recommendedColorTheme",

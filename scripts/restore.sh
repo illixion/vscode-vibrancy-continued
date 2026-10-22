@@ -6,7 +6,9 @@
 # start after enabling Vibrancy, or its window is invisible, Disable can't help:
 # it runs inside the editor. Since 1.3.1 Vibrancy keeps the original of every
 # file it patches next to it (main.js.vibrancy-orig), and this copies those
-# originals back, so the editor starts again without being reinstalled.
+# originals back, so the editor starts again without being reinstalled. It also
+# keeps product.json's original (one level up, beside out/), which it edits to
+# keep the editor's integrity check quiet.
 #
 # Usage:
 #   ./restore.sh                 restore every editor that has originals saved
@@ -45,7 +47,7 @@ for out in "${CANDIDATES[@]}"; do
   [ -d "$out" ] || continue
   case "$out" in *"$FILTER"*) ;; *) continue ;; esac
 
-  for backup in "$out"/*"$SUFFIX"; do
+  for backup in "$out"/*"$SUFFIX" "$(dirname "$out")"/product.json"$SUFFIX"; do
     [ -f "$backup" ] || continue
     original="${backup%"$SUFFIX"}"
 

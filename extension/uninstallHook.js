@@ -484,7 +484,7 @@ if (require.main === module) (async () => {
                 }
                 // The pristine copies kept for restoring an editor that won't
                 // start (patch-safety.js); unneeded once it's unpatched.
-                for (const file of [jsPath, path.join(path.dirname(jsPath), 'mainImpl.js')]) {
+                for (const file of [jsPath, path.join(path.dirname(jsPath), 'mainImpl.js'), productFileFor(appDir)]) {
                     const backup = backupPathFor(file);
                     if (fsSync.existsSync(backup)) await writer.removeFile(backup);
                 }

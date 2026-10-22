@@ -12,7 +12,15 @@
  *   2. A pristine copy of each patched file is kept next to it
  *      (`main.js.vibrancy-orig`), so whatever slips past the check is fixable
  *      without reinstalling the editor: scripts/restore.sh and restore.ps1 copy
- *      the originals back with the editor closed.
+ *      the originals back with the editor closed. product.json, which the main
+ *      process also loads and Vibrancy edits for the integrity check (see
+ *      checksums.js), gets one too.
+ *
+ * Other patcher-style extensions edit the same files, and their mistakes stop
+ * the editor just the same. So after each operation, and again right before
+ * Vibrancy restarts the editor, every file the editor loads before it can run
+ * an extension is checked as it is on disk (startupFiles), and the user is
+ * warned not to restart if one of them wouldn't load, whoever broke it.
  */
 const path = require('path');
 const { removeJSMarkers, removeElectronOptions } = require('./file-transforms');
@@ -118,6 +126,20 @@ function canRunAsNode(binDirs, { readdir, readFile }) {
  * }} opts
  * @returns {{ ok: boolean, skipped?: boolean, message?: string }}
  */
+/**
+ * The verdict from a `--check` run: only a SyntaxError is a verdict on the
+ * code; any other exit means the check itself didn't work.
+ */
+function checkVerdict(status, signal, stderr, error) {
+  if (error || status === null) {
+    return { ok: true, skipped: true, message: String((error && error.message) || signal) };
+  }
+  if (status === 0) return { ok: true };
+  const syntaxLine = String(stderr).split('\n').find((l) => /SyntaxError/.test(l));
+  if (!syntaxLine) return { ok: true, skipped: true, message: String(stderr).slice(0, 300) };
+  return { ok: false, message: syntaxLine.trim().slice(0, 300) };
+}
+
 function checkSyntax(code, { execPath, moduleType, tmpDir, spawnSync, writeFile, unlink, timeout = 30000 }) {
   const ext = moduleType === 'module' ? '.mjs' : '.cjs';
   const file = path.join(tmpDir, `vibrancy-check-${process.pid}-${Date.now()}${ext}`);
@@ -133,18 +155,128 @@ function checkSyntax(code, { execPath, moduleType, tmpDir, spawnSync, writeFile,
       timeout,
       windowsHide: true,
     });
-    if (result.error || result.status === null) {
-      return { ok: true, skipped: true, message: String(result.error?.message || result.signal) };
-    }
-    if (result.status === 0) return { ok: true };
-    // Only a SyntaxError is a verdict on the code; any other exit means the
-    // check itself didn't work.
-    const syntaxLine = String(result.stderr).split('\n').find((l) => /SyntaxError/.test(l));
-    if (!syntaxLine) return { ok: true, skipped: true, message: String(result.stderr).slice(0, 300) };
-    return { ok: false, message: syntaxLine.trim().slice(0, 300) };
+    return checkVerdict(result.status, result.signal, result.stderr, result.error);
   } finally {
     try { unlink(file); } catch { /* best effort */ }
   }
+}
+
+/**
+ * Parse a file where it is, with the editor's engine: the same as checkSyntax,
+ * but without a copy, so the module system is the one the editor picks for
+ * that path. Asynchronous, so checking the workbench bundle (several MB)
+ * doesn't hold up the extension host.
+ *
+ * @param {string} file
+ * @param {{ execPath: string, spawn: typeof import('child_process').spawn, timeout?: number }} opts
+ * @returns {Promise<{ ok: boolean, skipped?: boolean, message?: string }>}
+ */
+function checkFileSyntax(file, { execPath, spawn, timeout = 60000 }) {
+  return new Promise((resolve) => {
+    let child;
+    try {
+      child = spawn(execPath, ['--check', file], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        windowsHide: true,
+      });
+    } catch (error) {
+      resolve(checkVerdict(null, null, '', error));
+      return;
+    }
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => child.kill(), timeout);
+    child.on('error', (error) => { clearTimeout(timer); resolve(checkVerdict(null, null, '', error)); });
+    child.on('close', (status, signal) => { clearTimeout(timer); resolve(checkVerdict(status, signal, stderr)); });
+  });
+}
+
+/** JSON as require() reads it, which ignores a leading BOM. */
+function checkJSON(text) {
+  try {
+    JSON.parse(text.replace(/^\uFEFF/, ''));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: String(error.message).slice(0, 300) };
+  }
+}
+
+/**
+ * The files the editor loads before it can run any extension: the main
+ * process's entry, its window code, the two JSON files it reads, and the
+ * workbench bundle. If one of them doesn't load, the editor doesn't start or
+ * opens a blank window, and nothing inside it can undo the damage.
+ *
+ * @param {{ appDir: string, jsFile: string, windowOptionsFile: string }} paths
+ * @param {(p: string) => boolean} exists
+ * @returns {{ file: string, kind: 'js' | 'json' }[]}
+ */
+function startupFiles({ appDir, jsFile, windowOptionsFile }, exists) {
+  const appRoot = path.dirname(appDir);
+  const files = [
+    { file: jsFile, kind: 'js' },
+    { file: windowOptionsFile, kind: 'js' },
+    { file: path.join(appRoot, 'product.json'), kind: 'json' },
+    { file: path.join(appRoot, 'package.json'), kind: 'json' },
+    { file: path.join(appDir, 'vs', 'workbench', 'workbench.desktop.main.js'), kind: 'js' },
+  ];
+  const seen = new Set();
+  return files.filter(({ file }) => !seen.has(file) && seen.add(file) && exists(file));
+}
+
+/**
+ * Which of these files wouldn't load.
+ *
+ * @param {{ file: string, kind: 'js' | 'json' }[]} files
+ * @param {{
+ *   readFile: (p: string) => string,
+ *   checkJS?: (file: string) => Promise<{ ok: boolean, message?: string }>,
+ * }} io - checkJS is left out when the editor's binary can't parse JavaScript
+ *   (see canRunAsNode); the JSON files are still checked
+ * @returns {Promise<{ file: string, message: string }[]>}
+ */
+async function findStartupProblems(files, { readFile, checkJS }) {
+  const results = await Promise.all(files.map(async ({ file, kind }) => {
+    if (kind === 'json') {
+      let text;
+      try {
+        text = readFile(file);
+      } catch (error) {
+        return { file, message: error.message };
+      }
+      const result = checkJSON(text);
+      return result.ok ? null : { file, message: result.message };
+    }
+    if (!checkJS) return null;
+    const result = await checkJS(file);
+    return result.ok ? null : { file, message: result.message };
+  }));
+  return results.filter(Boolean);
+}
+
+/**
+ * The backup to keep of product.json before Vibrancy edits it. Only its
+ * checksums change, so any copy that parses lets the editor start; the one
+ * kept is the first, replaced when an editor update has brought a new one.
+ *
+ * @param {string} current
+ * @param {string|undefined} existingBackup
+ * @returns {string|null} Content to write as the backup, or null to leave it
+ */
+function planJSONBackup(current, existingBackup) {
+  const parse = (text) => {
+    try {
+      return JSON.parse(text.replace(/^\uFEFF/, ''));
+    } catch {
+      return undefined;
+    }
+  };
+  const now = parse(current);
+  if (now === undefined) return null;
+  if (existingBackup === undefined) return current;
+  const kept = parse(existingBackup);
+  if (kept === undefined || kept.commit !== now.commit || kept.version !== now.version) return current;
+  return null;
 }
 
 /**
@@ -181,5 +313,10 @@ module.exports = {
   moduleTypeOf,
   canRunAsNode,
   checkSyntax,
+  checkFileSyntax,
+  checkJSON,
+  startupFiles,
+  findStartupProblems,
+  planJSONBackup,
   hasUnambiguousWindowAnchor,
 };
