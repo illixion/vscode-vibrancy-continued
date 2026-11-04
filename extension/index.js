@@ -879,7 +879,9 @@ function activate(context) {
    * instead of offering a restart. Returns whether it did.
    */
   async function warnIfEditorWontStart() {
-    const problems = await findStartupProblems();
+    const check = findStartupProblems();
+    pendingStartupCheck = check.catch(() => {});
+    const problems = await check;
     if (problems.length === 0) return false;
     vscode.window.showErrorMessage(startupProblemMessage(problems[0]), { modal: true });
     return true;
@@ -2120,9 +2122,15 @@ function activate(context) {
 }
 exports.activate = activate;
 
+// The restart prompt after an operation runs once the command has returned
+// (enabledRestart and disabledRestart aren't awaited), and its startup-file
+// check spawns the editor's binary. Tests wait on this before tearing down, or
+// a check from one test reports into the next one's messages.
+let pendingStartupCheck = Promise.resolve();
+
 // this method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;
 
 // Exported for testing
-exports._test = { getCurrentTheme, getEditorSettingsPath };
+exports._test = { getCurrentTheme, getEditorSettingsPath, startupCheckSettled: () => pendingStartupCheck };

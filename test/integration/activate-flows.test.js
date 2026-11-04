@@ -145,7 +145,10 @@ beforeEach(() => {
   extension = require('../../extension/index.js');
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // Let the restart prompt's startup check finish while this test's install
+  // still exists, so it can't land in the next test's messages.
+  await extension?._test.startupCheckSettled();
   for (const [k, v] of Object.entries(savedEnv || {})) {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
