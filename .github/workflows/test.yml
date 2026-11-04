@@ -61,6 +61,14 @@ jobs:
     # where every step exhausts its own budget) closely enough to stay a real
     # backstop while letting those step caps fire first. See `tests` above.
     timeout-minutes: 75
+    # The two macOS legs back each other up: one passing is enough, because a
+    # leg on its own fails as often from GitHub not finding a runner (run
+    # 40894580876) as from a real bug, and xcode-27 is a preview image with no
+    # SLA. continue-on-error keeps either from failing this job on its own;
+    # the ci job's "Check the macOS legs" step reads each leg's real result,
+    # fails when neither passed, and warns when only one did. Keep this list
+    # in step with MACOS_LEGS there.
+    continue-on-error: ${{ matrix.os == 'macos-26' || matrix.os == 'xcode-27' }}
     env:
       # Scheduled runs test against Insiders to catch breaking changes early.
       # Manual dispatch uses the chosen version. Push/PR runs use stable.
@@ -79,8 +87,9 @@ jobs:
         # windows-11-arm is build-only — it compiles the arm64 native module
         # but skips the E2E run; see "Run E2E tests (Windows)" for why.
         # xcode-27 is GitHub's macOS 27 image (public preview, no SLA): there
-        # is no macos-27 label yet. Switch to macos-27 once it reaches GA.
-        os: [ubuntu-latest, xcode-27, windows-latest, windows-11-arm]
+        # is no macos-27 label yet. Once macos-27 reaches GA, run it alone and
+        # drop the macOS pairing (continue-on-error above, MACOS_LEGS in ci).
+        os: [ubuntu-latest, macos-26, xcode-27, windows-latest, windows-11-arm]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -380,8 +389,57 @@ jobs:
     runs-on: ubuntu-latest
     # Baseline ~10s.
     timeout-minutes: 10
+    # actions: read lets "Check the macOS legs" list this run's jobs.
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v6
+      # needs.e2e-tests.result is one verdict for the whole matrix, and the
+      # macOS legs' continue-on-error makes it `success` even when they failed.
+      # So read each leg's own conclusion from the API. A failed lookup fails
+      # the step: guessing "passed" would hide exactly what this is for.
+      - name: Check the macOS legs
+        id: macos
+        if: always()
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          E2E_RESULT: ${{ needs.e2e-tests.result }}
+          # Keep in step with continue-on-error on the e2e-tests job.
+          MACOS_LEGS: macos-26 xcode-27
+        run: |
+          set -euo pipefail
+          jobs=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/attempts/$RUN_ATTEMPT/jobs" \
+            -q '.jobs[] | "\(.name)\t\(.conclusion)"')
+          passed=0
+          total=0
+          summary=''
+          for leg in $MACOS_LEGS; do
+            conclusion=$(awk -F'\t' -v n="e2e-tests ($leg)" '$1 == n { print $2 }' <<< "$jobs")
+            conclusion=${conclusion:-missing}
+            echo "$leg: $conclusion"
+            summary+="${summary:+, }$leg=$conclusion"
+            total=$((total + 1))
+            if [[ "$conclusion" == 'success' ]]; then passed=$((passed + 1)); fi
+          done
+          # The verdict for e2e as a whole: the matrix's own, unless that only
+          # reads success because every macOS leg failed under continue-on-error.
+          e2e=$E2E_RESULT
+          if [[ "$e2e" == 'success' && $passed -eq 0 ]]; then e2e=failure; fi
+          degraded=false
+          if [[ $passed -gt 0 && $passed -lt $total ]]; then
+            degraded=true
+            echo "::warning::Only $passed of $total macOS legs passed ($summary). One is enough to pass, but look at the other: a runner that never started is GitHub's problem, a failing test may be a real bug on that macOS."
+          fi
+          {
+            echo "e2e=$e2e"
+            echo "degraded=$degraded"
+            echo "summary=$summary"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v8
         if: always()
         with:
@@ -400,7 +458,7 @@ jobs:
       # HTTP 401 (revoked bot token) and only reported `exit code 22`. So it now
       # names the cause, retries transient errors, and never exits 0 on failure.
       - name: Notify Telegram on failure
-        if: needs.tests.result != 'success' || needs.e2e-tests.result != 'success'
+        if: always() && (needs.tests.result != 'success' || steps.macos.outputs.e2e != 'success' || steps.macos.outputs.degraded == 'true')
         timeout-minutes: 5
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -411,7 +469,10 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           EVENT: ${{ github.event_name }}
           TESTS_RESULT: ${{ needs.tests.result }}
-          E2E_RESULT: ${{ needs.e2e-tests.result }}
+          # Empty output means "Check the macOS legs" itself failed.
+          E2E_RESULT: ${{ steps.macos.outputs.e2e || 'unknown (macOS check failed)' }}
+          DEGRADED: ${{ steps.macos.outputs.degraded }}
+          MACOS_SUMMARY: ${{ steps.macos.outputs.summary }}
         run: |
           set -uo pipefail
           if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
@@ -424,7 +485,15 @@ jobs:
           if [[ "$TESTS_RESULT" == 'cancelled' || "$E2E_RESULT" == 'cancelled' ]]; then
             note=$'\n(a cancelled job usually means it exceeded its timeout)'
           fi
-          MESSAGE=$'\xE2\x9D\x8C Tests failed in '"$REPO"$'\nBranch: '"$BRANCH"$'\nEvent: '"$EVENT"$'\nUnit: '"$TESTS_RESULT"$'\nE2E: '"$E2E_RESULT""$note"$'\nRun: '"$SERVER_URL/$REPO/actions/runs/$RUN_ID"
+          headline=$'\xE2\x9D\x8C Tests failed in '
+          if [[ "$TESTS_RESULT" == 'success' && "$E2E_RESULT" == 'success' && "$DEGRADED" == 'true' ]]; then
+            # Passing, but on one macOS leg only: worth a look, not a failure.
+            headline=$'\xE2\x9A\xA0\xEF\xB8\x8F Only one macOS leg passed in '
+          fi
+          if [[ -n "$MACOS_SUMMARY" ]]; then
+            note+=$'\nmacOS: '"$MACOS_SUMMARY"
+          fi
+          MESSAGE="$headline$REPO"$'\nBranch: '"$BRANCH"$'\nEvent: '"$EVENT"$'\nUnit: '"$TESTS_RESULT"$'\nE2E: '"$E2E_RESULT""$note"$'\nRun: '"$SERVER_URL/$REPO/actions/runs/$RUN_ID"
           body="$RUNNER_TEMP/telegram-response.json"
           for attempt in 1 2 3; do
             # Truncate first: a connection-level failure can leave the previous
@@ -461,7 +530,7 @@ jobs:
         if: always()
         env:
           TESTS_RESULT: ${{ needs.tests.result }}
-          E2E_RESULT: ${{ needs.e2e-tests.result }}
+          E2E_RESULT: ${{ steps.macos.outputs.e2e || 'unknown (macOS check failed)' }}
         run: |
           echo "Unit tests: $TESTS_RESULT"
           echo "E2E tests: $E2E_RESULT"
