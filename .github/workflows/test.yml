@@ -78,7 +78,9 @@ jobs:
         # while running (restored afterwards on macOS/Windows).
         # windows-11-arm is build-only — it compiles the arm64 native module
         # but skips the E2E run; see "Run E2E tests (Windows)" for why.
-        os: [ubuntu-latest, macos-26, windows-latest, windows-11-arm]
+        # xcode-27 is GitHub's macOS 27 image (public preview, no SLA): there
+        # is no macos-27 label yet. Switch to macos-27 once it reaches GA.
+        os: [ubuntu-latest, xcode-27, windows-latest, windows-11-arm]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
