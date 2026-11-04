@@ -54,8 +54,11 @@ describe.skipIf(process.platform === 'win32' || !has('bash'))('restore.sh', () =
   });
 });
 
+// pwsh is a .NET app: on the ubuntu runner it usually starts in 1-2s, but a
+// cold start once took 6.4s (nightly run 39785551643) and blew vitest's 5s
+// default. The test checks what the script does, not how fast pwsh boots.
 describe.skipIf(!has('pwsh'))('restore.ps1', () => {
   it('puts back the originals in out/ and product.json beside it', () => {
     expectRestored(spawnSync('pwsh', ['-NoProfile', '-File', path.join(SCRIPTS, 'restore.ps1'), '-Filter', outDir], { encoding: 'utf-8' }));
-  });
+  }, 30_000);
 });
