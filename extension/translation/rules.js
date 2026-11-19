@@ -42,9 +42,11 @@
 	}
 
 	// Markdown that VS Code shows literally where a string is plain text: in a
-	// setting's `description`, a command title or a notification. (Notification
-	// links do render, so [text](url) is allowed.)
-	const PLAIN_TEXT_MARKUP = /`|\*\*|__/;
+	// setting's `description`, a command title or a notification. Only a pair
+	// counts (`code`, **bold**): a lone backtick is a character some languages
+	// and keyboards use as an apostrophe or quote, and it shows as typed.
+	// Notification links do render, so [text](url) is allowed.
+	const PLAIN_TEXT_MARKUP = /`[^`]+`|\*\*[^*]+\*\*/;
 
 	/**
 	 * Problems with one translated string, as sentences for a translator.
@@ -55,7 +57,7 @@
 		if (!isTranslated(translation)) return [];
 		const problems = [];
 		if (!(options && options.markdown) && PLAIN_TEXT_MARKUP.test(translation) && !PLAIN_TEXT_MARKUP.test(english)) {
-			problems.push('VS Code shows this text as it is, so backticks and ** would appear literally. Leave them out.');
+			problems.push('VS Code shows this text as it is, so the backticks or ** around words would appear literally instead of formatting them. Leave them out.');
 		}
 		const expected = placeholders(english);
 		const actual = placeholders(translation);

@@ -45,7 +45,14 @@ describe('rules.checkEntry', () => {
   it('flags backticks and ** in plain text, but not in Markdown', () => {
     expect(rules.checkEntry('Use the setting', 'Utilisez `le réglage`')[0]).toMatch(/backticks/);
     expect(rules.checkEntry('Use the setting', '**Utilisez**')[0]).toMatch(/backticks/);
+    expect(rules.checkEntry('Use the setting', '`a` et `b`')[0]).toMatch(/backticks/);
     expect(rules.checkEntry('Use the setting', 'Utilisez `le réglage`', { markdown: true })).toEqual([]);
+  });
+
+  it('leaves a lone backtick alone, as some languages use it for an apostrophe or quote', () => {
+    expect(rules.checkEntry('Use the setting', 'L`utilisateur choisit le réglage')).toEqual([]);
+    expect(rules.checkEntry('Use the setting', '`Réglage\' et 2 * 3 ** 2')).toEqual([]);
+    expect(rules.checkEntry('Use the setting', 'a__b')).toEqual([]);
   });
 
   it('requires link targets to be kept', () => {

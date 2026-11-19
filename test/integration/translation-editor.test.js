@@ -91,9 +91,9 @@ describe('languages', () => {
   it('starts a new language empty and remembers it', async () => {
     openEditor();
     await page({ type: 'ready' });
-    await page({ type: 'selectLocale', code: 'zh-TW' });
-    expect(last('locale')).toMatchObject({ locale: 'zh-tw', messages: {}, source: 'new', released: false, hasDraft: false });
-    expect(vscode.__state.globalState.get('translation.locale')).toBe('zh-tw');
+    await page({ type: 'selectLocale', code: 'XX' });
+    expect(last('locale')).toMatchObject({ locale: 'xx', messages: {}, source: 'new', released: false, hasDraft: false });
+    expect(vscode.__state.globalState.get('translation.locale')).toBe('xx');
   });
 
   it('starts an existing language from the released translation', async () => {
@@ -114,13 +114,13 @@ describe('languages', () => {
 describe('saving', () => {
   it('writes a draft in global storage, not in the extension', async () => {
     openEditor();
-    await page({ type: 'save', locale: 'zh-tw', messages: { 'messages.enabled': '已啟用。', 'messages.disabled': '' } });
-    const file = path.join(tmp, 'globalStorage', 'translations', 'package.nls.zh-tw.json');
-    expect(last('saved')).toMatchObject({ locale: 'zh-tw', path: file, hasDraft: true });
+    await page({ type: 'save', locale: 'xx', messages: { 'messages.enabled': '已啟用。', 'messages.disabled': '' } });
+    const file = path.join(tmp, 'globalStorage', 'translations', 'package.nls.xx.json');
+    expect(last('saved')).toMatchObject({ locale: 'xx', path: file, hasDraft: true });
     expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ $schema: './nls-schema.json', 'messages.enabled': '已啟用。' });
-    expect(fs.existsSync(path.join(repoRoot, 'package.nls.zh-tw.json'))).toBe(false);
+    expect(fs.existsSync(path.join(repoRoot, 'package.nls.xx.json'))).toBe(false);
 
-    await page({ type: 'selectLocale', code: 'zh-tw' });
+    await page({ type: 'selectLocale', code: 'xx' });
     expect(last('locale')).toMatchObject({ source: 'draft', hasDraft: true });
   });
 
@@ -148,8 +148,8 @@ describe('saving', () => {
 
   it('updates Vibrancy\'s own messages as you save while the draft setting is on', async () => {
     openEditor({ settings: { 'vscode_vibrancy.useTranslationDraft': true } });
-    await page({ type: 'selectLocale', code: 'zh-tw' });
-    await page({ type: 'save', locale: 'zh-tw', messages: { 'messages.enabled': '已啟用。' } });
+    await page({ type: 'selectLocale', code: 'xx' });
+    await page({ type: 'save', locale: 'xx', messages: { 'messages.enabled': '已啟用。' } });
     expect(localize('messages.enabled')).toBe('已啟用。');
     expect(localize('messages.disabled')).toBe(english['messages.disabled']);
   });
