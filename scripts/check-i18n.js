@@ -5,56 +5,39 @@
 //   node scripts/check-i18n.js --strict   untranslated keys are errors too
 //
 // Errors:   a file that isn't valid JSON, keys English doesn't have, empty
-//           values, and {0}/{1} placeholders that differ from English.
+//           values, {0}/%1 placeholders or link targets that differ from
+//           English, and backticks or ** where VS Code shows plain text.
 // Warnings: keys not translated yet. They fall back to English at runtime, so
 //           a new English string never breaks a translation until it is done.
+//
+// The rules live in extension/translation/rules.js, which the in-editor
+// translation page uses too ("Vibrancy: Translate Vibrancy").
 const fs = require('fs');
 const path = require('path');
 const { FILE_PATTERN } = require('../extension/locales');
-
-const META_KEYS = new Set(['$schema']);
-
-function placeholders(text) {
-	return (String(text).match(/\{\d+\}/g) || []).sort().join(' ');
-}
+const { checkFile, isMeta } = require('../extension/translation/rules');
+const { buildCatalog, markdownKeys } = require('../extension/translation/catalog');
 
 function checkLocales(dir) {
 	const english = JSON.parse(fs.readFileSync(path.join(dir, 'package.nls.json'), 'utf8'));
-	const englishKeys = Object.keys(english).filter(k => !META_KEYS.has(k));
+	const total = Object.keys(english).filter(k => !isMeta(k)).length;
+	const markdown = markdownKeys(buildCatalog(dir));
 	const results = [];
 
 	for (const name of fs.readdirSync(dir).sort()) {
 		const match = FILE_PATTERN.exec(name);
 		if (!match) continue;
-		const result = { file: name, locale: match[1], errors: [], missing: [] };
-		results.push(result);
-
 		let messages;
 		try {
 			messages = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
 		} catch (e) {
-			result.errors.push(`not valid JSON: ${e.message}`);
+			results.push({ file: name, locale: match[1], errors: [`not valid JSON: ${e.message}`], missing: [] });
 			continue;
 		}
-
-		for (const key of Object.keys(messages)) {
-			if (META_KEYS.has(key)) continue;
-			if (!(key in english)) result.errors.push(`"${key}" is not an English key (renamed or removed?)`);
-		}
-		for (const key of englishKeys) {
-			if (!(key in messages)) {
-				result.missing.push(key);
-				continue;
-			}
-			const value = messages[key];
-			if (typeof value !== 'string' || value.trim() === '') {
-				result.errors.push(`"${key}" is empty (delete the line to use the English text)`);
-			} else if (placeholders(value) !== placeholders(english[key])) {
-				result.errors.push(`"${key}" must contain the same placeholders as English: ${placeholders(english[key]) || 'none'}`);
-			}
-		}
+		const { errors, missing } = checkFile(english, messages, markdown);
+		results.push({ file: name, locale: match[1], errors, missing });
 	}
-	return { results, total: englishKeys.length };
+	return { results, total };
 }
 
 function main() {
@@ -72,4 +55,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { checkLocales, placeholders };
+module.exports = { checkLocales };

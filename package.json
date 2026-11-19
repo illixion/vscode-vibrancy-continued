@@ -52,6 +52,10 @@
       {
         "command": "extension.updateVibrancy",
         "title": "%extension.updateVibrancy.title%"
+      },
+      {
+        "command": "extension.translateVibrancy",
+        "title": "%extension.translateVibrancy.title%"
       }
     ],
     "configuration": {
@@ -292,6 +296,11 @@
         },
         "vscode_vibrancy.disableSmoothDragging": {
           "description": "%configuration.disableSmoothDragging.description%",
+          "type": "boolean",
+          "default": false
+        },
+        "vscode_vibrancy.useTranslationDraft": {
+          "markdownDescription": "%configuration.useTranslationDraft.description%",
           "type": "boolean",
           "default": false
         }

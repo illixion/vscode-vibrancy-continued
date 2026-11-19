@@ -1,187 +1,371 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A Vibrancy translation: package.nls.<locale>.json. Every key is optional; missing ones show in English. Generated from package.nls.json.",
   "type": "object",
   "properties": {
-    "configuration.type.description": {
+    "$schema": {
       "type": "string"
+    },
+    "configuration.type.description": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.type.auto.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.type.acrylic.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.type.acrylic-classic.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.type.mica.description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.type.tabbed.description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.type.transparent.description": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.type.macos-only.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.type.macos-only-legacy.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.opacity.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.backgroundOverride.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.theme.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.enableAutoTheme.description": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.imports.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.refreshInterval.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.preventFlash.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowMode.description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowMode.auto": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowMode.framed": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowMode.frameless": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowMode.framelessTransparent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowControlsStyle.description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowControlsStyle.auto": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowControlsStyle.custom": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowControlsStyle.hidden": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.windowControlsStyle.native": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.forceFramelessWindow.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.forceFramelessWindow.deprecation": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.disableFramelessWindow.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.disableFramelessWindow.deprecation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.preferedDarkTheme.deprecation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.preferedLightTheme.deprecation": {
+      "type": "string",
+      "minLength": 1
     },
     "configuration.fixChecksums.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.disableThemeFixes.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "configuration.disableColorCustomizations.description": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.disableSmoothDragging.description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "configuration.useTranslationDraft.description": {
+      "type": "string",
+      "minLength": 1
     },
     "extension.installVibrancy.title": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "extension.uninstallVibrancy.title": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "extension.updateVibrancy.title": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "extension.translateVibrancy.title": {
+      "type": "string",
+      "minLength": 1
     },
     "messages.firstload": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.updateNeeded": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.configupdate": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.windowSettingsChanged": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.enabled": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.disabled": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.smthingwrong": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.unsupported": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.unsupportedEditor": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.linuxFramedNoEffect": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.forceFramelessUnsupportedEditor": {
+      "type": "string",
+      "minLength": 1
     },
     "messages.patchWontLoad": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.brokenBeforePatch": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.editorWontStartRestorable": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.editorWontStartOther": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.restartAnyway": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.untestedEditor": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.admin": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.recommendedColorTheme": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.restartIde": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.installIde": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.reloadIde": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.changeColorThemeIde": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.noIde": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.importError": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.electronDeprecatedType": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "messages.applyToAllProfiles": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.elevationRequired": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.elevationYes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.elevationNo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.retryElevated": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.elevationFailed": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.noElevationMethod": {
+      "type": "string",
+      "minLength": 1
+    },
+    "terminal.elevationTitle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "terminal.elevationPrompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.snapImmutable": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.noNewPrivs": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.immutableUnsupported": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.nixMirrorProgress": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.nixRelaunchTitle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.nixRelaunch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.nixStale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.nixStaleReenable": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileMismatch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileMismatchDisableAnyway": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileTakeover": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileTip": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileLeftovers": {
+      "type": "string",
+      "minLength": 1
+    },
+    "messages.profileLeftoversUnreachable": {
+      "type": "string",
+      "minLength": 1
     }
   },
-  "required": [
-    "configuration.type.description",
-    "configuration.type.auto.description",
-    "configuration.type.acrylic.description",
-    "configuration.type.macos-only.description",
-    "configuration.type.macos-only-legacy.description",
-    "configuration.opacity.description",
-    "configuration.backgroundOverride.description",
-    "configuration.theme.description",
-    "configuration.imports.description",
-    "configuration.refreshInterval.description",
-    "configuration.preventFlash.description",
-    "configuration.forceFramelessWindow.description",
-    "configuration.disableFramelessWindow.description",
-    "configuration.fixChecksums.description",
-    "configuration.disableThemeFixes.description",
-    "extension.installVibrancy.title",
-    "extension.uninstallVibrancy.title",
-    "extension.updateVibrancy.title",
-    "messages.firstload",
-    "messages.updateNeeded",
-    "messages.configupdate",
-    "messages.windowSettingsChanged",
-    "messages.enabled",
-    "messages.disabled",
-    "messages.smthingwrong",
-    "messages.unsupported",
-    "messages.unsupportedEditor",
-    "messages.patchWontLoad",
-    "messages.brokenBeforePatch",
-    "messages.editorWontStartRestorable",
-    "messages.editorWontStartOther",
-    "messages.restartAnyway",
-    "messages.untestedEditor",
-    "messages.admin",
-    "messages.recommendedColorTheme",
-    "messages.restartIde",
-    "messages.installIde",
-    "messages.reloadIde",
-    "messages.changeColorThemeIde",
-    "messages.noIde",
-    "messages.importError",
-    "messages.electronDeprecatedType",
-    "messages.applyToAllProfiles",
-    "configuration.disableColorCustomizations.description"
-  ]
+  "additionalProperties": false
 }

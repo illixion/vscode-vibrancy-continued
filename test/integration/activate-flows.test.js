@@ -103,6 +103,7 @@ function activate({ settings = {}, appName, responses } = {}) {
       update: async (k, v) => { vscode.__state.globalState.set(k, v); },
     },
     extension: { packageJSON: require('../../package.json') },
+    extensionPath: path.join(__dirname, '../..'),
   };
 
   extension.activate(context);
@@ -991,5 +992,48 @@ describe('healing a stale settings.json path', () => {
     await activateAndSettle(profile.globalStoragePath);
 
     expect(fs.existsSync(configPath())).toBe(false);
+  });
+});
+
+describe('the translation draft setting', () => {
+  const localize = require('../../extension/i18n');
+  afterEach(() => localize.setOverride(null));
+
+  function change(key, value) {
+    vscode.__state.settings[key] = value;
+    for (const listener of vscode.__state.configListeners) {
+      listener({ affectsConfiguration: (section) => key === section || key.startsWith(`${section}.`) });
+    }
+  }
+  const reloadPrompts = () => vscode.__state.messages.filter(m => m.message === localize('messages.configupdate'));
+
+  it('does not ask to reload Vibrancy when it changes', () => {
+    makeInstall();
+    activate();
+    change('vscode_vibrancy.useTranslationDraft', true);
+    expect(reloadPrompts()).toEqual([]);
+  });
+
+  it('still asks when a setting that changes the patch does', () => {
+    makeInstall();
+    activate();
+    change('vscode_vibrancy.opacity', 0.5);
+    expect(reloadPrompts()).toHaveLength(1);
+  });
+
+  it('makes Vibrancy\'s own messages use the draft while it is on', () => {
+    makeInstall();
+    const context = activate();
+    const drafts = path.join(context.globalStorageUri.fsPath, 'translations');
+    fs.mkdirSync(drafts, { recursive: true });
+    fs.writeFileSync(path.join(drafts, 'package.nls.xx.json'), JSON.stringify({ 'messages.configupdate': 'Brouillon : recharger ?' }));
+    vscode.__state.globalState.set('translation.locale', 'xx');
+
+    change('vscode_vibrancy.useTranslationDraft', true);
+    change('vscode_vibrancy.opacity', 0.5);
+    expect(vscode.__state.messages.map(m => m.message)).toContain('Brouillon : recharger ?');
+
+    change('vscode_vibrancy.useTranslationDraft', false);
+    expect(localize('messages.configupdate')).toBe(require('../../package.nls.json')['messages.configupdate']);
   });
 });

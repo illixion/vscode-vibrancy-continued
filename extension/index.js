@@ -243,6 +243,20 @@ function getRenamedSetting(newKey, oldKey) {
 // don't trigger the onDidChangeConfiguration reload prompt. Best-effort: failures
 // are logged but never block install, and getRenamedSetting() still honors the
 // old key meanwhile.
+// Settings that don't change what Vibrancy writes into the editor, so changing
+// them must not raise the "Config is changed, would you like to reload?" prompt.
+const settingsOutsidePatch = ['useTranslationDraft'];
+
+// The vscode_vibrancy section without those settings, for change detection.
+function patchRelevantConfig() {
+  const config = vscode.workspace.getConfiguration("vscode_vibrancy");
+  const relevant = {};
+  for (const key of Object.keys(config)) {
+    if (!settingsOutsidePatch.includes(key)) relevant[key] = config[key];
+  }
+  return relevant;
+}
+
 async function migrateRenamedSettings() {
   const config = vscode.workspace.getConfiguration();
   const scopes = [
@@ -1671,7 +1685,7 @@ function activate(context) {
     // -detection baseline now — while we're still in the operation — to stop
     // them being mistaken for a user edit and popping the "config changed,
     // reload?" prompt.
-    lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    lastConfig = patchRelevantConfig();
   }
 
   /**
@@ -1997,6 +2011,13 @@ function activate(context) {
   context.subscriptions.push(installVibrancy);
   context.subscriptions.push(uninstallVibrancy);
   context.subscriptions.push(updateVibrancy);
+  // Loaded on demand: the translation editor isn't part of any install flow.
+  context.subscriptions.push(vscode.commands.registerCommand('extension.translateVibrancy', () => (
+    require('./translation/editor').open(context, localize)
+  )));
+  if (vscode.workspace.getConfiguration('vscode_vibrancy').get('useTranslationDraft') === true) {
+    require('./translation/editor').applyDraftOverride(context, localize);
+  }
 
   const currentVersion = context.extension.packageJSON.version;
   let lastVersion = context.globalState.get('lastVersion');
@@ -2073,11 +2094,14 @@ function activate(context) {
       .catch((err) => console.error('Vibrancy: failed to check the window settings against the install:', err));
   }
 
-  var lastConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+  var lastConfig = patchRelevantConfig();
 
-  vscode.workspace.onDidChangeConfiguration(() => {
+  vscode.workspace.onDidChangeConfiguration((event) => {
+    if (event && event.affectsConfiguration && event.affectsConfiguration('vscode_vibrancy.useTranslationDraft')) {
+      require('./translation/editor').applyDraftOverride(context, localize);
+    }
     if (operationInProgress) return;
-    const newConfig = vscode.workspace.getConfiguration("vscode_vibrancy");
+    const newConfig = patchRelevantConfig();
     if (!deepEqual(lastConfig, newConfig)) {
       lastConfig = newConfig;
       vscode.window.showInformationMessage(localize('messages.configupdate'), { title: localize('messages.reloadIde') })

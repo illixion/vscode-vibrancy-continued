@@ -57,6 +57,22 @@ const state = {
   /** vscode.env.appRoot, the install's resources/app directory. */
   appRoot: undefined,
   colorThemeKind: 2, // Dark
+  /** vscode.env.language, the display language. */
+  language: 'en',
+  /** vscode.workspace.workspaceFolders. @type {Array<{uri: {fsPath: string}}> | undefined} */
+  workspaceFolders: undefined,
+  /** Webview panels created, each with what it was sent in `posted`. @type {any[]} */
+  panels: [],
+  /** executeCommand calls, as argument lists. @type {any[][]} */
+  executed: [],
+  /** What showSaveDialog returns. */
+  saveDialogResult: undefined,
+  clipboard: '',
+  /** URLs passed to openExternal. @type {string[]} */
+  opened: [],
+  /** Quick picks and terminals shown. @type {any[]} */
+  quickPicks: [],
+  terminals: [],
 };
 
 /** Reset every captured interaction. Call from beforeEach. */
@@ -73,6 +89,15 @@ function __reset(overrides = {}) {
   state.appName = overrides.appName || 'Visual Studio Code';
   state.appRoot = overrides.appRoot;
   state.colorThemeKind = overrides.colorThemeKind ?? 2;
+  state.language = overrides.language || 'en';
+  state.workspaceFolders = overrides.workspaceFolders;
+  state.panels = [];
+  state.executed = [];
+  state.saveDialogResult = overrides.saveDialogResult;
+  state.clipboard = '';
+  state.opened = [];
+  state.quickPicks = [];
+  state.terminals = [];
   return state;
 }
 
@@ -125,6 +150,49 @@ const record = (kind) => (message, ...options) => {
 
 const disposable = () => ({ dispose: () => {} });
 
+class EventEmitter {
+  constructor() {
+    this.listeners = [];
+    this.event = (listener) => { this.listeners.push(listener); return disposable(); };
+  }
+  fire(value) { this.listeners.forEach((listener) => listener(value)); }
+  dispose() {}
+}
+
+const Uri = {
+  file: (fsPath) => ({ scheme: 'file', fsPath, path: fsPath, toString: () => `file://${fsPath}` }),
+  joinPath: (base, ...parts) => Uri.file(require('path').join(base.fsPath, ...parts)),
+  parse: (value) => ({ value, toString: () => value }),
+};
+
+/**
+ * A webview panel that records what the extension sends it. A test plays the
+ * page by calling `panel.receive(message)` and reads replies from `posted`.
+ */
+function createWebviewPanel(viewType, title, column, options) {
+  const panel = {
+    viewType,
+    title,
+    options,
+    posted: [],
+    revealed: 0,
+    disposeListeners: [],
+    receive: null,
+    webview: {
+      html: '',
+      cspSource: 'vscode-webview://test',
+      asWebviewUri: (uri) => ({ toString: () => `webview:${uri.fsPath}` }),
+      postMessage: async (message) => { panel.posted.push(message); return true; },
+      onDidReceiveMessage: (cb) => { panel.receive = cb; return disposable(); },
+    },
+    reveal: () => { panel.revealed += 1; },
+    onDidDispose: (cb) => { panel.disposeListeners.push(cb); return disposable(); },
+    dispose: () => panel.disposeListeners.forEach((cb) => cb()),
+  };
+  state.panels.push(panel);
+  return panel;
+}
+
 module.exports = {
   __state: state,
   __reset,
@@ -133,11 +201,15 @@ module.exports = {
   env: {
     get appName() { return state.appName; },
     get appRoot() { return state.appRoot; },
+    get language() { return state.language; },
+    clipboard: { writeText: async (text) => { state.clipboard = text; } },
+    openExternal: async (uri) => { state.opened.push(uri.toString()); return true; },
   },
 
   workspace: {
     getConfiguration,
     onDidChangeConfiguration: (cb) => { state.configListeners.push(cb); return disposable(); },
+    get workspaceFolders() { return state.workspaceFolders; },
   },
 
   window: {
@@ -147,15 +219,37 @@ module.exports = {
     withProgress: (_options, task) => task({ report: () => {} }),
     get activeColorTheme() { return { kind: state.colorThemeKind }; },
     onDidChangeActiveColorTheme: (cb) => { state.themeListeners.push(cb); return disposable(); },
+    createWebviewPanel,
+    showSaveDialog: async () => state.saveDialogResult,
+    createQuickPick: () => {
+      const pick = {
+        items: [],
+        activeItems: [],
+        placeholder: '',
+        show: () => state.quickPicks.push(pick),
+        hide: () => {},
+        dispose: () => {},
+        onDidAccept: () => disposable(),
+        onDidHide: () => disposable(),
+      };
+      return pick;
+    },
+    createTerminal: (options) => {
+      const terminal = { options, show: () => state.terminals.push(terminal) };
+      return terminal;
+    },
   },
 
   commands: {
     registerCommand: (id, fn) => { state.commands.set(id, fn); return disposable(); },
-    executeCommand: async () => {},
+    executeCommand: async (...args) => { state.executed.push(args); },
   },
 
   extensions: { getExtension: () => null },
 
+  EventEmitter,
+  Uri,
+  ViewColumn: { Active: -1, Beside: -2, One: 1 },
   ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
   ProgressLocation: { SourceControl: 1, Window: 10, Notification: 15 },
   ColorThemeKind: { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 },
