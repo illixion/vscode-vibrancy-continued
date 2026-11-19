@@ -52,10 +52,6 @@
       {
         "command": "extension.updateVibrancy",
         "title": "%extension.updateVibrancy.title%"
-      },
-      {
-        "command": "extension.translateVibrancy",
-        "title": "%extension.translateVibrancy.title%"
       }
     ],
     "configuration": {

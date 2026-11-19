@@ -14,6 +14,7 @@
 		mode: 'draft',
 		useDraft: false,
 		displayLanguage: 'en',
+		languages: [],
 		locale: null,
 		messages: {},
 		source: null,
@@ -121,6 +122,7 @@
 		switch (message.type) {
 			case 'init':
 				state.catalog = message.catalog;
+				state.languages = message.languages;
 				state.mode = message.mode;
 				state.repoRoot = message.repoRoot;
 				state.useDraft = message.useDraft;
@@ -208,8 +210,8 @@
 			flushSave();
 			state.locale = null;
 			renderAll();
-			const input = document.querySelector('#newLocale');
-			if (input) input.focus();
+			const picker = document.querySelector('#newLocale');
+			if (picker) picker.focus();
 			return;
 		}
 		flushSave();
@@ -674,31 +676,47 @@
 	// ---- welcome and footer ------------------------------------------------
 
 	function welcome() {
-		const input = h('input', { id: 'newLocale', type: 'text', placeholder: 'e.g. zh-tw, de, pt-br', 'aria-label': 'Language code', autocomplete: 'off', spellcheck: 'false' });
-		const name = h('span', { class: 'hint', id: 'newLocaleName' });
-		const start = h('button', { text: 'Start', disabled: true });
+		const have = new Set(state.locales.map(l => l.code));
+		const english = (code) => languageName(code, 'en');
+		const options = state.languages.filter(code => !have.has(code))
+			.sort((a, b) => english(a).localeCompare(english(b)));
+		const display = options.includes(state.displayLanguage) ? state.displayLanguage : null;
+
+		const select = h('select', { id: 'newLocale', 'aria-label': 'Language to add' },
+			h('option', { value: '', text: 'Choose a language…', selected: !display, disabled: true }),
+			display ? h('optgroup', { label: 'Your VS Code language' },
+				h('option', { value: display, selected: true, text: `${bothNames(display)} (${display})` })) : null,
+			h('optgroup', { label: 'All languages' },
+				options.map(code => h('option', { value: code, text: `${bothNames(code)} (${code})` }))),
+			h('option', { value: '__other', text: 'Another language code…' }));
+
+		const other = h('input', { id: 'otherLocale', type: 'text', placeholder: 'e.g. de-at', 'aria-label': 'Language code', autocomplete: 'off', spellcheck: 'false', hidden: true });
+		const otherName = h('span', { class: 'hint' });
+		const start = h('button', { text: 'Start', disabled: !display });
 		const valid = (v) => /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/.test(v) && v !== 'en';
-		input.addEventListener('input', () => {
-			const v = input.value.trim().toLowerCase().replace(/_/g, '-');
-			start.disabled = !valid(v);
-			name.textContent = valid(v) ? bothNames(v) : v ? 'Not a language code yet' : '';
-		});
-		const go = () => {
-			const v = input.value.trim().toLowerCase().replace(/_/g, '-');
-			if (valid(v)) api.postMessage({ type: 'selectLocale', code: v });
+		const chosen = () => (select.value === '__other' ? other.value.trim().toLowerCase().replace(/_/g, '-') : select.value);
+		const refresh = () => {
+			other.hidden = select.value !== '__other';
+			const code = chosen();
+			start.disabled = !valid(code);
+			otherName.textContent = select.value === '__other' && valid(code) ? bothNames(code) : '';
 		};
+		const go = () => {
+			if (valid(chosen())) api.postMessage({ type: 'selectLocale', code: chosen() });
+		};
+		select.addEventListener('change', () => {
+			refresh();
+			if (!other.hidden) other.focus();
+		});
+		other.addEventListener('input', refresh);
+		other.addEventListener('keydown', (event) => { if (event.key === 'Enter') go(); });
 		start.addEventListener('click', go);
-		input.addEventListener('keydown', (event) => { if (event.key === 'Enter') go(); });
 
 		const existing = state.locales.map(l => h('button', {
 			class: 'secondary',
 			onclick: () => api.postMessage({ type: 'selectLocale', code: l.code }),
 			text: `${bothNames(l.code)}${l.draft ? ' (your draft)' : ''}`,
 		}));
-
-		const display = state.displayLanguage && state.displayLanguage !== 'en' && !state.locales.some(l => l.code === state.displayLanguage)
-			? h('p', {}, h('button', { class: 'link', onclick: () => api.postMessage({ type: 'selectLocale', code: state.displayLanguage }), text: `Start ${bothNames(state.displayLanguage)} (${state.displayLanguage}), your VS Code language` }))
-			: null;
 
 		return h('div', { class: 'welcome' },
 			h('h1', { text: 'Translate Vibrancy into your language' }),
@@ -709,9 +727,8 @@
 			existing.length ? h('h2', { text: 'Improve a translation' }) : null,
 			existing.length ? h('div', { class: 'button-row' }, existing) : null,
 			h('h2', { text: 'Add a language' }),
-			display,
-			h('div', { class: 'new-locale' }, input, start, name),
-			h('p', { class: 'hint', text: 'Use the code VS Code uses for its display language: run "Configure Display Language" to see them. Write from the English text, the way your language is used in your region.' }));
+			h('div', { class: 'new-locale' }, select, other, start, otherName),
+			h('p', { class: 'hint', text: 'Write from the English text, the way your language is used in your region.' }));
 	}
 
 	function renderFooter() {

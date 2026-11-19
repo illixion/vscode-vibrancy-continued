@@ -251,7 +251,7 @@ Select Vibrancy theme:
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
-> Vibrancy is translated into English, Japanese and Simplified Chinese. Want to add your language or improve one? Run **Translate Vibrancy** from the Command Palette: it has an editor with live previews built in, and sends your translation to us when you're done. See [docs/TRANSLATING.md](./docs/TRANSLATING.md).
+> Vibrancy is translated into English, Japanese and Simplified Chinese. Want to add your language or improve one? Open the translation editor from the **Open the translation editor** link in Vibrancy's settings (search for "Vibrancy translation"): it has live previews built in, and sends your translation to us when you're done. See [docs/TRANSLATING.md](./docs/TRANSLATING.md).
 
 # ❄️ NixOS notes
 

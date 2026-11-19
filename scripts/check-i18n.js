@@ -11,7 +11,7 @@
 //           a new English string never breaks a translation until it is done.
 //
 // The rules live in extension/translation/rules.js, which the in-editor
-// translation page uses too ("Vibrancy: Translate Vibrancy").
+// translation editor uses too (the link in Vibrancy's settings).
 const fs = require('fs');
 const path = require('path');
 const { FILE_PATTERN } = require('../extension/locales');

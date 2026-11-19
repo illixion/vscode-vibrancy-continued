@@ -10,6 +10,7 @@ const path = require('path');
 const { DraftStore, findRepo, normalizeLocale, fileName } = require('./draft-store');
 const { buildCatalog } = require('./catalog');
 const rules = require('./rules');
+const languages = require('./languages');
 
 const SECTION = 'vscode_vibrancy';
 const DRAFT_SETTING = 'useTranslationDraft';
@@ -141,6 +142,7 @@ function open(context, localize) {
 				send({
 					type: 'init',
 					catalog,
+					languages,
 					mode: store.mode,
 					repoRoot: store.repoRoot,
 					displayLanguage: vscode.env.language,

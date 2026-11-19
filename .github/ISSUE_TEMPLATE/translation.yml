@@ -6,7 +6,7 @@ body:
 - type: markdown
   attributes:
     value: |
-      Thank you for helping! The easiest way is the translation editor built into Vibrancy: run **Translate Vibrancy** from the Command Palette, and its **Send to Vibrancy** button opens this form with your file copied, ready to paste or attach below. Details are in [docs/TRANSLATING.md](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/TRANSLATING.md).
+      Thank you for helping! The easiest way is the translation editor built into Vibrancy: open Vibrancy's settings and click **Open the translation editor**, and its **Send to Vibrancy** button opens this form with your file copied, ready to paste or attach below. Details are in [docs/TRANSLATING.md](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/TRANSLATING.md).
 - type: input
   attributes:
     label: Language and locale code

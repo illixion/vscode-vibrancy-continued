@@ -466,7 +466,8 @@ textarea {
 .welcome h2 { font-size: 1.1em; font-weight: 600; margin: 18px 0 8px; }
 .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .new-locale { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.new-locale input { width: 180px; }
+.new-locale select { min-width: 280px; max-width: 100%; }
+.new-locale input { width: 140px; }
 
 .footer {
 	display: flex;

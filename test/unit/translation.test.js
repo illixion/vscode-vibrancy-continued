@@ -5,6 +5,7 @@ const rules = require('../../extension/translation/rules');
 const messagesMeta = require('../../extension/translation/messages-meta');
 const { buildCatalog, markdownKeys, settingLabel } = require('../../extension/translation/catalog');
 const { DraftStore, findRepo, normalizeLocale } = require('../../extension/translation/draft-store');
+const languages = require('../../extension/translation/languages');
 
 const repoRoot = path.join(__dirname, '../..');
 const english = require('../../package.nls.json');
@@ -179,10 +180,13 @@ describe('catalog', () => {
     for (const e of plain) expect(e.english, e.key).not.toMatch(/`|\*\*/);
   });
 
-  it('links the Settings description to a command that exists', () => {
+  it('links the Settings description to a registered command that stays out of the Command Palette', () => {
     const text = english['configuration.useTranslationDraft.description'];
     const target = /\]\(command:([^)]+)\)/.exec(text)[1];
-    expect(pkg.contributes.commands.map(c => c.command)).toContain(target);
+    const source = fs.readFileSync(path.join(repoRoot, 'extension', 'index.js'), 'utf8');
+    expect(source).toContain(`registerCommand('${target}'`);
+    expect(pkg.contributes.commands.map(c => c.command)).not.toContain(target);
+    expect(JSON.stringify(pkg.contributes.menus || {})).not.toContain(target);
   });
 
   it('keeps nls-schema.json in step with the English keys, with every key optional', () => {
@@ -244,5 +248,17 @@ describe('DraftStore', () => {
     expect(normalizeLocale('en')).toBe(null);
     expect(normalizeLocale('../etc')).toBe(null);
     expect(normalizeLocale('')).toBe(null);
+  });
+});
+
+describe('languages', () => {
+  it('lists only codes the editor accepts, each once, without English', () => {
+    expect(new Set(languages).size).toBe(languages.length);
+    for (const code of languages) expect(normalizeLocale(code), code).toBe(code);
+    expect(languages).not.toContain('en');
+  });
+
+  it('includes the codes VS Code ships language packs for', () => {
+    expect(languages).toEqual(expect.arrayContaining(['de', 'fr', 'ja', 'ko', 'pt-br', 'ru', 'zh-cn', 'zh-tw']));
   });
 });

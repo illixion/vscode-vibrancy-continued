@@ -2012,6 +2012,8 @@ function activate(context) {
   context.subscriptions.push(uninstallVibrancy);
   context.subscriptions.push(updateVibrancy);
   // Loaded on demand: the translation editor isn't part of any install flow.
+  // Deliberately not in package.json's commands, so it isn't in the Command
+  // Palette: the link in the useTranslationDraft setting is how it's opened.
   context.subscriptions.push(vscode.commands.registerCommand('extension.translateVibrancy', () => (
     require('./translation/editor').open(context, localize)
   )));

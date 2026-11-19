@@ -7,11 +7,11 @@ Currently translated: English (the source), Japanese (`ja`), Simplified Chinese 
 
 ## With the translation editor
 
-1. Open it from the Command Palette with **Translate Vibrancy**, or from the
-   **Open the translation editor** link in Vibrancy's settings.
-2. Pick a language to improve, or add one by its code. Use the code VS Code uses
-   for its display language, such as `zh-tw`, `pt-br`, `de` or `ko`. The editor
-   shows the language's name, so you can check you have the right one.
+1. Open VS Code's Settings, search for **Vibrancy translation**, and click
+   **Open the translation editor** in the description of the **Use Translation
+   Draft** setting.
+2. Pick a language to improve, or choose one to add from the list. It starts
+   with your VS Code display language.
 3. Work through the list on the left. Each string shows the English text, where
    it appears, a field for your translation and a preview. The preview copies
    the real place it's shown (a setting, a notification, a dialog, the Command
@@ -57,7 +57,7 @@ The editor checks these as you type and lists anything to fix under the field.
 
 ## In a clone of the repository
 
-Open the repository folder in VS Code and run **Translate Vibrancy**. The editor
+Open the repository folder in VS Code, press F5, and open the translation editor from the setting in the window that opens. The editor
 sees the clone and writes straight into its `package.nls.<locale>.json` files,
 ready to commit. A file in the repo root is all a language needs; nothing else
 registers it.

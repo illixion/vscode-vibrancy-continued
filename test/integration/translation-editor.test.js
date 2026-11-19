@@ -80,6 +80,7 @@ describe('opening', () => {
     const init = last('init');
     expect(init.catalog.entries.length).toBe(Object.keys(english).length - 1);
     expect(init.mode).toBe('draft');
+    expect(init.languages).toEqual(require('../../extension/translation/languages'));
     expect(init.displayLanguage).toBe('zh-tw');
     expect(last('locale')).toMatchObject({ locale: null, messages: {} });
     expect(last('locale').locales.map((l) => l.code)).toEqual(expect.arrayContaining(['ja', 'zh-cn']));

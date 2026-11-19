@@ -166,10 +166,6 @@
       "type": "string",
       "minLength": 1
     },
-    "extension.translateVibrancy.title": {
-      "type": "string",
-      "minLength": 1
-    },
     "messages.firstload": {
       "type": "string",
       "minLength": 1
