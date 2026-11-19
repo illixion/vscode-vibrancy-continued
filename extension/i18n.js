@@ -1,19 +1,14 @@
-var fs = require('mz/fs');
 var vscode = require('vscode');
 var path = require('path');
+const { loadMessages, pickLocale } = require('./locales');
 
-const i18nMessages = {
-	'en': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.json'))),
-	'zh-cn': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.zh-cn.json'))),
-	'ja': JSON.parse(fs.readFileSync(path.join(__dirname, '../package.nls.ja.json')))
-};
-const defaultLocale = 'en';
-const locale = (vscode.env.language || defaultLocale).toLowerCase();
+const i18nMessages = loadMessages(path.join(__dirname, '..'));
+const locale = pickLocale(vscode.env.language, Object.keys(i18nMessages));
 const localize = (info) => {
-	if (locale in i18nMessages && info in i18nMessages[locale]) {
+	if (info in i18nMessages[locale]) {
 		return i18nMessages[locale][info]
 	} else {
-		return i18nMessages[defaultLocale][info]
+		return i18nMessages.en[info]
 	}
 }
 

@@ -1,0 +1,30 @@
+name: 🌐 Translation
+description: Offer a translation, or fix one that reads wrong
+title: "[Translation]: "
+labels: ["translation"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thank you for helping! A language is one file and needs no code. The steps are in [docs/TRANSLATING.md](https://github.com/illixion/vscode-vibrancy-continued/blob/main/docs/TRANSLATING.md); you can open a pull request, or attach the file here.
+- type: input
+  attributes:
+    label: Language and locale code
+    description: The language, the region if it matters, and the code VS Code uses for it.
+    placeholder: "Traditional Chinese (Taiwan), zh-tw"
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: What are you offering?
+    options:
+    - A new language
+    - A correction to an existing translation
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Details
+    description: Attach `package.nls.<locale>.json` here if you are not opening a pull request. For a correction, say which strings and what they should say.
+  validations:
+    required: false

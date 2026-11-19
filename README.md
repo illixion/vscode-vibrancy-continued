@@ -251,6 +251,8 @@ Select Vibrancy theme:
 
 > You can contribute more themes! [see here](https://github.com/illixion/vscode-vibrancy-continued/tree/master/themes).
 
+> Vibrancy is translated into English, Japanese and Simplified Chinese. Want to add your language? It's one file, and you don't need to write any code: see [docs/TRANSLATING.md](./docs/TRANSLATING.md).
+
 # ❄️ NixOS notes
 
 On NixOS the VSCode package lives in the read-only `/nix/store`, so its files can't be patched in place — not even with root. Instead, when you enable Vibrancy on a Nix-installed VSCode (nixpkgs `vscode`, `vscodium`, etc.), the extension automatically:
