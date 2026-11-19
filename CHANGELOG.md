@@ -1,3 +1,8 @@
+# 1.6.2
+
+* Core:
+  * Fix the translation editor reporting a single backtick as a mistake. Some languages and keyboards use one as an apostrophe or quote, and it shows as typed, so only paired backticks (`` `word` ``) and `**` are flagged now
+
 # 1.6.1
 
 * Core:
