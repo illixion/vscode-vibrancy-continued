@@ -1,3 +1,11 @@
+# 1.6.1
+
+* Core:
+  * Add a translation editor, so anyone can translate Vibrancy without git, Node or editing JSON. Open Settings, search for "Vibrancy translation" and click **Open the translation editor**. It lists every string with where it appears, shows a preview that updates as you type (the Settings entry, the Command Palette, notifications, dialogs and the Linux password terminal), and has buttons that show the real notification, dialog, Command Palette list or terminal in VS Code with your text. Pick the language from a list, work in drafts that are saved as you type and kept across updates, then send the finished file to us with one click or save a copy. It flags a missing `%1` or `{0}` placeholder, a lost link target, or Markdown typed where VS Code shows plain text
+  * Add the `vscode_vibrancy.useTranslationDraft` setting, which makes Vibrancy's own notifications use your draft so you can check it where it appears. Changing it doesn't ask you to reload Vibrancy
+  * A new language is now one file, `package.nls.<locale>.json`, with no code to edit. A regional code falls back to its language (`pt-br` to `pt`), then English, and a translation file that is broken is skipped instead of stopping the extension from loading
+  * Fix backticks showing literally in four setting descriptions and two notifications; they are removed in every language
+
 # 1.6.0
 
 * Core:
