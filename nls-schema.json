@@ -80,9 +80,6 @@
     "messages.disabled": {
       "type": "string"
     },
-    "messages.already_disabled": {
-      "type": "string"
-    },
     "messages.smthingwrong": {
       "type": "string"
     },
@@ -134,9 +131,6 @@
     "messages.importError": {
       "type": "string"
     },
-    "messages.htmlError": {
-      "type": "string"
-    },
     "messages.electronDeprecatedType": {
       "type": "string"
     },
@@ -169,7 +163,6 @@
     "messages.windowSettingsChanged",
     "messages.enabled",
     "messages.disabled",
-    "messages.already_disabled",
     "messages.smthingwrong",
     "messages.unsupported",
     "messages.unsupportedEditor",
@@ -187,7 +180,6 @@
     "messages.changeColorThemeIde",
     "messages.noIde",
     "messages.importError",
-    "messages.htmlError",
     "messages.electronDeprecatedType",
     "messages.applyToAllProfiles",
     "configuration.disableColorCustomizations.description"
