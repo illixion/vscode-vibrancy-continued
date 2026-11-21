@@ -79,7 +79,7 @@
   "messages.immutableUnsupported": "此 VSCode 安装位于只读文件系统上，即使使用管理员权限也无法修改，并且此环境没有可用的自动解决方案。请参阅扩展 README 了解支持的安装方式。",
   "messages.nixMirrorProgress": "Vibrancy: 正在主文件夹中创建 VSCode 的可写副本（仅需一次）…",
   "messages.nixRelaunchTitle": "Vibrancy 已启用 — 请启动“(Vibrancy)”应用来使用",
-  "messages.nixRelaunch": "您的 Nix store 安装是只读的，因此 Vibrancy 已应用到 VSCode 的可写副本。请从应用程序菜单启动“%1 (Vibrancy)”来使用它 — 此窗口中的重启提示可以忽略（此副本未被修改）。",
+  "messages.nixRelaunch": "您的 Nix store 安装是只读的，因此 Vibrancy 已应用到 VSCode 的可写副本。请从应用程序菜单启动“%1 (Vibrancy)”来使用它 — 此窗口中的重启提示可以忽略（当前窗口使用的仍是未修改的原始安装）。",
   "messages.nixStale": "自创建 Vibrancy 副本以来，系统的 VSCode 已更新。请重新启用 Vibrancy 以从新版本重建副本。",
   "messages.nixStaleReenable": "重建并启用",
   "messages.profileMismatch": "Vibrancy 是从另一个 VSCode 配置文件（profile）启用的。在此禁用会为所有配置文件还原 VSCode 的共享文件，但只能恢复当前配置文件的颜色自定义 —— 启用 Vibrancy 的那个配置文件中的设置将被遗留。请切换到那个配置文件并在那里禁用。如果那个配置文件已不存在，或者您正在清理遗留在当前配置文件中的颜色，请选择“仍然禁用”。",
