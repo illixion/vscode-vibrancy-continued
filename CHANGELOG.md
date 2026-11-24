@@ -1,3 +1,10 @@
+# 1.6.3
+
+* i18n:
+  * Add a Traditional Chinese (Taiwan) translation for Vibrancy's settings, commands and messages (PR [#289](https://github.com/illixion/vscode-vibrancy-continued/pull/289))
+* Contributors:
+  * [@monarchsofchaos004-gif](https://github.com/monarchsofchaos004-gif)
+
 # 1.6.2
 
 * Core:
