@@ -91,7 +91,10 @@ function backgroundMaterialForType(type) {
  * @returns {{ r: any; g: any; b: any; } | null}
  */
 function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  // #RGB and #RRGGBBAA are valid colour settings too; the alpha is ignored.
+  var value = String(hex).replace(/^#/, '');
+  if (/^[a-f\d]{3}$/i.test(value)) value = value.replace(/./g, '$&$&');
+  var result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})(?:[a-f\d]{2})?$/i.exec(value);
   return result
     ? {
       r: parseInt(result[1], 16),
