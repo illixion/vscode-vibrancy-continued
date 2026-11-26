@@ -180,6 +180,23 @@ describe('Enable', () => {
     expect(colours()).toMatchObject({ 'editor.background': expect.stringMatching(/^#[0-9a-f]{8}$/i) });
   });
 
+  it.each([
+    ['#RRGGBBAA, as the colour picker writes with alpha', '#12345680'],
+    ['#RGB shorthand', '#123'],
+  ])('reads a backgroundOverride given as %s', async (_, override) => {
+    makeInstall();
+    activate({ settings: { 'vscode_vibrancy.backgroundOverride': override } });
+
+    await run('extension.installVibrancy');
+
+    // Every colour written is a valid #RRGGBBAA, built on the override's RGB.
+    for (const [key, value] of Object.entries(colours())) {
+      expect(value, key).toMatch(/^#[0-9a-f]{8}$/i);
+    }
+    const rgb = override === '#123' ? '112233' : '123456';
+    expect(colours()['editor.background']).toMatch(new RegExp(`^#${rgb}[0-9a-f]{2}$`, 'i'));
+  });
+
   it('records what it patched, so the uninstall hook can undo it', async () => {
     const { jsPath, htmlPath } = makeInstall();
     activate();

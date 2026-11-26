@@ -18,6 +18,7 @@ var {
   checkRuntimeUpdate,
   getConfigDir,
   resolveManagedBgKeys,
+  extractBaseColor,
 } = require('./file-transforms');
 const { applySettings, restoreSettings } = require('./vscode-settings');
 const { toggleTitleBarForRestartPrompt, healStrandedTitleBarToggle } = require('./mac-restart-toggle');
@@ -1243,9 +1244,10 @@ function activate(context) {
       opacity = themeConfig.opacity?.[osType] ?? 0.5;
     }
 
-    const themeBackground = vibrancyConfig.get("backgroundOverride")
-      ? vibrancyConfig.get("backgroundOverride").replace('#', '')
-      : themeConfig.background;
+    // The colour picker writes #RRGGBBAA once alpha is changed, and #RGB is
+    // valid too: reduce either to the 6-digit hex the colours are built from.
+    const themeBackground = extractBaseColor(vibrancyConfig.get("backgroundOverride"))
+      ?? themeConfig.background;
 
     const config = vscode.workspace.getConfiguration();
     const settingsStore = {
